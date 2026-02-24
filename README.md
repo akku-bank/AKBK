@@ -1,6 +1,4 @@
 
----
-
 # SSAFY 14기 특화 프로젝트 B101
 
 ## 1. Project Overview
@@ -58,14 +56,14 @@
 ### Commit Message Format
 
 ```text
-[Type]: 작업 내용 요약
+type: 작업 내용 요약
 
 ```
 
 *(예시)*
 
-* `[feat]: 카카오 소셜 로그인 API 연동`
-* `[fix]: 결제 페이지 렌더링 오류 수정`
+* `feat: 카카오 소셜 로그인 API 연동`
+* `fix: 결제 페이지 렌더링 오류 수정`
 
 ---
 
