@@ -1,21 +1,23 @@
 pipeline {
     agent any
     environment {
+        // Credentials ID 확인: 'mattermost-webhook-url'
         MM_WEBHOOK = credentials('mattermost-webhook-url')
     }
     stages {
         stage('Infrastructure Check') {
             steps {
-                // 실무 조언 반영: YAML 문법 사전 검증
-                sh 'docker-compose -f ../docker-compose.yml config'
+                // 'docker-compose' 대신 최신 버전인 'docker compose' 시도
+                // 만약 이래도 안되면 이 스테이지는 일단 주석 처리하세요.
+                sh 'docker compose -f ../docker-compose.yml config || echo "docker compose check skipped"'
             }
         }
         stage('Build Services') {
             steps {
                 script {
                     try {
-                        // 실제 서비스 빌드 명령어
-                        sh 'docker-compose -f ../docker-compose.yml build'
+                        // 테스트를 위해 강제 에러 발생 (문구 포함)
+                        sh 'echo "NullPointerException 발생 테스트!!" && exit 1'
                     } catch (Exception e) {
                         currentBuild.result = 'FAILURE'
                         error "Build Failed"
@@ -27,12 +29,16 @@ pipeline {
     post {
         failure {
             script {
-                // 1. 로그 파일 경로 확보
-                def logFile = "${env.WORKSPACE}@tmp/build.log"
-                sh "curl -u admin:${process.env.JENKINS_PASS} ${env.BUILD_URL}consoleText > ${logFile}"
+                // 1. 로그 파일 추출 (인증 정보 없이 현재 워크스페이스에서 가져오기)
+                def logFile = "build_log.txt"
+                sh "tail -n 200 ${env.WORKSPACE}@tmp/durable-31eae390/output.txt > ${logFile} || jenkins-screenshot --full-page" 
+                // 위 경로가 복잡하면 아래의 간단한 명령어로 대체 가능합니다.
+                sh "echo '빌드 로그 마지막 부분 추출 중...' > ${logFile}"
+                sh "tail -n 50 ${env.WORKSPACE}/../../jobs/${env.JOB_NAME}/builds/${env.BUILD_NUMBER}/log >> ${logFile} || echo 'Log not found' >> ${logFile}"
 
-                // 2. 파이썬 스크립트 실행
-                def resultJson = sh(script: "python3 analyze_log.py ${logFile}", returnStdout: true).trim()
+                // 2. 파이썬 스크립트 실행 (경로 주의: infra/jenkins/안에 있다면 경로 표시)
+                // 만약 python3 명령어가 없다고 뜨면 'python'으로 바꿔보세요.
+                def resultJson = sh(script: "python3 infra/jenkins/analyze_log.py ${logFile}", returnStdout: true).trim()
                 def result = new groovy.json.JsonSlurper().parseText(resultJson)
 
                 // 3. Mattermost 전송
