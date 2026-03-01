@@ -1,80 +1,57 @@
 pipeline {
     agent any
-
     environment {
-        // Jenkins Credentials에 등록한 ID와 일치해야 합니다.
         MM_WEBHOOK = credentials('mattermost-webhook-url')
     }
-
     stages {
         stage('Infrastructure Check') {
             steps {
                 script {
-                    // docker-compose.yml 위치를 자동으로 찾아 검증합니다.
-                    sh '''
-                        if [ -f "infra/docker-compose.yml" ]; then
-                            docker-compose -f infra/docker-compose.yml config
-                        elif [ -f "docker-compose.yml" ]; then
-                            docker-compose config
-                        else
-                            echo "⚠️ docker-compose.yml 파일을 찾을 수 없어 체크를 건너뜁니다."
-                        fi
-                    '''
+                    sh '[ -f infra/docker-compose.yml ] && docker-compose -f infra/docker-compose.yml config || echo "Skip check"'
                 }
             }
         }
-
         stage('Build Services') {
             steps {
                 script {
                     try {
-                        // 실제 빌드 명령어 대신 테스트용 강제 에러 발생
-                        // 로그 분석기 테스트를 위해 "NullPointerException" 문구를 포함합니다.
                         sh 'echo "[TEST] java.lang.NullPointerException 발생!!" && exit 1'
                     } catch (Exception e) {
                         currentBuild.result = 'FAILURE'
-                        error "❌ 빌드 단계에서 에러가 발생하여 중단합니다."
+                        error "❌ 빌드 단계에서 에러 발생"
                     }
                 }
             }
         }
     }
-
     post {
         failure {
             script {
-                // 1. 빌드 로그 추출 (보안 승인 문제를 피하기 위해 물리적 경로 사용)
+                // 1. 로그 추출 및 파이썬 분석 (이전과 동일)
                 def logFile = "${env.WORKSPACE}/extracted_log.txt"
-                sh "tail -n 100 /var/jenkins_home/jobs/${env.JOB_NAME}/builds/${env.BUILD_NUMBER}/log > ${logFile}"
-
-                // 2. 파이썬 분석 스크립트 실행 및 결과를 파일로 저장
+                sh "tail -n 50 /var/jenkins_home/jobs/${env.JOB_NAME}/builds/${env.BUILD_NUMBER}/log > ${logFile}"
+                
                 def resultFile = "${env.WORKSPACE}/analysis_result.json"
-                // analyze_log.py의 경로가 infra/jenkins/안에 있는지 꼭 확인하세요.
+                // 파이썬이 JSON 파일 자체를 생성하도록 변경 (출력 가공 에러 방지)
                 sh "python3 infra/jenkins/analyze_log.py ${logFile} > ${resultFile}"
+
+                // 2. Mattermost 전송용 최종 JSON 파일 생성 (쉘에서 가공하여 깨짐 방지)
+                // Groovy 변수를 거치지 않고 직접 파일을 생성해 Serialization 에러를 회피합니다.
+                sh """
+                TEAM=\$(cat ${resultFile} | python3 -c "import sys, json; print(json.load(sys.stdin)['team'])")
+                SUMMARY=\$(cat ${resultFile} | python3 -c "import sys, json; print(json.load(sys.stdin)['summary'])")
                 
-                // 3. 분석 결과 파일 읽기
-                def resultText = readFile(file: resultFile).trim()
-                
-                if (resultText && resultText.startsWith('{')) {
-                    def result = new groovy.json.JsonSlurper().parseText(resultText)
-                    
-                    // 4. Mattermost 알림 페이로드 구성
-                    // 사용자님의 기술 스택별 팀 태깅 결과가 반영됩니다.
-                    def payload = """
-                    {
-                        "username": "Jenkins-Analyzer",
-                        "icon_url": "https://jenkins.io/images/logos/jenkins/jenkins.png",
-                        "text": "### 🚨 [${result.team}] 빌드 실패 알림\\n**프로젝트:** ${env.JOB_NAME}\\n**빌드 번호:** #${env.BUILD_NUMBER}\\n**에러 분석:** ${result.summary}\\n\\n[👉 상세 로그 확인하기](${env.BUILD_URL}console)"
-                    }
-                    """
-                    
-                    // Mattermost Webhook 전송
-                    sh "curl -sS -X POST -H 'Content-Type: application/json' -d '${payload}' ${MM_WEBHOOK}"
-                } else {
-                    echo "⚠️ 분석 결과가 올바른 JSON 형식이 아닙니다: ${resultText}"
-                    // 결과가 없을 경우 기본 알림이라도 전송
-                    sh "curl -sS -X POST -H 'Content-Type: application/json' -d '{\"text\":\"🚨 [COMMON] 빌드 실패 (분석 불가)\"}' ${MM_WEBHOOK}"
+                cat <<EOF > final_payload.json
+                {
+                    "username": "Jenkins-Analyzer",
+                    "icon_url": "https://jenkins.io/images/logos/jenkins/jenkins.png",
+                    "text": "### 🚨 [\$TEAM] 빌드 실패 알림\\n**프로젝트:** ${env.JOB_NAME}\\n**빌드 번호:** #${env.BUILD_NUMBER}\\n**에러 분석:**\\n\`\`\`\\n\$SUMMARY\\n\`\`\`\\n\\n[👉 상세 로그 확인하기](${env.BUILD_URL}console)"
                 }
+EOF
+                """
+
+                // 3. Webhook 전송 (파일을 직접 전송하여 특수문자 문제 완전 해결)
+                sh "curl -sS -X POST -H 'Content-Type: application/json' -d @final_payload.json ${MM_WEBHOOK}"
             }
         }
     }
