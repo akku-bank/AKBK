@@ -1,22 +1,29 @@
 pipeline {
     agent any
     environment {
-        // Credentials ID 확인: 'mattermost-webhook-url'
         MM_WEBHOOK = credentials('mattermost-webhook-url')
     }
     stages {
         stage('Infrastructure Check') {
             steps {
-                // 'docker-compose' 대신 최신 버전인 'docker compose' 시도
-                // 만약 이래도 안되면 이 스테이지는 일단 주석 처리하세요.
-                sh 'docker compose -f ../docker-compose.yml config || echo "docker compose check skipped"'
+                script {
+                    // 경로 문제를 피하기 위해 파일이 있는지 먼저 확인 후 실행
+                    sh '''
+                        if [ -f "infra/docker-compose.yml" ]; then
+                            docker-compose -f infra/docker-compose.yml config
+                        elif [ -f "docker-compose.yml" ]; then
+                            docker-compose config
+                        else
+                            echo "docker-compose.yml을 찾을 수 없어 체크를 건너跳니다."
+                        fi
+                    '''
+                }
             }
         }
         stage('Build Services') {
             steps {
                 script {
                     try {
-                        // 테스트를 위해 강제 에러 발생 (문구 포함)
                         sh 'echo "NullPointerException 발생 테스트!!" && exit 1'
                     } catch (Exception e) {
                         currentBuild.result = 'FAILURE'
@@ -29,15 +36,13 @@ pipeline {
     post {
         failure {
             script {
-                // 1. 로그 파일 추출 (인증 정보 없이 현재 워크스페이스에서 가져오기)
-                def logFile = "build_log.txt"
-                sh "tail -n 200 ${env.WORKSPACE}@tmp/durable-31eae390/output.txt > ${logFile} || jenkins-screenshot --full-page" 
-                // 위 경로가 복잡하면 아래의 간단한 명령어로 대체 가능합니다.
-                sh "echo '빌드 로그 마지막 부분 추출 중...' > ${logFile}"
-                sh "tail -n 50 ${env.WORKSPACE}/../../jobs/${env.JOB_NAME}/builds/${env.BUILD_NUMBER}/log >> ${logFile} || echo 'Log not found' >> ${logFile}"
+                // 1. 빌드 로그를 안전하게 가져오기 (Jenkins 내부 변수 활용)
+                def logFile = "extracted_build_log.txt"
+                // 현재까지의 빌드 로그 최신 100줄을 파일로 저장
+                sh "echo '${currentBuild.rawBuild.getLog(100).join('\n')}' > ${logFile}"
 
-                // 2. 파이썬 스크립트 실행 (경로 주의: infra/jenkins/안에 있다면 경로 표시)
-                // 만약 python3 명령어가 없다고 뜨면 'python'으로 바꿔보세요.
+                // 2. 파이썬 분석 스크립트 실행 (경로를 정확히 명시)
+                // infra/jenkins 폴더 안에 analyze_log.py가 있다고 가정합니다.
                 def resultJson = sh(script: "python3 infra/jenkins/analyze_log.py ${logFile}", returnStdout: true).trim()
                 def result = new groovy.json.JsonSlurper().parseText(resultJson)
 
@@ -47,7 +52,8 @@ pipeline {
                     "text": "### 🚨 [${result.team}] 빌드 실패 발생\\n**Job:** ${env.JOB_NAME}\\n**에러 요약:**\\n```\\n${result.summary}\\n```\\n[로그 보기](${env.BUILD_URL}console)"
                 }
                 """
-                sh "curl -X POST -H 'Content-Type: application/json' -d '${payload}' ${MM_WEBHOOK}"
+                // -s 옵션으로 출력을 숨기고 -S로 에러만 표시
+                sh "curl -sS -X POST -H 'Content-Type: application/json' -d '${payload}' ${MM_WEBHOOK}"
             }
         }
     }
