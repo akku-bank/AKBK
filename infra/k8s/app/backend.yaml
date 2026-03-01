@@ -1,0 +1,36 @@
+# infra/k8s/app/backend.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: dev # dev 네임스페이스에 배포
+spec:
+  replicas: 1 # Pod 1개 유지
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+        - name: backend
+          image: backend/backend:latest
+          ports:
+            - containerPort: 8080
+---
+# 내부 통신용 서비스 정의
+# Pod는 죽었다 재생성되면 IP가 바뀌기 때문에, 서비스로 안정적인 통신을 보장합니다.
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-svc
+  namespace: dev # dev 네임스페이스에 배포
+spec:
+  selector:
+    app: backend
+  ports:
+    - port: 80
+      targetPort: 8080
+  type: ClusterIP

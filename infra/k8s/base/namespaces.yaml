@@ -1,0 +1,13 @@
+# infra/k8s/base/namespaces.yaml
+# Namespace definitions for the Kubernetes cluster
+# 리소스 분리 및 관리 용이성을 위해 네임스페이스를 정의합니다.
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: dev
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: prod

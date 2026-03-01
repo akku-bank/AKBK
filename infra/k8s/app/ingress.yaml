@@ -1,0 +1,29 @@
+# infra/k8s/app/ingress.yaml
+# Ingress resource definition for the application
+# 애플리케이션에 대한 Ingress 리소스 정의입니다.
+# 외부 HTTP/HTTPS 트래픽을 내부 서비스로 라우팅하는 역할을 합니다.
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: app-ingress
+  namespace: dev
+spec:
+  rules:
+    - host: example.com
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: backend-svc
+                port:
+                  number: 80
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend-svc
+                port:
+                  number: 80
