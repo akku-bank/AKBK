@@ -156,3 +156,6 @@ venv.bak/
 
 # Cython debug symbols
 cython_debug/
+
+# 어떤 경로에 있든 jenkins_home 폴더와 그 내용은 무시
+**/jenkins_home/

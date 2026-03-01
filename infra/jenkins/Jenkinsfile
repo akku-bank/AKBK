@@ -1,0 +1,48 @@
+pipeline {
+    agent any
+    environment {
+        MM_WEBHOOK = credentials('mattermost-webhook-url')
+    }
+    stages {
+        stage('Infrastructure Check') {
+            steps {
+                // 실무 조언 반영: YAML 문법 사전 검증
+                sh 'docker-compose -f ../docker-compose.yml config'
+            }
+        }
+        stage('Build Services') {
+            steps {
+                script {
+                    try {
+                        // 실제 서비스 빌드 명령어
+                        sh 'docker-compose -f ../docker-compose.yml build'
+                    } catch (Exception e) {
+                        currentBuild.result = 'FAILURE'
+                        error "Build Failed"
+                    }
+                }
+            }
+        }
+    }
+    post {
+        failure {
+            script {
+                // 1. 로그 파일 경로 확보
+                def logFile = "${env.WORKSPACE}@tmp/build.log"
+                sh "curl -u admin:${process.env.JENKINS_PASS} ${env.BUILD_URL}consoleText > ${logFile}"
+
+                // 2. 파이썬 스크립트 실행
+                def resultJson = sh(script: "python3 analyze_log.py ${logFile}", returnStdout: true).trim()
+                def result = new groovy.json.JsonSlurper().parseText(resultJson)
+
+                // 3. Mattermost 전송
+                def payload = """
+                {
+                    "text": "### 🚨 [${result.team}] 빌드 실패 발생\\n**Job:** ${env.JOB_NAME}\\n**에러 요약:**\\n```\\n${result.summary}\\n```\\n[로그 보기](${env.BUILD_URL}console)"
+                }
+                """
+                sh "curl -X POST -H 'Content-Type: application/json' -d '${payload}' ${MM_WEBHOOK}"
+            }
+        }
+    }
+}
