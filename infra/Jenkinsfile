@@ -1,36 +1,94 @@
+// pipeline {
+//     agent any
+
+//     environment {
+//         MM_WEBHOOK = credentials('mattermost-webhook-url')
+//     }
+
+//     stages {
+//         stage('Checkout') {
+//             steps {
+//                 // 깃랩에서 소스코드 가져오기
+//                 git url: 'https://lab.ssafy.com/s14-fintech-finance-sub1/S14P21B101.git',
+//                     credentialsId: 'gitlab_auth', 
+//                     branch: 'master'
+//             }
+//         }
+
+//         stage('Infrastructure Check') {
+//             steps {
+//                 script {
+//                     // 도커 설정 파일 확인
+//                     sh '[ -f infra/docker-compose.yml ] && echo "Docker config found" || echo "Skip check"'
+//                 }
+//             }
+//         }
+
+//         stage('Build & Test') {
+//             steps {
+//                 script {
+//                     try {
+//                         // 실제 빌드 명령어를 넣는 곳입니다. (현재는 테스트를 위해 에러 발생 상황 연출 가능)
+//                         echo "빌드를 시작합니다..."
+//                         // sh './gradlew build' // 실제 서비스 시 주석 해제
+//                     } catch (Exception e) {
+//                         currentBuild.result = 'FAILURE'
+//                         error "❌ 빌드 단계에서 에러 발생"
+//                     }
+//                 }
+//             }
+//         }
+//     }
+
+//     post {
+//         success {
+//             script {
+//                 // 성공 시 간단한 메타모스트 알림
+//                 sh """
+//                 curl -X POST -H 'Content-Type: application/json' \
+//                 -d '{"text":"✅ **[Jenkins 빌드 성공]**\\n- 프로젝트: ${env.JOB_NAME}\\n- 빌드 번호: #${env.BUILD_NUMBER}\\n- 확인: ${env.BUILD_URL}"}' \
+//                 ${MM_WEBHOOK}
+//                 """
+//             }
+//         }
+//         failure {
+//             script {
+//                 // 1. 로그 추출
+//                 def logFile = "${env.WORKSPACE}/extracted_log.txt"
+//                 sh "tail -n 50 /var/jenkins_home/jobs/${env.JOB_NAME}/builds/${env.BUILD_NUMBER}/log > ${logFile}"
+                
+//                 // 2. 파이썬 분석 스크립트 실행
+//                 sh "python3 infra/jenkins/analyze_log.py ${logFile} ${env.JOB_NAME} ${env.BUILD_NUMBER} ${env.BUILD_URL}"
+
+//                 // 3. 실패 알림 전송
+//                 sh """
+//                 curl -X POST -H 'Content-Type: application/json' \
+//                 -d '{"text":"❌ **[Jenkins 빌드 실패]**\\n- 프로젝트: ${env.JOB_NAME}\\n- 빌드 번호: #${env.BUILD_NUMBER}\\n- 로그를 확인해 주세요!"}' \
+//                 ${MM_WEBHOOK}
+//                 """
+//             }
+//         }
+//     }
+// }
+
 pipeline {
     agent any
-
     environment {
         MM_WEBHOOK = credentials('mattermost-webhook-url')
     }
-
     stages {
-        stage('Checkout') {
-            steps {
-                // 깃랩에서 소스코드 가져오기
-                git url: 'https://lab.ssafy.com/s14-fintech-finance-sub1/S14P21B101.git',
-                    credentialsId: 'gitlab_auth', 
-                    branch: 'master'
-            }
-        }
-
         stage('Infrastructure Check') {
             steps {
                 script {
-                    // 도커 설정 파일 확인
-                    sh '[ -f infra/docker-compose.yml ] && echo "Docker config found" || echo "Skip check"'
+                    sh '[ -f infra/docker-compose.yml ] && docker-compose -f infra/docker-compose.yml config || echo "Skip check"'
                 }
             }
         }
-
-        stage('Build & Test') {
+        stage('Build Services') {
             steps {
                 script {
                     try {
-                        // 실제 빌드 명령어를 넣는 곳입니다. (현재는 테스트를 위해 에러 발생 상황 연출 가능)
-                        echo "빌드를 시작합니다..."
-                        // sh './gradlew build' // 실제 서비스 시 주석 해제
+                        sh 'echo "[TEST] java.lang.NullPointerException 발생!!" && exit 1'
                     } catch (Exception e) {
                         currentBuild.result = 'FAILURE'
                         error "❌ 빌드 단계에서 에러 발생"
@@ -39,33 +97,21 @@ pipeline {
             }
         }
     }
-
     post {
-        success {
-            script {
-                // 성공 시 간단한 메타모스트 알림
-                sh """
-                curl -X POST -H 'Content-Type: application/json' \
-                -d '{"text":"✅ **[Jenkins 빌드 성공]**\\n- 프로젝트: ${env.JOB_NAME}\\n- 빌드 번호: #${env.BUILD_NUMBER}\\n- 확인: ${env.BUILD_URL}"}' \
-                ${MM_WEBHOOK}
-                """
-            }
-        }
         failure {
             script {
-                // 1. 로그 추출 (친구의 analyze_log.py가 있다면 실행)
+                // 1. 로그 추출 (이전과 동일)
                 def logFile = "${env.WORKSPACE}/extracted_log.txt"
                 sh "tail -n 50 /var/jenkins_home/jobs/${env.JOB_NAME}/builds/${env.BUILD_NUMBER}/log > ${logFile}"
                 
-                // 2. 파이썬 분석 스크립트 실행 (파일이 infra/jenkins/ 내부에 있을 경우)
+                // 2. 파이썬 실행 (이 부분이 핵심입니다!)
+                // 파이썬에게 '로그파일', '결과파일경로', '잡이름', '빌드주소'를 모두 넘겨줍니다.
+                // 파이썬 안에서 Mattermost용 JSON을 직접 완성하게 만듭니다.
                 sh "python3 infra/jenkins/analyze_log.py ${logFile} ${env.JOB_NAME} ${env.BUILD_NUMBER} ${env.BUILD_URL}"
 
-                // 3. 실패 알림 전송
-                sh """
-                curl -X POST -H 'Content-Type: application/json' \
-                -d '{"text":"❌ **[Jenkins 빌드 실패]**\\n- 프로젝트: ${env.JOB_NAME}\\n- 빌드 번호: #${env.BUILD_NUMBER}\\n- 로그를 확인해 주세요!"}' \
-                ${MM_WEBHOOK}
-                """
+                // 3. 생성된 JSON 파일을 그대로 전송
+                // 파이썬이 'mattermost_payload.json'이라는 파일을 만들도록 할 것입니다.
+                sh "curl -sS -X POST -H 'Content-Type: application/json' -d @mattermost_payload.json ${MM_WEBHOOK}"
             }
         }
     }
