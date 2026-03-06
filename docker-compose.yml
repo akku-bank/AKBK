@@ -11,7 +11,45 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       # Run init scripts only on first boot (empty data volume).
-      - ./ai/db/init:/docker-entrypoint-initdb.d
+      # - ./ai/db/init:/docker-entrypoint-initdb.d # 오류 발생으로 주석 처리 후 작업했음
     restart: always
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME} -d ${DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  airflow-init:
+    image: apache/airflow:2.7.1
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${DB_USERNAME}:${DB_PASSWORD}@postgres:5432/${DB_NAME}
+      # Airflow 표준 환경 변수명을 사용하여 직접 주입
+      - _AIRFLOW_DB_UPGRADE=true
+      - _AIRFLOW_WWW_USER_CREATE=true
+      - _AIRFLOW_WWW_USER_USERNAME=${AIRFLOW_USERNAME}
+      - _AIRFLOW_WWW_USER_PASSWORD=${AIRFLOW_PASSWORD}
+    # 명령어를 최소화하여 구문 에러 방지
+    command: version
+    
+  airflow:
+    image: apache/airflow:2.7.1
+    container_name: airflow_scheduler
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully # 초기화가 '성공(0)'으로 끝난 뒤에만 시작
+    environment:
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${DB_USERNAME}:${DB_PASSWORD}@postgres:5432/${DB_NAME}
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor 
+      - AIRFLOW__CORE__LOAD_EXAMPLES=False # 불필요한 예제 DAG 로드 방지
+    volumes:
+      - ./ai/airflow/dags:/opt/airflow/dags
+    ports:
+      - "9000:8080"
+    command: bash -c "airflow scheduler & airflow webserver"
+
 volumes:
   postgres_data:
