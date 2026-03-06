@@ -11,7 +11,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       # Run init scripts only on first boot (empty data volume).
-      # - ./ai/db/init:/docker-entrypoint-initdb.d # 오류 발생으로 주석 처리 후 작업했음
+      - ./ai/db/init:/docker-entrypoint-initdb.d # 오류 발생으로 주석 처리 후 작업했음
     restart: always
 
     healthcheck:
@@ -34,7 +34,7 @@ services:
       - _AIRFLOW_WWW_USER_PASSWORD=${AIRFLOW_PASSWORD}
     # 명령어를 최소화하여 구문 에러 방지
     command: version
-    
+
   airflow:
     image: apache/airflow:2.7.1
     container_name: airflow_scheduler
