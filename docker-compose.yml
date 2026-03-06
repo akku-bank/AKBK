@@ -11,7 +11,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       # Run init scripts only on first boot (empty data volume).
-      # - ./ai/db/init:/docker-entrypoint-initdb.d # 오류 발생으로 주석 처리 후 작업했음
+      - ./ai/db/init:/docker-entrypoint-initdb.d # 오류 발생으로 주석 처리 후 작업했음
     restart: always
 
     healthcheck:
