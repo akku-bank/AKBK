@@ -11,7 +11,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       # Run init scripts only on first boot (empty data volume).
-      - ./ai/db/init:/docker-entrypoint-initdb.d # 오류 발생으로 주석 처리 후 작업했음
+      # - ./ai/db/init:/docker-entrypoint-initdb.d # 오류 발생으로 주석 처리 후 작업했음
     restart: always
 
     healthcheck:
@@ -24,15 +24,17 @@ services:
     image: apache/airflow:2.7.1
     depends_on:
       postgres:
-        condition: service_healthy # DB가 진짜 쿼리를 받을 수 있을 때 시작
-      # 나중에 백엔드 뜨면 뜨도록 수정 필요
-
+        condition: service_healthy
     environment:
       - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${DB_USERNAME}:${DB_PASSWORD}@postgres:5432/${DB_NAME}
-    # Airflow 메타데이터 DB 초기화 및 관리자 계정 생성
-    command: >
-      bash -c "airflow db init && 
-      airflow users create --username admin --password admin --firstname Admin --lastname Admin --role Admin --email admin@example.com"  
+      # Airflow 표준 환경 변수명을 사용하여 직접 주입
+      - _AIRFLOW_DB_UPGRADE=true
+      - _AIRFLOW_WWW_USER_CREATE=true
+      - _AIRFLOW_WWW_USER_USERNAME=${AIRFLOW_USERNAME}
+      - _AIRFLOW_WWW_USER_PASSWORD=${AIRFLOW_PASSWORD}
+    # 명령어를 최소화하여 구문 에러 방지
+    command: version
+    
   airflow:
     image: apache/airflow:2.7.1
     container_name: airflow_scheduler
