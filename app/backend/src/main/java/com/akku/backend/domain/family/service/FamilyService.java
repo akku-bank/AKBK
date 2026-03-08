@@ -2,6 +2,7 @@ package com.akku.backend.domain.family.service;
 
 import com.akku.backend.domain.family.dto.FamilyCreateResponse;
 import com.akku.backend.domain.family.dto.FamilyMemberPreRegisterRequest;
+import com.akku.backend.domain.family.dto.FamilyQrResponse;
 import com.akku.backend.domain.family.entity.FamilyEntity;
 import com.akku.backend.domain.family.entity.FamilyProfileEntity;
 import com.akku.backend.domain.family.repository.FamilyProfileRepository;
@@ -64,12 +65,29 @@ public class FamilyService {
 
     /**
      * 2. 가족 QR 발급 및 조회 (GET /api/families/qr)
+     * 이미 유효한 QR이 있으면 반환하고, 없거나 만료됐으면 새로 생성
      */
     @Transactional
-    public String getOrGenerateFamilyQr(UUID parentUserId) { // DDL에 맞춰 UUID로 수정
-        // TODO: 1. 부모의 family_id로 현재 가족 그룹 찾기
-        // TODO: 2. 이미 유효한 QR이 있으면 그거 반환, 없거나 만료됐으면 새로 만들어서 DB 업데이트 후 반환
-        return "발급된_QR_문자열";
+    public FamilyQrResponse getOrGenerateFamilyQr(UUID familyId) { // DDL에 맞춰 UUID로 수정
+        // 1. 가족 그룹 조회
+        FamilyEntity family = familyRepository.findById(familyId)
+                .orElseThrow(() -> new ApiException(FamilyErrorCode.FAMILY_NOT_FOUND));
+
+        // 2. 유효한 QR이 있는지 확인 (문자열이 있고, 만료 시간이 현재보다 미래인 경우)
+        if (family.getQrCode() != null &&
+                family.getQrExpiresAt() != null &&
+                family.getQrExpiresAt().isAfter(LocalDateTime.now())) {
+
+            return new FamilyQrResponse(family.getQrCode(), family.getQrExpiresAt());
+        }
+
+        // 3. QR이 없거나 만료되었다면 새로 생성 (UUID 활용)
+        String newQrCode = UUID.randomUUID().toString();
+        LocalDateTime newExpiresAt = LocalDateTime.now().plusMinutes(5); // 유효기간 5분 설정
+
+        family.updateQrCode(newQrCode, newExpiresAt); // 엔티티 메서드 활용
+
+        return new FamilyQrResponse(newQrCode, newExpiresAt);
     }
 
     /**

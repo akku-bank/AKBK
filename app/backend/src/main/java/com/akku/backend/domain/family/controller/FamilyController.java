@@ -4,6 +4,7 @@ import com.akku.backend.domain.family.dto.FamilyCreateResponse;
 import com.akku.backend.domain.family.dto.FamilyJoinRequest;
 import com.akku.backend.domain.family.dto.FamilyMemberPreRegisterRequest;
 import com.akku.backend.domain.family.service.FamilyService;
+import com.akku.backend.domain.family.dto.FamilyQrResponse;
 import com.akku.backend.global.dto.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -54,6 +55,22 @@ public class FamilyController {
         familyService.preRegisterFamilyMember(familyId, request);
 
         return ResponseEntity.ok(ApiResponse.success("가족 구성원이 사전 등록되었습니다.", null));
+    }
+
+    /**
+     * 2. 가족 QR 발급 및 조회
+     * 부모가 자녀 초대용 QR 코드를 요청
+     */
+    @Operation(summary = "가족 QR 발급", description = "유효한 QR 코드를 조회하거나 새로 생성하여 반환합니다.")
+    @GetMapping("/qr")
+    public ResponseEntity<ApiResponse<FamilyQrResponse>> getFamilyQr(
+            @RequestAttribute("familyId") UUID familyId) {
+
+        FamilyQrResponse response = familyService.getOrGenerateFamilyQr(familyId);
+
+        return ResponseEntity.ok(
+                ApiResponse.success("QR 코드가 성공적으로 조회되었습니다.", response)
+        );
     }
 
     /**
