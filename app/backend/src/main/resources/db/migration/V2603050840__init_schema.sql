@@ -267,8 +267,8 @@ ALTER TABLE weekly_report
     ADD CONSTRAINT fk_wr_user FOREIGN KEY (user_id) REFERENCES users (id);
 ALTER TABLE weekly_category_ratio
     ADD CONSTRAINT fk_wcr_user FOREIGN KEY (user_id) REFERENCES users (id);
-ALTER TABLE weekly_category_ratio
-    ADD CONSTRAINT fk_wcr_merchant FOREIGN KEY (sub_category_id) REFERENCES merchant (sub_category_id);
+-- ALTER TABLE weekly_category_ratio
+   --  ADD CONSTRAINT fk_wcr_merchant FOREIGN KEY (sub_category_id) REFERENCES merchant (sub_category_id);
 ALTER TABLE user_quizzes
     ADD CONSTRAINT fk_uq_user FOREIGN KEY (user_id) REFERENCES users (id);
 ALTER TABLE user_quizzes
