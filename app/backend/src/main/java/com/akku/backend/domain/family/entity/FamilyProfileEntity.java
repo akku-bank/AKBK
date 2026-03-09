@@ -60,4 +60,28 @@ public class FamilyProfileEntity {
     public void linkUser(UUID userId) {
         this.linkedUserId = userId;
     }
+
+    /**
+     * 구성원 정보(이름, 생년월일) 부분 수정 로직
+     * null이거나 빈 값이면 기존 데이터를 유지합니다.
+     */
+    public void updateProfileInfo(String name, LocalDate birthDate) {
+        // 이름이 null이 아니고 빈 칸이 아닐 때만 수정
+        if (name != null && !name.trim().isEmpty()) {
+            this.name = name;
+        }
+
+        // 생년월일이 null이 아닐 때만 수정
+        if (birthDate != null) {
+            this.birthDate = birthDate;
+        }
+    }
+
+    /**
+     * 유저 연동 해제 (Soft Disconnect)
+     */
+    public void unlinkUser() {
+        this.linkedUserId = null;
+    }
+
 }
