@@ -9,7 +9,7 @@ spring:
   jpa:
     hibernate:
       ddl-auto: validate
-    show-sql: false   # 운영 환경에서는 false (개발 시 true로 변경)
+    show-sql: false # P6Spy와 중복 출력 막기 위해 false로 변경
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
@@ -42,3 +42,31 @@ springdoc:
     path: /swagger-ui.html
   api-docs:
     path: /v3/api-docs
+decorator:
+  datasource:
+    p6spy:
+      enable-logging: true # 로컬에서는 켜서 쿼리 성능(ms) 확인
+      multiline: true      # 쿼리를 한 줄이 아니라 보기 좋게 여러 줄로 줄바꿈해서 출력
+      logging: slf4j       # 스프링 부트 기본 로그(콘솔)에 출력되도록 설정
+
+# ==========================================================
+
+# --- 실제 운영 환경 설정 (spring.profiles.active: prod) ---
+# 추후 배포용 yaml(application-prod.yaml) 만들 때 아래처럼 꼭 수정
+# decorator:
+#   datasource:
+#     p6spy:
+#       enable-logging: false # 운영 환경에서는 성능 방어를 위해 무조건 끄기
+# ==========================================================
+# --- 로깅(Logging) 설정 ---
+# ==========================================================
+logging:
+  pattern:
+    # 콘솔 로그 출력 포맷 정의
+    # %X{traceId}: MDC에 저장된 traceId 값을 출력. 값이 없으면 빈칸으로 처리됨
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} %5p [%X{traceId}] --- [%15.15t] %-40.40logger{39} : %m%n"
+  level:
+    root: INFO
+    # 프로젝트 기본 패키지(com.akku.backend)의 로그 레벨 설정
+    # 로컬 개발 시에는 DEBUG로 두어 상세한 파라미터나 흐름을 확인하는 것이 좋음
+    com.akku.backend: DEBUG
