@@ -148,12 +148,19 @@ def _fetch_rss_items(keyword: str) -> Iterable[dict]:
         return []
 
     rows: list[dict] = []
+    # determine cutoff once (same 90 days as collect_news)
+    cutoff = datetime.now(timezone.utc) - timedelta(days=90)
     for item in channel.findall("item"):
         title = _safe_text(item.findtext("title"))
         link = _safe_text(item.findtext("link"))
         source = _safe_text(item.findtext("source")) or "Google News"
         pub_date = _parse_published_at(item.findtext("pubDate"))
         description = _strip_html(item.findtext("description"))
+
+        # if this item is already older than cutoff we can stop iterating;
+        # RSS feeds are typically sorted newest first.
+        if pub_date < cutoff:
+            break
 
         if not title or not link:
             continue
