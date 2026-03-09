@@ -33,7 +33,7 @@ jwt:
 # SSAFY 금융망 API
 ssafy:
   api:
-    base-url: https://fiapi.ssafy.io
+    base-url: https://finopenapi.ssafy.io/ssafy/api/v1
     key: ${SSAFY_API_KEY:}
 
 # Swagger / SpringDoc

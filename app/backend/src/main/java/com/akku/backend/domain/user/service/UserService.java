@@ -2,8 +2,8 @@ package com.akku.backend.domain.user.service;
 
 import com.akku.backend.domain.auth.entity.User;
 import com.akku.backend.domain.auth.repository.UserRepository;
-import com.akku.backend.global.exception.AppException;
-import com.akku.backend.global.exception.ErrorCode;
+import com.akku.backend.domain.user.exception.UserErrorCode;
+import com.akku.backend.global.error.ApiException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -25,7 +25,7 @@ public class UserService {
     @Transactional
     public void withdraw(UUID userId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+                .orElseThrow(() -> new ApiException(UserErrorCode.USER_NOT_FOUND));
 
         user.deactivate();
         log.info("회원 탈퇴 완료 (soft delete) - userId: {}", userId);

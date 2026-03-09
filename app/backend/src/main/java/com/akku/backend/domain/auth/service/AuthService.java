@@ -10,8 +10,9 @@ import com.akku.backend.domain.auth.entity.User;
 import com.akku.backend.domain.auth.repository.LogoutTokenRepository;
 import com.akku.backend.domain.auth.repository.UserRepository;
 import com.akku.backend.global.security.JwtProvider;
-import com.akku.backend.global.exception.AppException;
-import com.akku.backend.global.exception.ErrorCode;
+import com.akku.backend.domain.auth.exception.AuthErrorCode;
+import com.akku.backend.domain.user.exception.UserErrorCode;
+import com.akku.backend.global.error.ApiException;
 import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -52,9 +53,11 @@ public class AuthService {
                 .findByProviderAndProviderId("KAKAO", providerId)
                 .orElseGet(() -> {
                     isNewUserFlag[0] = true;
-                    String userKey = ssafyFinanceService.createMember(email);
+                    // 이메일이 없는 경우 providerId를 식별자로 사용
+                    String effectiveId = (email != null) ? email : providerId;
+                    String userKey = ssafyFinanceService.createMember(effectiveId);
                     User newUser = User.builder()
-                            .email(email)
+                            .email(effectiveId)
                             .provider("KAKAO")
                             .providerId(providerId)
                             .userKey(userKey)
@@ -66,7 +69,7 @@ public class AuthService {
 
         // 탈퇴/비활성 사용자 차단
         if (!user.getIsActive()) {
-            throw new AppException(ErrorCode.ACCESS_DENIED);
+            throw new ApiException(AuthErrorCode.ACCESS_DENIED);
         }
 
         boolean isNewUser = isNewUserFlag[0];
@@ -90,7 +93,7 @@ public class AuthService {
     @Transactional
     public SignupData signup(UUID userId, SignupRequest request) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+                .orElseThrow(() -> new ApiException(UserErrorCode.USER_NOT_FOUND));
 
         user.updateProfile(request.name(), request.role());
 
@@ -106,7 +109,7 @@ public class AuthService {
     @Transactional
     public void logout(String accessToken, UUID userId) {
         if (accessToken == null) {
-            throw new AppException(ErrorCode.INVALID_TOKEN);
+            throw new ApiException(AuthErrorCode.INVALID_TOKEN);
         }
         Claims claims = jwtProvider.parseToken(accessToken);
         LocalDateTime expiredAt = claims.getExpiration()
@@ -130,16 +133,16 @@ public class AuthService {
      */
     public RefreshData refresh(String refreshToken) {
         if (!jwtProvider.validateToken(refreshToken)) {
-            throw new AppException(ErrorCode.TOKEN_EXPIRED);
+            throw new ApiException(AuthErrorCode.TOKEN_EXPIRED);
         }
 
         UUID userId = jwtProvider.getUserIdFromToken(refreshToken);
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+                .orElseThrow(() -> new ApiException(UserErrorCode.USER_NOT_FOUND));
 
         // 탈퇴/비활성 사용자 차단
         if (!user.getIsActive()) {
-            throw new AppException(ErrorCode.ACCESS_DENIED);
+            throw new ApiException(AuthErrorCode.ACCESS_DENIED);
         }
 
         String newAccessToken = jwtProvider.generateAccessToken(user.getId(), user.getRole());

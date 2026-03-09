@@ -4,6 +4,7 @@ import com.akku.backend.domain.auth.repository.LogoutTokenRepository;
 import com.akku.backend.global.security.JwtAuthenticationFilter;
 import com.akku.backend.global.security.JwtProvider;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -24,7 +25,7 @@ public class SecurityConfig {
 
     private final JwtProvider jwtProvider;
     private final LogoutTokenRepository logoutTokenRepository;
-    private final ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {

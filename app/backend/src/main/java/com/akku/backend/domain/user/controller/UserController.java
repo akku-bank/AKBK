@@ -1,6 +1,6 @@
 package com.akku.backend.domain.user.controller;
 
-import com.akku.backend.domain.auth.dto.ApiResponse;
+import com.akku.backend.global.dto.ApiResponse;
 import com.akku.backend.domain.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -28,7 +28,7 @@ public class UserController {
             @AuthenticationPrincipal UUID userId
     ) {
         userService.withdraw(userId);
-        return ResponseEntity.ok(ApiResponse.ok(
+        return ResponseEntity.ok(ApiResponse.success(
                 "회원 탈퇴가 완료되었습니다. 이용해 주셔서 감사합니다.",
                 null
         ));

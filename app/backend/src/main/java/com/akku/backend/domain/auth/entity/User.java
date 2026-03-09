@@ -29,7 +29,7 @@ public class User {
     @Column(name = "provider_id", length = 100)
     private String providerId;      // 카카오 고유 ID
 
-    @Column(name = "user_key")
+    @Column(name = "fin_user_key")
     private String userKey;         // 금융망 userKey
 
     @Column(name = "family_id")

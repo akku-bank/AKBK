@@ -1,9 +1,7 @@
 -- users 테이블에 소셜 로그인 및 금융망 연동 컬럼 추가
 ALTER TABLE users
-    ADD COLUMN email VARCHAR(255) UNIQUE,
     ADD COLUMN provider VARCHAR(20),
     ADD COLUMN provider_id VARCHAR(100),
-    ADD COLUMN user_key VARCHAR(255),
     ALTER COLUMN pin_password DROP NOT NULL;
 
 -- 동일 소셜 계정 중복 방지

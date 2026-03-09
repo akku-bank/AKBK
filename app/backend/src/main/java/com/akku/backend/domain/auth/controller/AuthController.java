@@ -1,6 +1,13 @@
 package com.akku.backend.domain.auth.controller;
 
-import com.akku.backend.domain.auth.dto.*;
+import com.akku.backend.domain.auth.dto.KakaoLoginRequest;
+import com.akku.backend.domain.auth.dto.KakaoUserInfo;
+import com.akku.backend.domain.auth.dto.RefreshData;
+import com.akku.backend.domain.auth.dto.RefreshRequest;
+import com.akku.backend.domain.auth.dto.SignupData;
+import com.akku.backend.domain.auth.dto.SignupRequest;
+import com.akku.backend.domain.auth.dto.SocialLoginData;
+import com.akku.backend.global.dto.ApiResponse;
 import com.akku.backend.domain.auth.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -33,7 +40,7 @@ public class AuthController {
                 ? "로그인에 성공했습니다."
                 : "신규 유저입니다. 회원가입을 진행해주세요.";
 
-        return ResponseEntity.ok(ApiResponse.ok(message, data));
+        return ResponseEntity.ok(ApiResponse.success(message, data));
     }
 
     /**
@@ -48,7 +55,7 @@ public class AuthController {
             @Valid @RequestBody SignupRequest request
     ) {
         SignupData data = authService.signup(userId, request);
-        return ResponseEntity.ok(ApiResponse.ok(
+        return ResponseEntity.ok(ApiResponse.success(
                 "기본 정보 등록이 완료되었습니다. 간편 비밀번호를 설정해주세요.",
                 data
         ));
@@ -66,7 +73,7 @@ public class AuthController {
     ) {
         String token = resolveToken(request);
         authService.logout(token, userId);
-        return ResponseEntity.ok(ApiResponse.ok("성공적으로 로그아웃 되었습니다.", null));
+        return ResponseEntity.ok(ApiResponse.success("성공적으로 로그아웃 되었습니다.", null));
     }
 
     private String resolveToken(jakarta.servlet.http.HttpServletRequest request) {
@@ -87,6 +94,6 @@ public class AuthController {
             @RequestBody RefreshRequest request
     ) {
         RefreshData data = authService.refresh(request.refreshToken());
-        return ResponseEntity.ok(ApiResponse.ok("토큰이 재발급되었습니다.", data));
+        return ResponseEntity.ok(ApiResponse.success("토큰이 재발급되었습니다.", data));
     }
 }
