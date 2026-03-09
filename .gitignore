@@ -147,6 +147,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+akbk-venv/
 
 # Pyre type checker
 .pyre/
