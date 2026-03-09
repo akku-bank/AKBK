@@ -1,7 +1,9 @@
 from fastapi import APIRouter
 
-router = APIRouter()
-
+router = APIRouter(
+    prefix="/chat",
+    tags=["chat"]
+)
 
 @router.post("/message")
 async def send_message():
