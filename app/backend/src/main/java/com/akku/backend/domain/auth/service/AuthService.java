@@ -46,7 +46,7 @@ public class AuthService {
         String providerId = kakaoUserInfo.getProviderId();
         String nickname = kakaoUserInfo.getNickname();
 
-        log.info("카카오 로그인 시도 - email: {}, providerId: {}", email, providerId);
+        log.info("카카오 로그인 시도 - providerId: [MASKED]");
 
         boolean[] isNewUserFlag = {false};
         User user = userRepository

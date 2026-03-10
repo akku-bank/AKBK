@@ -1,6 +1,7 @@
 package com.akku.backend.domain.user.controller;
 
 import com.akku.backend.domain.user.dto.FcmTokenRequest;
+import jakarta.validation.Valid;
 import com.akku.backend.domain.user.dto.UserProfileResponse;
 import com.akku.backend.domain.user.dto.UserUpdateRequest;
 import com.akku.backend.domain.user.dto.UserUpdateResponse;
@@ -42,7 +43,7 @@ public class UserController {
     @PatchMapping("/me")
     public ResponseEntity<ApiResponse<UserUpdateResponse>> updateProfile(
             @AuthenticationPrincipal UUID userId,
-            @RequestBody UserUpdateRequest request
+            @Valid @RequestBody UserUpdateRequest request
     ) {
         UserUpdateResponse data = userService.updateProfile(userId, request);
         return ResponseEntity.ok(ApiResponse.success("프로필 수정이 완료되었습니다.", data));
@@ -57,7 +58,7 @@ public class UserController {
     @PutMapping("/me/fcm-token")
     public ResponseEntity<ApiResponse<Void>> updateFcmToken(
             @AuthenticationPrincipal UUID userId,
-            @RequestBody FcmTokenRequest request
+            @Valid @RequestBody FcmTokenRequest request
     ) {
         userService.updateFcmToken(userId, request.fcmToken());
         return ResponseEntity.ok(ApiResponse.success("FCM 토큰이 갱신되었습니다.", null));

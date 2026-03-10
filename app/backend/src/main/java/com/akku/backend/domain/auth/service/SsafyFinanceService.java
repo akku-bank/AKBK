@@ -50,7 +50,7 @@ public class SsafyFinanceService {
 
             if (response != null && response.containsKey("userKey")) {
                 String userKey = (String) response.get("userKey");
-                log.info("금융망 계정 생성 성공 - userId: {}, userKey: {}", userId, userKey);
+                log.info("금융망 계정 생성 성공 - userId: [MASKED], userKey: [MASKED]");
                 return userKey;
             }
 
@@ -81,7 +81,7 @@ public class SsafyFinanceService {
 
             if (response != null && response.containsKey("userKey")) {
                 String userKey = (String) response.get("userKey");
-                log.info("금융망 기존 계정 조회 성공 - userId: {}, userKey: {}", userId, userKey);
+                log.info("금융망 기존 계정 조회 성공 - userId: [MASKED], userKey: [MASKED]");
                 return userKey;
             }
 

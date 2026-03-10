@@ -46,11 +46,11 @@ public class UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ApiException(UserErrorCode.USER_NOT_FOUND));
 
-        if (request.name() != null) {
-            user.updateName(request.name());
+        if (request.name() != null && !request.name().isBlank()) {
+            user.updateName(request.name().trim());
         }
 
-        log.info("프로필 수정 완료 - userId: {}, name: {}", userId, user.getName());
+        log.info("프로필 수정 완료 - userId: {}", userId);
         return new UserUpdateResponse(user.getName());
     }
 

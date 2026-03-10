@@ -32,7 +32,7 @@ public class AuthController {
     @PostMapping("/social/{provider}")
     public ResponseEntity<ApiResponse<SocialLoginData>> socialLogin(
             @PathVariable String provider,
-            @RequestBody KakaoLoginRequest request
+            @Valid @RequestBody KakaoLoginRequest request
     ) {
         SocialLoginData data = authService.kakaoLogin(request.socialToken(), request.fcmToken());
 
