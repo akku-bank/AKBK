@@ -56,9 +56,39 @@ public class SsafyFinanceService {
 
             throw new RuntimeException("금융망 응답에 userKey 없음");
 
-        } catch (HttpClientErrorException.Conflict e) {
-            log.warn("금융망에 이미 존재하는 식별자: {}", userId);
-            throw new RuntimeException("이미 금융망에 등록된 식별자입니다.");
+        } catch (HttpClientErrorException.Conflict | HttpClientErrorException.BadRequest e) {
+            // 이미 존재하는 ID인 경우, 기존 userKey를 조회
+            log.warn("금융망에 이미 존재하는 식별자: {} - 기존 userKey 조회 시도", userId);
+            return searchMember(userId);
+        }
+    }
+
+    /**
+     * 금융망에서 기존 사용자의 userKey 조회
+     */
+    private String searchMember(String userId) {
+        try {
+            Map<String, String> requestBody = new HashMap<>();
+            requestBody.put("apiKey", apiKey);
+            requestBody.put("userId", userId);
+
+            Map<?, ?> response = restClient.post()
+                    .uri("/member/search")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(requestBody)
+                    .retrieve()
+                    .body(Map.class);
+
+            if (response != null && response.containsKey("userKey")) {
+                String userKey = (String) response.get("userKey");
+                log.info("금융망 기존 계정 조회 성공 - userId: {}, userKey: {}", userId, userKey);
+                return userKey;
+            }
+
+            throw new RuntimeException("금융망 기존 계정 조회 실패 - userKey 없음");
+        } catch (Exception e) {
+            log.error("금융망 기존 계정 조회 실패 - userId: {}", userId, e);
+            throw new RuntimeException("금융망 계정 조회 실패", e);
         }
     }
 }

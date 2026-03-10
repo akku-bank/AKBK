@@ -53,8 +53,8 @@ public class AuthService {
                 .findByProviderAndProviderId("KAKAO", providerId)
                 .orElseGet(() -> {
                     isNewUserFlag[0] = true;
-                    // 이메일이 없는 경우 providerId를 식별자로 사용
-                    String effectiveId = (email != null) ? email : providerId;
+                    // 이메일이 없는 경우 providerId를 이메일 형식으로 변환하여 사용
+                    String effectiveId = (email != null) ? email : providerId + "@kakao.com";
                     String userKey = ssafyFinanceService.createMember(effectiveId);
                     User newUser = User.builder()
                             .email(effectiveId)

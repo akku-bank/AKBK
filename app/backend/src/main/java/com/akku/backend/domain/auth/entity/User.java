@@ -44,6 +44,9 @@ public class User {
     @Column(name = "pin_password")
     private String pinPassword;
 
+    @Column(name = "birth_date")
+    private java.time.LocalDate birthDate;
+
     @Column(name = "fcm_token")
     private String fcmToken;
 
