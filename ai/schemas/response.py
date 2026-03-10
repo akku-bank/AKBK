@@ -1,10 +1,9 @@
-from pydantic import BaseModel
-from typing import Literal
+from pydantic import BaseModel, Field
 
 class ChatResponse(BaseModel):
-    route: Literal["DICT", "RAG", "LLM", "DENY"]
-    intent: Literal["DEFINE", "HINT", "EXPLAIN", "OTHER"]
-    hint_lavel: int
-    remaining_credits: int
-    answer: str
-    
+    remaining_credits: int = Field(alias="remainingCredits")
+    ai_reply: str = Field(alias="aiReply")
+
+    model_config = {
+        "populate_by_name": True
+    }
