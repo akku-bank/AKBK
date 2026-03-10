@@ -49,12 +49,21 @@ public class UserService {
         if (request.name() != null) {
             user.updateName(request.name());
         }
-        if (request.fcmToken() != null) {
-            user.updateFcmToken(request.fcmToken());
-        }
 
         log.info("프로필 수정 완료 - userId: {}, name: {}", userId, user.getName());
         return new UserUpdateResponse(user.getName());
+    }
+
+    /**
+     * FCM 토큰 갱신
+     */
+    @Transactional
+    public void updateFcmToken(UUID userId, String fcmToken) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ApiException(UserErrorCode.USER_NOT_FOUND));
+
+        user.updateFcmToken(fcmToken);
+        log.info("FCM 토큰 갱신 완료 - userId: {}", userId);
     }
 
     /**

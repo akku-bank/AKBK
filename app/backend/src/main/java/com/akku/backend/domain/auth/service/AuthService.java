@@ -40,7 +40,7 @@ public class AuthService {
      * - 기존 유저: JWT Access + Refresh 토큰 발급
      */
     @Transactional
-    public SocialLoginData kakaoLogin(String socialToken) {
+    public SocialLoginData kakaoLogin(String socialToken, String fcmToken) {
         KakaoUserInfo kakaoUserInfo = kakaoService.getUserInfo(socialToken);
         String email = kakaoUserInfo.getEmail();
         String providerId = kakaoUserInfo.getProviderId();
@@ -63,6 +63,7 @@ public class AuthService {
                             .userKey(userKey)
                             .name(nickname != null ? nickname : "사용자")
                             .role("PARENT")
+                            .fcmToken(fcmToken)
                             .build();
                     return userRepository.save(newUser);
                 });
@@ -70,6 +71,11 @@ public class AuthService {
         // 탈퇴/비활성 사용자 차단
         if (!user.getIsActive()) {
             throw new ApiException(AuthErrorCode.ACCESS_DENIED);
+        }
+
+        // 기존 유저: 로그인 시 FCM 토큰 갱신
+        if (!isNewUserFlag[0] && fcmToken != null) {
+            user.updateFcmToken(fcmToken);
         }
 
         boolean isNewUser = isNewUserFlag[0];

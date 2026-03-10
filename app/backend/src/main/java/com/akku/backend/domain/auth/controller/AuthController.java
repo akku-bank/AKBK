@@ -34,7 +34,7 @@ public class AuthController {
             @PathVariable String provider,
             @RequestBody KakaoLoginRequest request
     ) {
-        SocialLoginData data = authService.kakaoLogin(request.socialToken());
+        SocialLoginData data = authService.kakaoLogin(request.socialToken(), request.fcmToken());
 
         String message = data.isRegistered()
                 ? "로그인에 성공했습니다."

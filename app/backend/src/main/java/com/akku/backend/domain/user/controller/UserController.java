@@ -1,5 +1,6 @@
 package com.akku.backend.domain.user.controller;
 
+import com.akku.backend.domain.user.dto.FcmTokenRequest;
 import com.akku.backend.domain.user.dto.UserProfileResponse;
 import com.akku.backend.domain.user.dto.UserUpdateRequest;
 import com.akku.backend.domain.user.dto.UserUpdateResponse;
@@ -36,7 +37,7 @@ public class UserController {
      * 내 정보 수정
      * PATCH /api/users/me
      * Header: Authorization: Bearer {token}
-     * Body: { "name": "변경할 이름", "fcmToken": "FCM 토큰" }
+     * Body: { "name": "변경할 이름" }
      */
     @PatchMapping("/me")
     public ResponseEntity<ApiResponse<UserUpdateResponse>> updateProfile(
@@ -45,6 +46,21 @@ public class UserController {
     ) {
         UserUpdateResponse data = userService.updateProfile(userId, request);
         return ResponseEntity.ok(ApiResponse.success("프로필 수정이 완료되었습니다.", data));
+    }
+
+    /**
+     * FCM 토큰 갱신
+     * PUT /api/users/me/fcm-token
+     * Header: Authorization: Bearer {token}
+     * Body: { "fcmToken": "new_device_token" }
+     */
+    @PutMapping("/me/fcm-token")
+    public ResponseEntity<ApiResponse<Void>> updateFcmToken(
+            @AuthenticationPrincipal UUID userId,
+            @RequestBody FcmTokenRequest request
+    ) {
+        userService.updateFcmToken(userId, request.fcmToken());
+        return ResponseEntity.ok(ApiResponse.success("FCM 토큰이 갱신되었습니다.", null));
     }
 
     /**
