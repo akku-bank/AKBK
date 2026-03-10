@@ -29,7 +29,9 @@
       - _AIRFLOW_WWW_USER_CREATE=true
       - _AIRFLOW_WWW_USER_USERNAME=${AIRFLOW_USERNAME}
       - _AIRFLOW_WWW_USER_PASSWORD=${AIRFLOW_PASSWORD}
-    command: version
+    volumes:
+      - ./ai/airflow/requirements.txt:/opt/airflow/requirements.txt
+    command: bash -c "python -m pip install --no-cache-dir -r /opt/airflow/requirements.txt && airflow version"
 
   airflow:
     image: apache/airflow:2.7.1
@@ -45,14 +47,13 @@
       - DB_PASSWORD=${DB_PASSWORD}
       - VECTOR_DB_NAME=${VECTOR_DB_NAME}
       - OPENAI_API_KEY=${GMS_API_KEY}
-      - OPENAI_EMBED_MODEL=${OPENAI_EMBED_MODEL:-text-embedding-3-small}
-      - OPENAI_EMBED_DIM=${OPENAI_EMBED_DIM:-1536}
     volumes:
       - ./ai/airflow/dags:/opt/airflow/dags
       - ./ai/airflow/lib:/opt/airflow/lib
+      - ./ai/airflow/requirements.txt:/opt/airflow/requirements.txt
     ports:
       - "9000:8080"
-    command: bash -c "airflow scheduler & airflow webserver"
+    command: bash -c "python -m pip install --no-cache-dir -r /opt/airflow/requirements.txt && airflow scheduler & airflow webserver"
 
 volumes:
   postgres_data:
