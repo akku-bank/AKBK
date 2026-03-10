@@ -34,7 +34,7 @@ services:
       - _AIRFLOW_WWW_USER_PASSWORD=${AIRFLOW_PASSWORD}
     # 명령어를 최소화하여 구문 에러 방지
     command: version
-    
+
   airflow:
     image: apache/airflow:2.7.1
     container_name: airflow_scheduler

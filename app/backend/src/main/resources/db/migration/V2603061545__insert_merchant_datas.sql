@@ -3,8 +3,8 @@
    1: 카페, 2: 음식, 3: 학습, 4: 문구, 5: 쇼핑, 6: 오락, 7: 문화생활, 8: 교통, 9: 기타
 */
 
--- 1. 카페 (subCategoryId: 1)
-INSERT INTO merchant (merchantId, categoryId, merchantName, subCategoryId, subCategoryName) VALUES
+-- 1. 카페 (sub_category_id: 1)
+INSERT INTO merchant (merchant_id, category_id, merchant_name, sub_category_id, sub_category_name) VALUES
 (17069, 9, '스타벅스 대전유성온천점', 1, '카페'),
 (17070, 9, '스타벅스 대전둔산점', 1, '카페'),
 (17071, 9, '스타벅스 대전은행동점', 1, '카페'),
@@ -41,8 +41,8 @@ INSERT INTO merchant (merchantId, categoryId, merchantName, subCategoryId, subCa
 (17102, 9, '대전둔산 디저트카페', 1, '카페'),
 (17103, 9, '대전은행동 디저트카페', 1, '카페');
 
--- 2. 음식 (subCategoryId: 2)
-INSERT INTO merchant (merchantId, categoryId, merchantName, subCategoryId, subCategoryName) VALUES
+-- 2. 음식 (sub_category_id: 2)
+INSERT INTO merchant (merchant_id, category_id, merchant_name, sub_category_id, sub_category_name) VALUES
 (17104, 9, 'GS25 대전유성온천점', 2, '음식'),
 (17105, 9, 'CU 대전둔산로점', 2, '음식'),
 (17106, 9, '세븐일레븐 대전은행점', 2, '음식'),
@@ -84,8 +84,8 @@ INSERT INTO merchant (merchantId, categoryId, merchantName, subCategoryId, subCa
 (17230, 9, '성심당 본점', 2, '음식'),
 (17231, 9, '성심당 DCC점', 2, '음식');
 
--- 3. 학습 (subCategoryId: 3)
-INSERT INTO merchant (merchantId, categoryId, merchantName, subCategoryId, subCategoryName) VALUES
+-- 3. 학습 (sub_category_id: 3)
+INSERT INTO merchant (merchant_id, category_id, merchant_name, sub_category_id, sub_category_name) VALUES
 (17142, 9, '교보문고 대전둔산점', 3, '학습'),
 (17143, 9, '영풍문고 대전은행점', 3, '학습'),
 (17144, 9, '대전해커스어학원 둔산점', 3, '학습'),
@@ -107,8 +107,8 @@ INSERT INTO merchant (merchantId, categoryId, merchantName, subCategoryId, subCa
 (17160, 9, '르하임스터디카페 대전둔산점', 3, '학습'),
 (17161, 9, '르하임스터디카페 대전관저점', 3, '학습');
 
--- 4. 문구 (subCategoryId: 4)
-INSERT INTO merchant (merchantId, categoryId, merchantName, subCategoryId, subCategoryName) VALUES
+-- 4. 문구 (sub_category_id: 4)
+INSERT INTO merchant (merchant_id, category_id, merchant_name, sub_category_id, sub_category_name) VALUES
 (17162, 9, '핫트랙스 대전둔산점', 4, '문구'),
 (17163, 9, '아트박스 대전은행점', 4, '문구'),
 (17164, 9, '아트박스 대전둔산점', 4, '문구'),
@@ -117,8 +117,8 @@ INSERT INTO merchant (merchantId, categoryId, merchantName, subCategoryId, subCa
 (17167, 9, '대전문구센터 둔산점', 4, '문구'),
 (17168, 9, '대전학용품센터 유성점', 4, '문구');
 
--- 5. 쇼핑 (subCategoryId: 5)
-INSERT INTO merchant (merchantId, categoryId, merchantName, subCategoryId, subCategoryName) VALUES
+-- 5. 쇼핑 (sub_category_id: 5)
+INSERT INTO merchant (merchant_id, category_id, merchant_name, sub_category_id, sub_category_name) VALUES
 (17169, 9, '무신사 스탠다드 대전둔산점', 5, '쇼핑'),
 (17170, 9, '(주)무신사', 5, '쇼핑'),
 (17171, 9, '(주)에이블리코퍼레이션', 5, '쇼핑'),
@@ -144,8 +144,8 @@ INSERT INTO merchant (merchantId, categoryId, merchantName, subCategoryId, subCa
 (17191, 9, '다이소 대전유성점', 5, '쇼핑'),
 (17192, 9, '에이블리 스토어', 5, '쇼핑');
 
--- 6. 오락 (subCategoryId: 6)
-INSERT INTO merchant (merchantId, categoryId, merchantName, subCategoryId, subCategoryName) VALUES
+-- 6. 오락 (sub_category_id: 6)
+INSERT INTO merchant (merchant_id, category_id, merchant_name, sub_category_id, sub_category_name) VALUES
 (17193, 9, '대전둔산 인형뽑기존', 6, '오락'),
 (17194, 9, '대전유성 인형뽑기랜드', 6, '오락'),
 (17195, 9, '가챠샵 은행동점', 6, '오락'),
@@ -165,8 +165,8 @@ INSERT INTO merchant (merchantId, categoryId, merchantName, subCategoryId, subCa
 (17209, 9, '대전둔산 인형캐치존', 6, '오락'),
 (17210, 9, '대전유성 크레인파크', 6, '오락');
 
--- 7. 문화생활 (subCategoryId: 7)
-INSERT INTO merchant (merchantId, categoryId, merchantName, subCategoryId, subCategoryName) VALUES
+-- 7. 문화생활 (sub_category_id: 7)
+INSERT INTO merchant (merchant_id, category_id, merchant_name, sub_category_id, sub_category_name) VALUES
 (17211, 9, 'CGV 대전둔산', 7, '문화생활'),
 (17212, 9, '롯데시네마 대전관저', 7, '문화생활'),
 (17213, 9, '메가박스 대전유성', 7, '문화생활'),
@@ -176,8 +176,8 @@ INSERT INTO merchant (merchantId, categoryId, merchantName, subCategoryId, subCa
 (17217, 9, '대전오월드 매점', 7, '문화생활'),
 (17218, 9, '대전예술의전당 기념품샵', 7, '문화생활');
 
--- 8. 교통 (subCategoryId: 8)
-INSERT INTO merchant (merchantId, categoryId, merchantName, subCategoryId, subCategoryName) VALUES
+-- 8. 교통 (sub_category_id: 8)
+INSERT INTO merchant (merchant_id, category_id, merchant_name, sub_category_id, sub_category_name) VALUES
 (17219, 9, '카카오T 택시', 8, '교통'),
 (17220, 9, '우버택시', 8, '교통'),
 (17221, 9, '대전 타슈 정기권', 8, '교통'),
@@ -185,8 +185,8 @@ INSERT INTO merchant (merchantId, categoryId, merchantName, subCategoryId, subCa
 (17223, 9, '대전 타슈 대여소 유성온천', 8, '교통'),
 (17224, 9, '대전 버스 교통카드 충전', 8, '교통');
 
--- 9. 기타 (subCategoryId: 9 - 매핑되지 않은 남은 모든 가맹점)
-INSERT INTO merchant (merchantId, categoryId, merchantName, subCategoryId, subCategoryName) VALUES
+-- 9. 기타 (sub_category_id: 9 - 매핑되지 않은 남은 모든 가맹점)
+INSERT INTO merchant (merchant_id, category_id, merchant_name, sub_category_id, sub_category_name) VALUES
 -- (16332, 3, '현대오일뱅크', 9, '기타'),
 -- (16333, 3, 'SK엔크린', 9, '기타'),
 -- (16334, 3, 'GS칼텍스', 9, '기타'),
