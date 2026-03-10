@@ -10,7 +10,7 @@ lib_path = os.path.join(dag_dir, '../lib')
 if lib_path not in sys.path:
     sys.path.insert(0, lib_path)
 
-# 우리가 만든 LangGraph 앱 임포트
+# LangGraph 앱 임포트
 from graph import quiz_app
 
 def generate_quiz_task(difficulty: str, **kwargs):
