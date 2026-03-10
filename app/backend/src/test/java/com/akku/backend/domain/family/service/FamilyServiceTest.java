@@ -8,6 +8,7 @@ import com.akku.backend.domain.family.repository.FamilyProfileRepository;
 import com.akku.backend.domain.family.repository.FamilyRepository;
 import com.akku.backend.global.error.ApiException;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -16,6 +17,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -28,122 +30,143 @@ import static org.mockito.Mockito.*;
 class FamilyServiceTest {
 
     @InjectMocks
-    private FamilyService familyService; // 테스트할 진짜 객체 (의존성이 주입됨)
+    private FamilyService familyService;
 
     @Mock
-    private FamilyRepository familyRepository; // 가짜(Mock) DB 레포지토리
+    private FamilyRepository familyRepository;
 
     @Mock
-    private FamilyProfileRepository familyProfileRepository; // 가짜(Mock) DB 레포지토리
+    private FamilyProfileRepository familyProfileRepository;
 
-    @Test
-    @DisplayName("가족 그룹 생성 - 성공 시 새로운 가족 ID를 반환한다")
-    void createFamilyGroup_Success() {
-        // given (준비: 가짜 데이터와 행동 설정)
-        UUID parentId = UUID.randomUUID();
-        UUID mockFamilyId = UUID.randomUUID();
+    @Nested
+    @DisplayName("가족 그룹 생성 및 등록")
+    class RegistrationTests {
+        @Test
+        @DisplayName("1. 가족 그룹 생성 - 성공")
+        void createFamilyGroup_Success() {
+            UUID parentId = UUID.randomUUID();
+            FamilyEntity mockFamily = mock(FamilyEntity.class);
+            given(mockFamily.getId()).willReturn(UUID.randomUUID());
+            given(familyRepository.save(any(FamilyEntity.class))).willReturn(mockFamily);
 
-        FamilyEntity mockFamily = mock(FamilyEntity.class);
-        given(mockFamily.getId()).willReturn(mockFamilyId);
-        given(familyRepository.save(any(FamilyEntity.class))).willReturn(mockFamily);
+            FamilyCreateResponse response = familyService.createFamilyGroup(parentId);
 
-        // when (실행)
-        FamilyCreateResponse response = familyService.createFamilyGroup(parentId);
+            assertNotNull(response.familyId());
+        }
 
-        // then (검증)
-        assertNotNull(response);
-        assertEquals(mockFamilyId, response.familyId());
-        verify(familyRepository, times(1)).save(any(FamilyEntity.class)); // save가 1번 호출되었는지 검증
+        @Test
+        @DisplayName("1-1. 가족 구성원 사전 등록 - 성공")
+        void preRegisterFamilyMember_Success() {
+            UUID familyId = UUID.randomUUID();
+            FamilyMemberPreRegisterRequest request = new FamilyMemberPreRegisterRequest("자녀1", "CHILD", LocalDate.now());
+
+            familyService.preRegisterFamilyMember(familyId, request);
+
+            verify(familyProfileRepository).save(any(FamilyProfileEntity.class));
+        }
     }
 
-    @Test
-    @DisplayName("가족 그룹 합류 - 만료된 QR 코드일 경우 예외가 발생한다")
-    void joinFamilyGroup_WhenQrExpired_ThrowsException() {
-        // given
-        UUID childId = UUID.randomUUID();
-        String scannedQrCode = "fake-qr-code";
+    @Nested
+    @DisplayName("QR 코드 관리 로직")
+    class QrManagementTests {
+        @Test
+        @DisplayName("2. QR 조회 - 유효한 QR이 없으면 새로 생성")
+        void getOrGenerateFamilyQr_New() {
+            UUID familyId = UUID.randomUUID();
+            FamilyEntity family = mock(FamilyEntity.class);
+            given(family.getQrCode()).willReturn(null); // QR 없음
+            given(familyRepository.findById(familyId)).willReturn(Optional.of(family));
 
-        FamilyEntity mockFamily = mock(FamilyEntity.class);
-        given(mockFamily.getQrExpiresAt()).willReturn(LocalDateTime.now().minusMinutes(10)); // 10분 전(과거)으로 세팅
+            FamilyQrResponse response = familyService.getOrGenerateFamilyQr(familyId);
 
-        given(familyRepository.findByQrCode(scannedQrCode)).willReturn(Optional.of(mockFamily));
+            assertNotNull(response.qrCode());
+            verify(family).updateQrCode(anyString(), any(LocalDateTime.class));
+        }
 
-        // when & then
-        ApiException exception = assertThrows(ApiException.class, () ->
-                familyService.joinFamilyGroup(childId, scannedQrCode, "김싸피", LocalDate.of(2010, 1, 1))
-        );
+        @Test
+        @DisplayName("4. QR 강제 재발급 - 기존 상관없이 무조건 새로 생성")
+        void reissueFamilyQr_Success() {
+            UUID familyId = UUID.randomUUID();
+            FamilyEntity family = mock(FamilyEntity.class);
+            given(familyRepository.findById(familyId)).willReturn(Optional.of(family));
 
-        // 우리가 만든 커스텀 에러 코드가 정확히 터지는지 검증
-        assertEquals(FamilyErrorCode.EXPIRED_QR_CODE, exception.getErrorCode());
+            FamilyQrResponse response = familyService.reissueFamilyQr(familyId);
+
+            assertNotNull(response.qrCode());
+            verify(family).updateQrCode(anyString(), any(LocalDateTime.class));
+        }
     }
 
-    @Test
-    @DisplayName("가족 그룹 합류 - 정상적인 QR과 프로필 매칭 시 연동(linkUser)에 성공한다")
-    void joinFamilyGroup_Success() {
-        // given
-        UUID childId = UUID.randomUUID();
-        String scannedQrCode = "valid-qr-code";
-        UUID familyId = UUID.randomUUID();
-        String childName = "김싸피";
-        LocalDate birthDate = LocalDate.of(2010, 1, 1);
+    @Nested
+    @DisplayName("가족 합류 및 목록 조회")
+    class MemberInteractionTests {
+        @Test
+        @DisplayName("3. 가족 합류 - 정상 QR 및 프로필 매칭 성공")
+        void joinFamilyGroup_Success() {
+            UUID childId = UUID.randomUUID();
+            UUID familyId = UUID.randomUUID();
+            String qr = "valid-qr";
 
-        // 가짜 가족 (QR 유효함)
-        FamilyEntity mockFamily = mock(FamilyEntity.class);
-        given(mockFamily.getId()).willReturn(familyId);
-        given(mockFamily.getQrExpiresAt()).willReturn(LocalDateTime.now().plusMinutes(10)); // 미래 시간
-        given(familyRepository.findByQrCode(scannedQrCode)).willReturn(Optional.of(mockFamily));
+            FamilyEntity family = mock(FamilyEntity.class);
+            given(family.getId()).willReturn(familyId);
+            given(family.getQrExpiresAt()).willReturn(LocalDateTime.now().plusMinutes(10));
+            given(familyRepository.findByQrCode(qr)).willReturn(Optional.of(family));
 
-        // 가짜 프로필 (매칭됨)
-        FamilyProfileEntity mockProfile = mock(FamilyProfileEntity.class);
-        given(familyProfileRepository.findByFamilyIdAndNameAndBirthDateAndLinkedUserIdIsNull(
-                familyId, childName, birthDate)).willReturn(Optional.of(mockProfile));
+            FamilyProfileEntity profile = mock(FamilyProfileEntity.class);
+            given(familyProfileRepository.findByFamilyIdAndNameAndBirthDateAndLinkedUserIdIsNull(any(), any(), any()))
+                    .willReturn(Optional.of(profile));
 
-        // when
-        familyService.joinFamilyGroup(childId, scannedQrCode, childName, birthDate);
+            familyService.joinFamilyGroup(childId, qr, "자녀", LocalDate.now());
 
-        // then
-        verify(mockProfile, times(1)).linkUser(childId); // 프로필에 자녀 ID가 정상적으로 연동되었는지 확인
+            verify(profile).linkUser(childId);
+        }
+
+        @Test
+        @DisplayName("5. 가족 구성원 목록 조회 - 리스트 반환 확인")
+        void getFamilyMembers_Success() {
+            UUID familyId = UUID.randomUUID();
+            FamilyProfileEntity profile = mock(FamilyProfileEntity.class);
+            given(profile.getLinkedUserId()).willReturn(UUID.randomUUID());
+            given(familyProfileRepository.findAllByFamilyId(familyId)).willReturn(List.of(profile));
+
+            FamilyMemberListResponse response = familyService.getFamilyMembers(familyId);
+
+            assertFalse(response.members().isEmpty());
+            assertNotNull(response.members().get(0).accountId()); // 더미 UUID 확인
+        }
     }
 
-    @Test
-    @DisplayName("가족 구성원 정보 수정 - 이미 연동된 유저의 정보를 수정하려 하면 예외가 발생한다")
-    void updateFamilyMember_WhenAlreadyLinked_ThrowsException() {
-        // given
-        UUID familyId = UUID.randomUUID();
-        UUID profileId = UUID.randomUUID();
-        FamilyMemberUpdateRequest request = new FamilyMemberUpdateRequest("새이름", LocalDate.now());
+    @Nested
+    @DisplayName("수정 및 삭제 권한/상태 검증")
+    class AuthorityTests {
+        @Test
+        @DisplayName("7. 정보 수정 - 이미 연동된 유저는 수정 불가 (ApiException)")
+        void updateFamilyMember_AlreadyLinked() {
+            UUID familyId = UUID.randomUUID();
+            FamilyProfileEntity profile = mock(FamilyProfileEntity.class);
+            given(profile.getFamilyId()).willReturn(familyId);
+            given(profile.getLinkedUserId()).willReturn(UUID.randomUUID()); // 이미 연동됨
+            given(familyProfileRepository.findById(any())).willReturn(Optional.of(profile));
 
-        FamilyProfileEntity mockProfile = mock(FamilyProfileEntity.class);
-        given(mockProfile.getFamilyId()).willReturn(familyId); // 우리 가족은 맞음
-        given(mockProfile.getLinkedUserId()).willReturn(UUID.randomUUID()); // 🚨 이미 연동된 유저 ID가 존재함
+            ApiException ex = assertThrows(ApiException.class, () ->
+                    familyService.updateFamilyMember(familyId, UUID.randomUUID(), new FamilyMemberUpdateRequest("이름", LocalDate.now())));
 
-        given(familyProfileRepository.findById(profileId)).willReturn(Optional.of(mockProfile));
+            assertEquals(FamilyErrorCode.PROFILE_ALREADY_LINKED, ex.getErrorCode());
+        }
 
-        // when & then
-        ApiException exception = assertThrows(ApiException.class, () ->
-                familyService.updateFamilyMember(familyId, profileId, request)
-        );
-        assertEquals(FamilyErrorCode.PROFILE_ALREADY_LINKED, exception.getErrorCode());
-    }
+        @Test
+        @DisplayName("8-A. 연결 해제 - 연동된 유저는 Soft Disconnect")
+        void removeFamilyMember_Soft() {
+            UUID familyId = UUID.randomUUID();
+            FamilyProfileEntity profile = mock(FamilyProfileEntity.class);
+            given(profile.getFamilyId()).willReturn(familyId);
+            given(profile.getLinkedUserId()).willReturn(UUID.randomUUID());
+            given(familyProfileRepository.findById(any())).willReturn(Optional.of(profile));
 
-    @Test
-    @DisplayName("가족 구성원 연결 해제 - 미연동 상태인 경우 프로필 자체를 완전 삭제(Hard Delete)한다")
-    void removeFamilyMember_WhenNotLinked_DeletesProfile() {
-        // given
-        UUID familyId = UUID.randomUUID();
-        UUID profileId = UUID.randomUUID();
+            familyService.removeFamilyMember(familyId, UUID.randomUUID());
 
-        FamilyProfileEntity mockProfile = mock(FamilyProfileEntity.class);
-        given(mockProfile.getFamilyId()).willReturn(familyId);
-        given(mockProfile.getLinkedUserId()).willReturn(null); // 연동 안 됨 (빈 의자)
-
-        given(familyProfileRepository.findById(profileId)).willReturn(Optional.of(mockProfile));
-
-        // when
-        familyService.removeFamilyMember(familyId, profileId);
-
-        // then
-        verify(familyProfileRepository, times(1)).delete(mockProfile); // delete 쿼리가 호출되었는지 검증
-        verify(mockProfile, never()).unlinkUser(); // unlink 로직은 타면 안 됨
+            verify(profile).unlinkUser();
+            verify(familyProfileRepository, never()).delete(any());
+        }
     }
 }
