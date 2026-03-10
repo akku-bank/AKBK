@@ -73,14 +73,14 @@ class PolicyService:
         credit_result = self._check_credit_limit(state)
         if credit_result is not None:
             return credit_result
-        # 2. 금융 범위 체크
-        scope_result = self._check_finance_scope(state)
-        if scope_result is not None:
-            return scope_result
-        # 3. 부정행위 체크
+        # 2. 부정행위 체크
         cheating_result = self._check_cheating(state)
         if cheating_result is not None:
             return cheating_result
+        # 3. 금융 범위 체크
+        scope_result = self._check_finance_scope(state)
+        if scope_result is not None:
+            return scope_result
         # 4. 모든 정책 통과
         return PolicyResult(
             decision=PolicyDecision.ALLOW,
