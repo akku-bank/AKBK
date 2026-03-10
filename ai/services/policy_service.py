@@ -89,6 +89,9 @@ class PolicyService:
         )
 
     def _check_credit_limit(self, state: ChatContextState) -> PolicyResult | None:
+        # 완전 소진 상태인지 / 아예 요청 불가 상태인지만 판단
+        # 나중에 route 결정되면 
+        # 선택된 route를 실행할 만큼 크레딧이 충분한지 다시 확인 필요
         if state.credits_balance <= 0:
             return PolicyResult(
                 decision=PolicyDecision.DENY,
