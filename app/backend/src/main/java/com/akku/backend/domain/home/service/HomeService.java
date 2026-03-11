@@ -3,9 +3,12 @@ package com.akku.backend.domain.home.service;
 import com.akku.backend.domain.auth.entity.User;
 import com.akku.backend.domain.auth.repository.UserRepository;
 import com.akku.backend.domain.avatar.repository.UserItemRepository;
+import com.akku.backend.domain.family.entity.FamilyProfileEntity;
+import com.akku.backend.domain.family.repository.FamilyProfileRepository;
 import com.akku.backend.domain.home.dto.ChildHomeResponse;
 import com.akku.backend.domain.home.dto.ChildHomeResponse.AvatarDto;
 import com.akku.backend.domain.home.dto.ChildHomeResponse.EquippedItemDto;
+import com.akku.backend.domain.home.dto.ParentHomeResponse;
 import com.akku.backend.domain.user.exception.UserErrorCode;
 import com.akku.backend.global.error.ApiException;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +25,7 @@ public class HomeService {
 
     private final UserRepository userRepository;
     private final UserItemRepository userItemRepository;
+    private final FamilyProfileRepository familyProfileRepository;
 
     public ChildHomeResponse getChildHome(UUID userId) {
 
@@ -58,4 +62,40 @@ public class HomeService {
                 avatarDto
         );
     }
+
+    /**
+     * 부모 대시보드 홈 데이터 조회
+     */
+    public ParentHomeResponse getParentHome(UUID userId) {
+
+        // 1. 부모 유저 정보 조회
+        User parent = userRepository.findById(userId)
+                .orElseThrow(() -> new ApiException(UserErrorCode.USER_NOT_FOUND));
+
+        // 🚨 [확인 필요] User 엔티티에 family_id가 어떻게 매핑되어 있는지 몰라서 임의의 Getter(getFamilyId)를 적어뒀어!
+        // 만약 객체로 매핑되어 있다면 parent.getFamily().getId() 등으로 네 코드에 맞게 수정해 줘.
+        UUID familyId = parent.getFamilyId();
+
+        // 2. 가족 구성원 프로필(빈 의자 포함) 목록 조회
+        List<FamilyProfileEntity> familyProfiles = familyProfileRepository.findAllByFamilyId(familyId);
+
+        // 3. 자녀(CHILD) 프로필만 필터링하여 DTO 변환 (Real + Mock 하이브리드)
+        List<ParentHomeResponse.ChildSummaryDto> children = familyProfiles.stream()
+                .filter(profile -> "CHILD".equals(profile.getRole())) // 자녀 역할만 필터링
+                .map(profile -> new ParentHomeResponse.ChildSummaryDto(
+                        profile.getLinkedUserId(), // 연동 전이면 null이 들어감 (명세에 맞게 프론트와 협의 가능)
+                        profile.getName(),         // Real 데이터 (자녀 이름)
+                        50000L,                    // TODO: WalletService 연동 시 교체 (자녀별 잔액)
+                        15000L                     // TODO: ReportService 연동 시 교체 (주간 지출 누적액)
+                ))
+                .toList();
+
+        // 4. 최종 부모 대시보드 데이터 반환
+        return new ParentHomeResponse(
+                500000L, // TODO: WalletService 연동 시 교체 (부모 잔액)
+                2,       // TODO: ChallengeService 연동 시 교체 (대기 중인 챌린지 수)
+                children // Real + Mock 조합 데이터
+        );
+    }
+
 }
