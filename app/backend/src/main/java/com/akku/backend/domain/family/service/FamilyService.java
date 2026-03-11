@@ -6,6 +6,9 @@ import com.akku.backend.domain.family.entity.FamilyProfileEntity;
 import com.akku.backend.domain.family.repository.FamilyProfileRepository;
 import com.akku.backend.domain.family.repository.FamilyRepository;
 import com.akku.backend.domain.family.exception.FamilyErrorCode;
+import com.akku.backend.domain.auth.entity.User;
+import com.akku.backend.domain.auth.repository.UserRepository;
+import com.akku.backend.domain.user.exception.UserErrorCode;
 import com.akku.backend.global.error.ApiException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -22,8 +25,8 @@ import java.util.UUID;
 public class FamilyService {
 
     private final FamilyRepository familyRepository;
-    private final FamilyProfileRepository familyProfileRepository; // 미연동 프로필 관리를 위해 주입
-    // private final UserRepository userRepository; // 자녀 합류 시 유저 테이블 업데이트용
+    private final FamilyProfileRepository familyProfileRepository;
+    private final UserRepository userRepository;
 
     /**
      * 1. 가족 그룹 생성 (최초 빈 그룹 생성)
@@ -40,9 +43,10 @@ public class FamilyService {
         // 2. DB 저장 (UUID 및 createdAt 자동 생성)
         FamilyEntity savedFamily = familyRepository.save(newFamily);
 
-        // TODO: 3. 부모(User) 테이블의 family_id를 방금 생성한 savedFamily.getId()로 업데이트
-        // UserEntity parent = userRepository.findById(parentId).orElseThrow(...);
-        // parent.updateFamilyId(savedFamily.getId());
+        // 3. 부모(User)의 familyId를 방금 생성한 그룹의 ID로 업데이트
+        User parent = userRepository.findById(parentId)
+                .orElseThrow(() -> new ApiException(UserErrorCode.USER_NOT_FOUND));
+        parent.updateFamilyId(savedFamily.getId());
 
         return new FamilyCreateResponse(savedFamily.getId());
     }
@@ -108,11 +112,14 @@ public class FamilyService {
         FamilyProfileEntity profile = familyProfileRepository
                 .findByFamilyIdAndNameAndBirthDateAndLinkedUserIdIsNull(family.getId(), childName, birthDate)
                 .orElseThrow(() -> new ApiException(FamilyErrorCode.PROFILE_ALREADY_LINKED));
-        // 4. 프로필에 유저 ID 연결 (연동 완료)
+
+        // 4. 프로필에 유저 ID 연결 (family_profiles.linked_user_id 업데이트)
         profile.linkUser(childId);
 
-        // TODO: 3. 검증 통과! 자녀(User) 정보를 DB에서 조회
-        // TODO: 4. 자녀의 family_id를 찾은 family.getId()로 업데이트 (가족 합류 완료!)
+        // 5. 자녀(User) 테이블의 family_id를 연동된 가족 그룹 ID로 업데이트
+        User child = userRepository.findById(childId)
+                .orElseThrow(() -> new ApiException(UserErrorCode.USER_NOT_FOUND));
+        child.updateFamilyId(family.getId());
     }
 
     /**
@@ -224,16 +231,15 @@ public class FamilyService {
 
         UUID userId = profile.getLinkedUserId();
         if (userId != null) {
-            // 2-A. 이미 연동된 유저인 경우 -> 연동 해제 (Soft Disconnect)
+            // 2-A. 이미 연동된 유저인 경우 → 연동 해제 (Soft Disconnect)
             profile.unlinkUser();
 
-            // TODO: User 도메인이 완성되면 아래 주석을 풀고 실제 유저의 family_id도 null로 업데이트
-            // UserEntity user = userRepository.findById(userId)
-            //         .orElseThrow(() -> new ApiException(UserErrorCode.USER_NOT_FOUND));
-            // user.updateFamilyId(null);
+            // 자녀(User) 테이블의 family_id도 null로 초기화 (가족 그룹에서 완전히 제거)
+            User linkedUser = userRepository.findById(userId)
+                    .orElseThrow(() -> new ApiException(UserErrorCode.USER_NOT_FOUND));
+            linkedUser.updateFamilyId(null);
         } else {
-            // 2-B. 미연동 상태(빈 의자)인 경우 -> 프로필 완전 삭제
-            // 가입도 안 한 상태에서 지우는 것이므로 DB에서 날리는 것이 깔끔합니다.
+            // 2-B. 미연동 상태(빈 의자)인 경우 → 프로필 완전 삭제
             familyProfileRepository.delete(profile);
         }
     }
