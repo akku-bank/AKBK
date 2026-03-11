@@ -6,6 +6,8 @@ import com.akku.backend.domain.family.entity.FamilyProfileEntity;
 import com.akku.backend.domain.family.exception.FamilyErrorCode;
 import com.akku.backend.domain.family.repository.FamilyProfileRepository;
 import com.akku.backend.domain.family.repository.FamilyRepository;
+import com.akku.backend.domain.auth.entity.User;
+import com.akku.backend.domain.auth.repository.UserRepository;
 import com.akku.backend.global.error.ApiException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -38,6 +40,9 @@ class FamilyServiceTest {
     @Mock
     private FamilyProfileRepository familyProfileRepository;
 
+    @Mock
+    private UserRepository userRepository;
+
     @Nested
     @DisplayName("가족 그룹 생성 및 등록")
     class RegistrationTests {
@@ -49,9 +54,14 @@ class FamilyServiceTest {
             given(mockFamily.getId()).willReturn(UUID.randomUUID());
             given(familyRepository.save(any(FamilyEntity.class))).willReturn(mockFamily);
 
+            // familyService가 생성 후 parent.updateFamilyId()를 호출하미로 User 스터빙 필요
+            User mockParent = mock(User.class);
+            given(userRepository.findById(parentId)).willReturn(Optional.of(mockParent));
+
             FamilyCreateResponse response = familyService.createFamilyGroup(parentId);
 
             assertNotNull(response.familyId());
+            verify(mockParent).updateFamilyId(mockFamily.getId());
         }
 
         @Test
@@ -116,9 +126,14 @@ class FamilyServiceTest {
             given(familyProfileRepository.findByFamilyIdAndNameAndBirthDateAndLinkedUserIdIsNull(any(), any(), any()))
                     .willReturn(Optional.of(profile));
 
+            // joinFamilyGroup이 이제 child.updateFamilyId()를 호출하미로 User 스터빙 필요
+            User mockChild = mock(User.class);
+            given(userRepository.findById(childId)).willReturn(Optional.of(mockChild));
+
             familyService.joinFamilyGroup(childId, qr, "자녀", LocalDate.now());
 
             verify(profile).linkUser(childId);
+            verify(mockChild).updateFamilyId(familyId);
         }
 
         @Test
@@ -158,14 +173,21 @@ class FamilyServiceTest {
         @DisplayName("8-A. 연결 해제 - 연동된 유저는 Soft Disconnect")
         void removeFamilyMember_Soft() {
             UUID familyId = UUID.randomUUID();
+            UUID linkedUserId = UUID.randomUUID();
+
             FamilyProfileEntity profile = mock(FamilyProfileEntity.class);
             given(profile.getFamilyId()).willReturn(familyId);
-            given(profile.getLinkedUserId()).willReturn(UUID.randomUUID());
+            given(profile.getLinkedUserId()).willReturn(linkedUserId);
             given(familyProfileRepository.findById(any())).willReturn(Optional.of(profile));
+
+            // removeFamilyMember가 이제 linkedUser.updateFamilyId(null)을 호출하미로 User 스터빙 필요
+            User linkedUser = mock(User.class);
+            given(userRepository.findById(linkedUserId)).willReturn(Optional.of(linkedUser));
 
             familyService.removeFamilyMember(familyId, UUID.randomUUID());
 
             verify(profile).unlinkUser();
+            verify(linkedUser).updateFamilyId(null);
             verify(familyProfileRepository, never()).delete(any());
         }
     }
