@@ -22,4 +22,12 @@ public interface UserItemRepository extends JpaRepository<UserItem, UUID> {
      */
     @Query("SELECT ui FROM UserItem ui JOIN FETCH ui.item WHERE ui.user.id = :userId AND ui.isEquipped = true")
     List<UserItem> findEquippedItemsByUserId(@Param("userId") UUID userId);
+
+    /**
+     * 프론트엔드가 장착 요청한 아이템 ID 목록이 DB(user_items)에 이미 존재하는지 조회
+     * (존재하면 Update, 존재하지 않으면 Insert 처리를 하기 위함)
+     */
+    List<UserItem> findByUserIdAndItemIdIn(UUID userId, List<UUID> itemIds);
+
+
 }
