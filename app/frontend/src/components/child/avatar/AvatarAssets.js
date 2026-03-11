@@ -1,7 +1,7 @@
 export const AVATAR_ASSETS = {
     // 공통 뼈대
-    body_lower: require('../../../../test/body/lower_base.png'),
-    body_upper: require('../../../../test/body/upper_base.png'),
+    body_lower: require('../../../assets/avatar/body/lower_base.png'),
+    body_upper: require('../../../assets/avatar/body/upper_base.png'),
 
     // 얼굴
     face: {
@@ -9,7 +9,7 @@ export const AVATAR_ASSETS = {
         base_girl: require('../../../assets/avatar/face/base/base_girl.png'),
         boy_2: require('../../../assets/avatar/face/base/boy_2.png'),
         base_smile: require('../../../assets/avatar/face/smile/base_smile.png'),
-        base_closed: require('../../../../test/closed/base_closed.png'),
+        base_closed: require('../../../assets/avatar/face/closed/base_closed.png'),
     },
 
     // 헤어

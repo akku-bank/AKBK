@@ -66,7 +66,7 @@ const ChildHomeScreen = ({ navigation }) => {
 
                     <ChildAvatar equipState={equipState} size={200} />
 
-                    {/* 커스텀 */}
+                    {/* 옷장 */}
                     <TouchableOpacity style={styles.wardrobeButton} onPress={() => navigation.navigate('Wardrobe')}>
                         <Text style={styles.wardrobeButtonText}>옷장</Text>
                     </TouchableOpacity>
