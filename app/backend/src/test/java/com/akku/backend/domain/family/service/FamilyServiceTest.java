@@ -47,16 +47,18 @@ class FamilyServiceTest {
     @DisplayName("가족 그룹 생성 및 등록")
     class RegistrationTests {
         @Test
-        @DisplayName("1. 가족 그룹 생성 - 성공")
+        @DisplayName("1. 가족 그룹 생성 - 성공 (미소속 부모)")
         void createFamilyGroup_Success() {
             UUID parentId = UUID.randomUUID();
+
+            // 새 검증 로직: 서비스가 먼저 유저를 조회하므로 User 스터빙 선행 필요
+            User mockParent = mock(User.class);
+            given(mockParent.getFamilyId()).willReturn(null); // 어떤 가족에도 미소속 → 성공 경로
+            given(userRepository.findById(parentId)).willReturn(Optional.of(mockParent));
+
             FamilyEntity mockFamily = mock(FamilyEntity.class);
             given(mockFamily.getId()).willReturn(UUID.randomUUID());
             given(familyRepository.save(any(FamilyEntity.class))).willReturn(mockFamily);
-
-            // familyService가 생성 후 parent.updateFamilyId()를 호출하미로 User 스터빙 필요
-            User mockParent = mock(User.class);
-            given(userRepository.findById(parentId)).willReturn(Optional.of(mockParent));
 
             FamilyCreateResponse response = familyService.createFamilyGroup(parentId);
 
@@ -65,7 +67,26 @@ class FamilyServiceTest {
         }
 
         @Test
-        @DisplayName("1-1. 가족 구성원 사전 등록 - 성공")
+        @DisplayName("1-B. 가족 그룹 생성 - 실패 (이미 다른 가족 그룹 소속)")
+        void createFamilyGroup_Fail_AlreadyInFamily() {
+            UUID parentId = UUID.randomUUID();
+
+            // 이미 다른 가족 그룹에 소속된 부모
+            User mockParent = mock(User.class);
+            given(mockParent.getFamilyId()).willReturn(UUID.randomUUID()); // 이미 소속됨
+            given(userRepository.findById(parentId)).willReturn(Optional.of(mockParent));
+
+            // when & then
+            ApiException ex = assertThrows(ApiException.class,
+                    () -> familyService.createFamilyGroup(parentId));
+
+            assertEquals(FamilyErrorCode.USER_ALREADY_IN_FAMILY, ex.getErrorCode());
+            // 예외가 발생했으면 DB에 FamilyEntity가 저장되어서는 안 됨
+            verify(familyRepository, never()).save(any(FamilyEntity.class));
+        }
+
+        @Test
+        @DisplayName("1-1. 가족 구성원 사전 듵록 - 성공")
         void preRegisterFamilyMember_Success() {
             UUID familyId = UUID.randomUUID();
             FamilyMemberPreRegisterRequest request = new FamilyMemberPreRegisterRequest("자녀1", "CHILD", LocalDate.now());
@@ -111,11 +132,16 @@ class FamilyServiceTest {
     @DisplayName("가족 합류 및 목록 조회")
     class MemberInteractionTests {
         @Test
-        @DisplayName("3. 가족 합류 - 정상 QR 및 프로필 매칭 성공")
+        @DisplayName("3. 가족 합류 - 성공 (미소속 자녀 + 정상 QR + 프로필 매칭)")
         void joinFamilyGroup_Success() {
             UUID childId = UUID.randomUUID();
             UUID familyId = UUID.randomUUID();
             String qr = "valid-qr";
+
+            // 새 검증 로직: 서비스가 먼저 자녀 유저를 조회하므로 User 스터빙 선행 필요
+            User mockChild = mock(User.class);
+            given(mockChild.getFamilyId()).willReturn(null); // 어뗤 가족에도 미소속 → 성공 경로
+            given(userRepository.findById(childId)).willReturn(Optional.of(mockChild));
 
             FamilyEntity family = mock(FamilyEntity.class);
             given(family.getId()).willReturn(familyId);
@@ -126,14 +152,31 @@ class FamilyServiceTest {
             given(familyProfileRepository.findByFamilyIdAndNameAndBirthDateAndLinkedUserIdIsNull(any(), any(), any()))
                     .willReturn(Optional.of(profile));
 
-            // joinFamilyGroup이 이제 child.updateFamilyId()를 호출하미로 User 스터빙 필요
-            User mockChild = mock(User.class);
-            given(userRepository.findById(childId)).willReturn(Optional.of(mockChild));
-
             familyService.joinFamilyGroup(childId, qr, "자녀", LocalDate.now());
 
             verify(profile).linkUser(childId);
             verify(mockChild).updateFamilyId(familyId);
+        }
+
+        @Test
+        @DisplayName("3-B. 가족 합류 - 실패 (이미 가족 그룹에 소속된 자녀)")
+        void joinFamilyGroup_Fail_AlreadyInFamily() {
+            UUID childId = UUID.randomUUID();
+            String qr = "valid-qr";
+
+            // 이미 다른 가족 그룹에 소속된 자녀
+            User mockChild = mock(User.class);
+            given(mockChild.getFamilyId()).willReturn(UUID.randomUUID()); // 이미 소속됨
+            given(userRepository.findById(childId)).willReturn(Optional.of(mockChild));
+
+            // when & then
+            ApiException ex = assertThrows(ApiException.class,
+                    () -> familyService.joinFamilyGroup(childId, qr, "자녀", LocalDate.now()));
+
+            assertEquals(FamilyErrorCode.USER_ALREADY_IN_FAMILY, ex.getErrorCode());
+            // 예외가 발생했으면 QR 조회나 프로필에 접근해서는 안 됨
+            verify(familyRepository, never()).findByQrCode(anyString());
+            verify(familyProfileRepository, never()).findByFamilyIdAndNameAndBirthDateAndLinkedUserIdIsNull(any(), any(), any());
         }
 
         @Test
