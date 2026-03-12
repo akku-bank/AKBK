@@ -6,6 +6,7 @@ import com.akku.backend.domain.home.service.HomeService;
 import com.akku.backend.global.dto.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -22,8 +23,11 @@ public class HomeController {
 
     /**
      * 자녀 홈 대시보드 조회
+     * 엔드포인트 접근 권한: CHILD 역할만 허용
+     *
      * @param userId 로그인한 자녀의 ID
      */
+    @PreAuthorize("hasRole('CHILD')")
     @GetMapping
     public ResponseEntity<ApiResponse<ChildHomeResponse>> getChildHome(
             @AuthenticationPrincipal UUID userId
@@ -38,8 +42,11 @@ public class HomeController {
 
     /**
      * 부모 대시보드 홈 조회
+     * 엔드포인트 접근 권한: PARENT 역할만 허용
+     *
      * @param userId 로그인한 부모의 ID
      */
+    @PreAuthorize("hasRole('PARENT')")
     @GetMapping("/parent")
     public ResponseEntity<ApiResponse<ParentHomeResponse>> getParentHome(
             @AuthenticationPrincipal UUID userId
