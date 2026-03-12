@@ -112,7 +112,7 @@ public class SsafyFinanceService {
     }
 
     /**
-     * 계좌 생성 (SSAFY 금융 API 호출)
+     * 계좌 생성
      * @param userKey 금융망 사용자 키
      * @param accountTypeUniqueNo 상품 고유번호
      */
@@ -157,6 +157,72 @@ public class SsafyFinanceService {
             return response.data().rec();
         }
         
+        return Collections.emptyList();
+    }
+
+    /**
+     * 계좌 이체
+     */
+    public FinanceTransferResponse.Rec transfer(String userKey, String withdrawalBankCode, String withdrawalAccountNo, String depositBankCode, String depositAccountNo, Long amount) {
+        FinanceRequestHeader header = createHeader("createDemandDepositAccountTransfer", "createDemandDepositAccountTransfer", userKey);
+        
+        FinanceTransferRequest data = new FinanceTransferRequest(
+                depositBankCode, // 입금은행
+                depositAccountNo,
+                amount,
+                withdrawalBankCode, // 출금은행
+                withdrawalAccountNo,
+                "송금",
+                "이체"
+        );
+
+        FinanceRequest<FinanceTransferRequest> request = new FinanceRequest<>(header, data);
+
+        FinanceResponse<FinanceTransferResponse> response = restClient.post()
+                .uri("/edu/demandDeposit/updateDemandDepositAccountTransfer")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(request)
+                .retrieve()
+                .body(new ParameterizedTypeReference<>() {});
+
+        validateResponse(response);
+        if (response != null && response.data() != null && response.data().rec() != null && !response.data().rec().isEmpty()) {
+            return response.data().rec().get(0);
+        }
+
+        throw new RuntimeException("금융망 이체 처리 실패");
+    }
+
+    /**
+     * 계좌 거래 내역 조회
+     */
+    public List<FinanceTransactionHistoryResponse.TransactionDetails> getTransactionHistory(
+            String userKey, String accountNo, String startDate, String endDate) {
+        
+        FinanceRequestHeader header = createHeader("inquireTransactionHistoryList", "inquireTransactionHistoryList", userKey);
+        
+        FinanceTransactionHistoryRequest data = new FinanceTransactionHistoryRequest(
+                accountNo,
+                startDate,
+                endDate,
+                "A", // 전체
+                "DESC" // 최신순
+        );
+
+        FinanceRequest<FinanceTransactionHistoryRequest> request = new FinanceRequest<>(header, data);
+
+        FinanceResponse<FinanceTransactionHistoryResponse> response = restClient.post()
+                .uri("/edu/demandDeposit/inquireTransactionHistoryList")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(request)
+                .retrieve()
+                .body(new ParameterizedTypeReference<>() {});
+
+        validateResponse(response);
+        if (response != null && response.data() != null && response.data().rec() != null && response.data().rec().list() != null) {
+            return response.data().rec().list();
+        }
+
         return Collections.emptyList();
     }
 

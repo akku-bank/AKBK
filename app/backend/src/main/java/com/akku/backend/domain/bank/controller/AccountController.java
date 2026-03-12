@@ -6,6 +6,7 @@ import com.akku.backend.global.dto.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -21,7 +22,7 @@ public class AccountController {
     @Operation(summary = "계좌 생성", description = "부모가 자녀의 가상 계좌를 생성합니다.")
     @PostMapping
     public ApiResponse<AccountCreateResponse> createAccount(
-            @RequestParam UUID parentId, 
+            @AuthenticationPrincipal UUID parentId, 
             @RequestBody AccountCreateRequest request
     ) {
         AccountCreateResponse response = accountService.createAccount(parentId, request);
@@ -31,7 +32,7 @@ public class AccountController {
     @Operation(summary = "내 계좌 목록 조회", description = "로그인한 사용자의 모든 연동 계좌 목록을 조회합니다.")
     @GetMapping("/me")
     public ApiResponse<AccountListResponse> getMyAccounts(
-            @RequestParam UUID userId
+            @AuthenticationPrincipal UUID userId
     ) {
         AccountListResponse response = accountService.getMyAccounts(userId);
         return ApiResponse.success("계좌 목록 조회 성공", response);
@@ -40,10 +41,20 @@ public class AccountController {
     @Operation(summary = "타행 계좌 연동", description = "타행 계좌를 서비스에 연동합니다.")
     @PostMapping("/link")
     public ApiResponse<Void> linkExternalAccount(
-            @RequestParam UUID userId,
+            @AuthenticationPrincipal UUID userId,
             @RequestBody AccountLinkRequest request
     ) {
         accountService.linkExternalAccount(userId, request);
         return ApiResponse.success("계좌 연동 성공");
+    }
+
+    @Operation(summary = "계좌 이체", description = "입력받은 계좌/금액으로 송금 처리 후 잔액 갱신 및 내역을 생성합니다.")
+    @PostMapping("/transfers")
+    public ApiResponse<TransferResponse> transfer(
+            @AuthenticationPrincipal UUID userId,
+            @RequestBody TransferRequest request
+    ) {
+        TransferResponse response = accountService.transfer(userId, request);
+        return ApiResponse.success("계좌 이체 성공", response);
     }
 }

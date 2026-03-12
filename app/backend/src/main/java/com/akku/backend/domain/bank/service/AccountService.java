@@ -8,9 +8,11 @@ import com.akku.backend.domain.bank.dto.*;
 import com.akku.backend.domain.bank.entity.Account;
 import com.akku.backend.domain.bank.repository.AccountRepository;
 import com.akku.backend.domain.user.exception.UserErrorCode;
+import com.akku.backend.domain.bank.exception.BankErrorCode;
 import com.akku.backend.global.error.ApiException;
 import com.akku.backend.global.finance.dto.FinanceAccountCreateResponse;
 import com.akku.backend.global.finance.dto.FinanceAccountListResponse;
+import com.akku.backend.global.finance.dto.FinanceTransferResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -102,5 +104,48 @@ public class AccountService {
                 .build();
 
         accountRepository.save(account);
+    }
+
+    /**
+     * 계좌 이체
+     */
+    @Transactional
+    public TransferResponse transfer(UUID userId, TransferRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ApiException(UserErrorCode.USER_NOT_FOUND));
+
+        // PIN 검증
+        if (user.getPinPassword() == null || !user.getPinPassword().equals(request.pin())) {
+            throw new ApiException(AuthErrorCode.PIN_MISMATCH);
+        }
+
+        // 출금 계좌 조회
+        Account withdrawalAccount = accountRepository.findById(UUID.fromString(request.withdrawalAccountId()))
+                .orElseThrow(() -> new ApiException(BankErrorCode.ACCOUNT_NOT_FOUND));
+        
+        if (!withdrawalAccount.getUserId().equals(userId)) {
+            throw new ApiException(AuthErrorCode.ACCESS_DENIED);
+        }
+
+        // 입금 계좌 조회
+        Account depositAccount = accountRepository.findById(UUID.fromString(request.targetAccountId()))
+                .orElseThrow(() -> new ApiException(BankErrorCode.ACCOUNT_NOT_FOUND));
+
+        // 잔액 확인
+        if (withdrawalAccount.getBalance() < request.amount()) {
+            throw new ApiException(BankErrorCode.INSUFFICIENT_BALANCE);
+        }
+
+        // 금융망 API 호출
+        FinanceTransferResponse.Rec finRec = ssafyFinanceService.transfer(
+                user.getUserKey(),
+                withdrawalAccount.getBankCode(),
+                withdrawalAccount.getAccountNumber(),
+                depositAccount.getBankCode(),
+                depositAccount.getAccountNumber(),
+                request.amount()
+        );
+
+        return new TransferResponse(finRec.transactionUniqueNo(), withdrawalAccount.getBalance() - request.amount());
     }
 }
