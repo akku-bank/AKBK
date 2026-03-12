@@ -6,6 +6,8 @@ import com.akku.backend.domain.family.entity.FamilyProfileEntity;
 import com.akku.backend.domain.family.exception.FamilyErrorCode;
 import com.akku.backend.domain.family.repository.FamilyProfileRepository;
 import com.akku.backend.domain.family.repository.FamilyRepository;
+import com.akku.backend.domain.auth.entity.User;
+import com.akku.backend.domain.auth.repository.UserRepository;
 import com.akku.backend.global.error.ApiException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -38,13 +40,22 @@ class FamilyServiceTest {
     @Mock
     private FamilyProfileRepository familyProfileRepository;
 
+    @Mock
+    private UserRepository userRepository;
+
     @Nested
     @DisplayName("가족 그룹 생성 및 등록")
     class RegistrationTests {
         @Test
-        @DisplayName("1. 가족 그룹 생성 - 성공")
+        @DisplayName("1. 가족 그룹 생성 - 성공 (미소속 부모)")
         void createFamilyGroup_Success() {
             UUID parentId = UUID.randomUUID();
+
+            // 새 검증 로직: 서비스가 먼저 유저를 조회하므로 User 스터빙 선행 필요
+            User mockParent = mock(User.class);
+            given(mockParent.getFamilyId()).willReturn(null); // 어떤 가족에도 미소속 → 성공 경로
+            given(userRepository.findById(parentId)).willReturn(Optional.of(mockParent));
+
             FamilyEntity mockFamily = mock(FamilyEntity.class);
             given(mockFamily.getId()).willReturn(UUID.randomUUID());
             given(familyRepository.save(any(FamilyEntity.class))).willReturn(mockFamily);
@@ -52,10 +63,30 @@ class FamilyServiceTest {
             FamilyCreateResponse response = familyService.createFamilyGroup(parentId);
 
             assertNotNull(response.familyId());
+            verify(mockParent).updateFamilyId(mockFamily.getId());
         }
 
         @Test
-        @DisplayName("1-1. 가족 구성원 사전 등록 - 성공")
+        @DisplayName("1-B. 가족 그룹 생성 - 실패 (이미 다른 가족 그룹 소속)")
+        void createFamilyGroup_Fail_AlreadyInFamily() {
+            UUID parentId = UUID.randomUUID();
+
+            // 이미 다른 가족 그룹에 소속된 부모
+            User mockParent = mock(User.class);
+            given(mockParent.getFamilyId()).willReturn(UUID.randomUUID()); // 이미 소속됨
+            given(userRepository.findById(parentId)).willReturn(Optional.of(mockParent));
+
+            // when & then
+            ApiException ex = assertThrows(ApiException.class,
+                    () -> familyService.createFamilyGroup(parentId));
+
+            assertEquals(FamilyErrorCode.USER_ALREADY_IN_FAMILY, ex.getErrorCode());
+            // 예외가 발생했으면 DB에 FamilyEntity가 저장되어서는 안 됨
+            verify(familyRepository, never()).save(any(FamilyEntity.class));
+        }
+
+        @Test
+        @DisplayName("1-1. 가족 구성원 사전 듵록 - 성공")
         void preRegisterFamilyMember_Success() {
             UUID familyId = UUID.randomUUID();
             FamilyMemberPreRegisterRequest request = new FamilyMemberPreRegisterRequest("자녀1", "CHILD", LocalDate.now());
@@ -101,11 +132,16 @@ class FamilyServiceTest {
     @DisplayName("가족 합류 및 목록 조회")
     class MemberInteractionTests {
         @Test
-        @DisplayName("3. 가족 합류 - 정상 QR 및 프로필 매칭 성공")
+        @DisplayName("3. 가족 합류 - 성공 (미소속 자녀 + 정상 QR + 프로필 매칭)")
         void joinFamilyGroup_Success() {
             UUID childId = UUID.randomUUID();
             UUID familyId = UUID.randomUUID();
             String qr = "valid-qr";
+
+            // 새 검증 로직: 서비스가 먼저 자녀 유저를 조회하므로 User 스터빙 선행 필요
+            User mockChild = mock(User.class);
+            given(mockChild.getFamilyId()).willReturn(null); // 어뗤 가족에도 미소속 → 성공 경로
+            given(userRepository.findById(childId)).willReturn(Optional.of(mockChild));
 
             FamilyEntity family = mock(FamilyEntity.class);
             given(family.getId()).willReturn(familyId);
@@ -119,6 +155,28 @@ class FamilyServiceTest {
             familyService.joinFamilyGroup(childId, qr, "자녀", LocalDate.now());
 
             verify(profile).linkUser(childId);
+            verify(mockChild).updateFamilyId(familyId);
+        }
+
+        @Test
+        @DisplayName("3-B. 가족 합류 - 실패 (이미 가족 그룹에 소속된 자녀)")
+        void joinFamilyGroup_Fail_AlreadyInFamily() {
+            UUID childId = UUID.randomUUID();
+            String qr = "valid-qr";
+
+            // 이미 다른 가족 그룹에 소속된 자녀
+            User mockChild = mock(User.class);
+            given(mockChild.getFamilyId()).willReturn(UUID.randomUUID()); // 이미 소속됨
+            given(userRepository.findById(childId)).willReturn(Optional.of(mockChild));
+
+            // when & then
+            ApiException ex = assertThrows(ApiException.class,
+                    () -> familyService.joinFamilyGroup(childId, qr, "자녀", LocalDate.now()));
+
+            assertEquals(FamilyErrorCode.USER_ALREADY_IN_FAMILY, ex.getErrorCode());
+            // 예외가 발생했으면 QR 조회나 프로필에 접근해서는 안 됨
+            verify(familyRepository, never()).findByQrCode(anyString());
+            verify(familyProfileRepository, never()).findByFamilyIdAndNameAndBirthDateAndLinkedUserIdIsNull(any(), any(), any());
         }
 
         @Test
@@ -158,14 +216,21 @@ class FamilyServiceTest {
         @DisplayName("8-A. 연결 해제 - 연동된 유저는 Soft Disconnect")
         void removeFamilyMember_Soft() {
             UUID familyId = UUID.randomUUID();
+            UUID linkedUserId = UUID.randomUUID();
+
             FamilyProfileEntity profile = mock(FamilyProfileEntity.class);
             given(profile.getFamilyId()).willReturn(familyId);
-            given(profile.getLinkedUserId()).willReturn(UUID.randomUUID());
+            given(profile.getLinkedUserId()).willReturn(linkedUserId);
             given(familyProfileRepository.findById(any())).willReturn(Optional.of(profile));
+
+            // removeFamilyMember가 이제 linkedUser.updateFamilyId(null)을 호출하미로 User 스터빙 필요
+            User linkedUser = mock(User.class);
+            given(userRepository.findById(linkedUserId)).willReturn(Optional.of(linkedUser));
 
             familyService.removeFamilyMember(familyId, UUID.randomUUID());
 
             verify(profile).unlinkUser();
+            verify(linkedUser).updateFamilyId(null);
             verify(familyProfileRepository, never()).delete(any());
         }
     }

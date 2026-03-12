@@ -83,8 +83,22 @@ public class User {
         this.role = role;
     }
 
+    public void updateName(String name) {
+        this.name = name;
+    }
+
     public void deactivate() {
         this.isActive = false;
+    }
+
+    /**
+     * 가족 그룹 연동 시 familyId를 업데이트합니다.
+     * null 전달 시 연동 해제(Soft Disconnect)에도 재사용 가능합니다.
+     *
+     * @param familyId 연동할 가족 그룹 ID (연동 해제 시 null)
+     */
+    public void updateFamilyId(UUID familyId) {
+        this.familyId = familyId;
     }
 }
 
