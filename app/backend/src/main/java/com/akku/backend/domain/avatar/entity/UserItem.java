@@ -1,6 +1,6 @@
 package com.akku.backend.domain.avatar.entity;
 
-import com.akku.backend.domain.auth.entity.User; // ⭐️ User 엔티티 경로 본인 프로젝트에 맞게 확인!
+import com.akku.backend.domain.auth.entity.User;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
