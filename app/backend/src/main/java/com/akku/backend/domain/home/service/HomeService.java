@@ -72,8 +72,6 @@ public class HomeService {
         User parent = userRepository.findById(userId)
                 .orElseThrow(() -> new ApiException(UserErrorCode.USER_NOT_FOUND));
 
-        // 🚨 [확인 필요] User 엔티티에 family_id가 어떻게 매핑되어 있는지 몰라서 임의의 Getter(getFamilyId)를 적어뒀어!
-        // 만약 객체로 매핑되어 있다면 parent.getFamily().getId() 등으로 네 코드에 맞게 수정해 줘.
         UUID familyId = parent.getFamilyId();
 
         // 2. 가족 구성원 프로필(빈 의자 포함) 목록 조회

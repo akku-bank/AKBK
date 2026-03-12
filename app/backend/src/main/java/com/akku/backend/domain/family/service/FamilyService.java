@@ -37,15 +37,20 @@ public class FamilyService {
     @Transactional
     public FamilyCreateResponse createFamilyGroup(UUID parentId) {
 
-        // 1. 빈 가족 그룹 엔티티 생성 (QR 코드는 별도 API로 발급)
-        FamilyEntity newFamily = FamilyEntity.builder().build();
-
-        // 2. DB 저장 (UUID 및 createdAt 자동 생성)
-        FamilyEntity savedFamily = familyRepository.save(newFamily);
-
-        // 3. 부모(User)의 familyId를 방금 생성한 그룹의 ID로 업데이트
+        // 1. 부모 유저 조회 — save 이전에 검증하여 불필요한 DB 저장을 방지
         User parent = userRepository.findById(parentId)
                 .orElseThrow(() -> new ApiException(UserErrorCode.USER_NOT_FOUND));
+
+        // 2. 이미 가족 그룹에 소속된 경우 중복 생성 방지
+        if (parent.getFamilyId() != null) {
+            throw new ApiException(FamilyErrorCode.USER_ALREADY_IN_FAMILY);
+        }
+
+        // 3. 빈 가족 그룹 엔티티 생성 및 DB 저장 (QR 코드는 별도 API로 발급)
+        FamilyEntity newFamily = FamilyEntity.builder().build();
+        FamilyEntity savedFamily = familyRepository.save(newFamily);
+
+        // 4. 부모(User)의 familyId를 방금 생성한 그룹의 ID로 업데이트
         parent.updateFamilyId(savedFamily.getId());
 
         return new FamilyCreateResponse(savedFamily.getId());
@@ -99,26 +104,33 @@ public class FamilyService {
      */
     @Transactional
     public void joinFamilyGroup(UUID childId, String scannedQrCode, String childName, LocalDate birthDate) {
-        // 1. Repository를 이용해 QR 코드로 가족 찾기
+        // 1. 자녀 유저 조회 — 이후 로직 진행 전에 먼저 유효성 검증 (Fail-Fast)
+        User child = userRepository.findById(childId)
+                .orElseThrow(() -> new ApiException(UserErrorCode.USER_NOT_FOUND));
+
+        // 2. 이미 다른 가족 그룹에 소속된 경우 합류 불가 (FamilyProfile 오염 방어)
+        if (child.getFamilyId() != null) {
+            throw new ApiException(FamilyErrorCode.USER_ALREADY_IN_FAMILY);
+        }
+
+        // 3. QR 코드로 가족 그룹 조회
         FamilyEntity family = familyRepository.findByQrCode(scannedQrCode)
                 .orElseThrow(() -> new ApiException(FamilyErrorCode.INVALID_QR_CODE));
 
-        // 2. 만료 시간 검증 (서비스 단에서 자바 로직으로 처리!)
+        // 4. 만료 시간 검증 (서비스 단에서 자바 로직으로 처리)
         if (family.getQrExpiresAt() != null && family.getQrExpiresAt().isBefore(LocalDateTime.now())) {
             throw new ApiException(FamilyErrorCode.EXPIRED_QR_CODE);
         }
 
-        // 3. 미연동 프로필(FamilyProfile) 중 이름과 생년월일이 일치하는 데이터 매칭
+        // 5. 미연동 프로필(FamilyProfile) 중 이름과 생년월일이 일치하는 데이터 매칭
         FamilyProfileEntity profile = familyProfileRepository
                 .findByFamilyIdAndNameAndBirthDateAndLinkedUserIdIsNull(family.getId(), childName, birthDate)
                 .orElseThrow(() -> new ApiException(FamilyErrorCode.PROFILE_ALREADY_LINKED));
 
-        // 4. 프로필에 유저 ID 연결 (family_profiles.linked_user_id 업데이트)
+        // 6. 프로필에 유저 ID 연결 (family_profiles.linked_user_id 업데이트)
         profile.linkUser(childId);
 
-        // 5. 자녀(User) 테이블의 family_id를 연동된 가족 그룹 ID로 업데이트
-        User child = userRepository.findById(childId)
-                .orElseThrow(() -> new ApiException(UserErrorCode.USER_NOT_FOUND));
+        // 7. 자녀(User)의 family_id를 연동된 가족 그룹 ID로 업데이트
         child.updateFamilyId(family.getId());
     }
 

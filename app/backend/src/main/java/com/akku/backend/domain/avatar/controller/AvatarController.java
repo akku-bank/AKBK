@@ -6,6 +6,7 @@ import com.akku.backend.domain.avatar.service.AvatarItemService;
 import com.akku.backend.global.dto.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -15,6 +16,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/avatars")
 @RequiredArgsConstructor
+@PreAuthorize("hasRole('CHILD')")  // 아바타 도메인은 자녀 전용 — 클래스 수준 선언으로 모든 엔드포인트에 일괄 적용
 public class AvatarController {
 
     private final AvatarItemService avatarItemService;
