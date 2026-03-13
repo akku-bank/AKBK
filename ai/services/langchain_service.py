@@ -1,3 +1,5 @@
+# ai/services/langchain_service.py
+# LangChainService는 RAG 오케스트레이션을 담당하는 서비스 계층입니다.
 from typing import Any
 from uuid import UUID
 
@@ -46,9 +48,8 @@ class LangChainService:
     def select_contexts(
         self,
         docs: list[dict[str, Any]],
-        max_docs: int = 3,
+        max_docs: int = 3, # 상위 3개 문서만 선택 (추후 점수 기준 재정렬 가능)
     ) -> list[dict[str, Any]]:
-        # 현재는 상위 N개만 사용 (추후 점수 기준 재정렬 가능)
         return docs[:max_docs]
 
     def build_prompt(self, question: str, contexts: list[dict[str, Any]]) -> str:
