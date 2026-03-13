@@ -4,11 +4,12 @@ from ai.clients.langgraph_client import LangGraphClient
 from ai.schemas.request import ChatRequest
 from ai.schemas.response import ChatResponse
 from ai.schemas.state import ChatContextState
-
+from ai.services.policy_service import PolicyService
 
 class ChatService:
     def __init__(self) -> None:
         self.langgraph_client = LangGraphClient()
+        self.policy_service = PolicyService()
 
     async def handle_message(self, request: ChatRequest) -> ChatResponse:
         state = ChatContextState(
@@ -21,6 +22,20 @@ class ChatService:
             age_group="elementary",
         )
 
+        # 정책 검사
+        policy_result = self.policy_service.run_policy_gate(state)
+
+        state.policy_decision = policy_result.decision
+        state.policy_reason = policy_result.reason
+
+        # 정책 차단이면 바로 응답
+        if not policy_result.allowed:
+            return ChatResponse(
+                remaining_credits=state.credits_balance,
+                ai_reply=policy_result.message,
+            )
+
+        # 정책 통과 → LangGraph 실행
         result = await self.langgraph_client.generate_answer(state)
 
         # 내부 처리용 메타데이터 반영
