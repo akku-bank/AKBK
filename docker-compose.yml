@@ -55,5 +55,23 @@
       - "9000:8080"
     command: bash -c "python -m pip install --no-cache-dir -r /opt/airflow/requirements.txt && airflow scheduler & airflow webserver"
 
+  ai-server:
+    build:
+      context: .
+      dockerfile: ai/Dockerfile
+    container_name: ai_server
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - .env
+    volumes:    # 코드 변경 시 컨테이너 내부의 /app 디렉토리에 자동 반영
+      - .:/app  # 배포 시 삭제 !!!!!
+    ports:
+      - "8000:8000"
+    restart: always
+    command: uvicorn ai.main:app --host 0.0.0.0 --port 8000 --reload
+
+
 volumes:
   postgres_data:
