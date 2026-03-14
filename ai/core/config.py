@@ -1,20 +1,22 @@
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
-    # LLM / OpenAI / GMS
-    openai_api_key: str
-    openai_model: str = "gpt-4o-mini"
-    openai_base_url: str = "https://gms.ssafy.io/gmsapi/api.openai.com/v1"
+    openai_api_key: str = Field(validation_alias="OPENAI_API_KEY")
+    openai_model: str = Field(default="gpt-4o-mini", validation_alias="OPENAI_MODEL")
+    openai_base_url: str = Field(
+        default="https://gms.ssafy.io/gmsapi/api.openai.com/v1",
+        validation_alias="OPENAI_BASE_URL",
+    )
 
-    # Vector DB
-    vector_db_host: str = "localhost"
-    vector_db_port: int = 5432
-    vector_db_name: str = "vector_db"
-    vector_db_user: str = "app_user"
-    vector_db_password: str = "app_pw"
+    vector_db_host: str = Field(default="localhost", validation_alias="VECTOR_DB_HOST")
+    vector_db_port: int = Field(default=5432, validation_alias="VECTOR_DB_PORT")
+    vector_db_name: str = Field(default="vector_db", validation_alias="VECTOR_DB_NAME")
+    vector_db_user: str = Field(default="app_user", validation_alias="DB_USERNAME")
+    vector_db_password: str = Field(default="app_pw", validation_alias="DB_PASSWORD")
 
     def vector_db_dsn(self) -> str:
         return (

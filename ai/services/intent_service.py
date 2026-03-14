@@ -7,6 +7,7 @@ class IntentService:
         self.llm_client = LLMClient()
 
     def classify_message(self, message: str) -> ClassificationResult:
+        # 질문 분류용 LLM 호출 결과를 내부 ClassificationResult 모델로 변환합니다.
         result = self.llm_client.classify_message(message)
 
         return ClassificationResult(

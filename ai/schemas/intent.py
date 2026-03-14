@@ -1,7 +1,7 @@
 from enum import Enum
 from pydantic import BaseModel
 
-class Intent(str, Enum):
+class IntentType(str, Enum):
     DEFINE = "DEFINE"
     HINT = "HINT"
     EXPLAIN = "EXPLAIN"
