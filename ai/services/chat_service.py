@@ -83,6 +83,11 @@ class ChatService:
         state.route = result["route"]
         state.hint_level = result["hint_level"]
 
+        print("policy_decision =", state.policy_decision)
+        print("policy_reason =", state.policy_reason)
+        print("is_finance_related =", state.is_finance_related)
+        print("is_cheating =", state.is_cheating)
+        print("intent =", state.intent)
         return ChatResponse(
             remaining_credits=state.credits_balance,
             ai_reply=result["answer"],
