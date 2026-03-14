@@ -15,6 +15,11 @@ class Settings(BaseSettings):
     vector_db_user: str = Field(validation_alias="DB_USERNAME")
     vector_db_password: str = Field(validation_alias="DB_PASSWORD")
 
+    def require_openai_api_key(self) -> str:
+        if not self.openai_api_key:
+            raise RuntimeError("OPENAI_API_KEY가 설정되지 않았습니다.")
+        return self.openai_api_key
+
     def vector_db_dsn(self) -> str:
         return (
             f"host={self.vector_db_host} "

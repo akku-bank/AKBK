@@ -14,7 +14,7 @@ class LLMClient:
 
     def __init__(self) -> None:
         self.client = OpenAI(
-            api_key=settings.openai_api_key,
+            api_key=settings.require_openai_api_key(),
             base_url=settings.openai_base_url
         )
         self.model = settings.openai_model
@@ -137,7 +137,7 @@ class LLMClient:
         except ImportError as exc:
             raise RuntimeError(
                 "langchain_openai 패키지가 필요합니다. "
-                "RagClient를 사용하려면 관련 의존성을 설치해야 합니다."
+                "LLMClient를 사용하려면 관련 의존성을 설치해야 합니다."
             ) from exc
         return OpenAIEmbeddings
 
@@ -148,6 +148,6 @@ class LLMClient:
         except ImportError as exc:
             raise RuntimeError(
                 "langchain_openai 패키지가 필요합니다. "
-                "RagClient를 사용하려면 관련 의존성을 설치해야 합니다."
+                "LLMClient를 사용하려면 관련 의존성을 설치해야 합니다."
             ) from exc
         return ChatOpenAI
