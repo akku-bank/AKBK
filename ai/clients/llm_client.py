@@ -1,9 +1,11 @@
+import json
 from typing import Any
 
-from ai.core.config import Settings
+from openai import OpenAI
+from ai.core.config import settings
 
 
-class LangChainClient:
+class LLMClient:
     # 현재 프로젝트에서 사용하는 모델 설정은 코드 상수로 고정합니다.
     EMBEDDING_MODEL = "text-embedding-3-small"
     CHAT_MODEL = "gpt-4o-mini"
@@ -11,12 +13,57 @@ class LangChainClient:
     MAX_TOKENS = 512
 
     def __init__(self) -> None:
-        # 실제 LangChain 객체 생성은 지연 초기화로 처리합니다.
-        # 패키지가 설치되지 않은 환경에서도 모듈 import 자체는 가능하게 두고,
-        # 실제 사용 시점에만 명확한 오류를 내도록 합니다.
+        self.client = OpenAI(
+            api_key=settings.openai_api_key,
+            base_url=settings.openai_base_url
+        )
+        self.model = settings.openai_model
+
+        # Rag용 LangChain 객체는 지연 초기화
         self._embedding_client: Any | None = None
-        self._chat_client: Any | None = None
-        self._prompt_template: Any | None = None
+        self._chat_client: Any | None = None        
+
+    def classify_message(self, message: str) -> dict:
+        system_prompt = """
+당신은 어린이 금융 퀴즈 챗봇의 질문 분류기입니다.
+
+사용자 메시지를 보고 아래 JSON 형식으로만 응답하세요.
+
+{
+  "is_finance_related": true 또는 false,
+  "is_cheating": true 또는 false,
+  "intent": "DEFINE" | "HINT" | "EXPLAIN" | "OTHER"
+}
+
+판단 기준:
+- is_finance_related:
+  금융/경제/저축/투자/이자/퀴즈 풀이 맥락이면 true
+  완전히 무관한 일반 대화면 false
+
+- is_cheating:
+  정답 직접 요청, 답/보기 번호 요청, 답만 달라는 요청이면 true
+  힌트 요청이나 개념 설명 요청은 false
+
+- intent:
+  DEFINE: 용어 뜻/정의 요청
+  HINT: 문제 풀이 힌트 요청
+  EXPLAIN: 개념 설명, 이유 설명 요청
+  OTHER: 그 외
+
+반드시 JSON만 출력하세요.
+"""
+
+        response = self.client.chat.completions.create(
+            model=self.model,
+            temperature=0,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": message},
+            ],
+        )
+
+        content = response.choices[0].message.content
+        return json.loads(content)
 
     async def create_query_embedding(self, query: str) -> list[float]:
         # 검색용 질의를 임베딩 벡터로 변환합니다.
@@ -32,17 +79,7 @@ class LangChainClient:
 
         return [float(value) for value in embedding]
 
-    def build_prompt(self, question: str, contexts: list[str]) -> str:
-        # 검색된 문서를 번호 목록으로 정리한 뒤, 질문과 함께 최종 프롬프트를 생성합니다.
-        normalized_question = question.strip()
-        if not normalized_question:
-            raise ValueError("프롬프트에 사용할 question은 비어 있을 수 없습니다.")
-
-        prompt_template = self._get_prompt_template()
-        context_block = self._build_context_block(contexts)
-        return prompt_template.format(question=normalized_question, context=context_block)
-
-    async def call_llm(self, prompt: str) -> str:
+    async def generate_text(self, prompt: str) -> str:
         # 완성된 프롬프트를 챗 모델에 전달하고 문자열 답변만 추출합니다.
         normalized_prompt = prompt.strip()
         if not normalized_prompt:
@@ -69,25 +106,14 @@ class LangChainClient:
 
         return answer
 
-    def _build_context_block(self, contexts: list[str]) -> str:
-        # 검색 결과가 없더라도 프롬프트 규칙상 문맥 부재를 명시해 모델 응답을 안정화합니다.
-        normalized_contexts = [context.strip() for context in contexts if context and context.strip()]
-        if not normalized_contexts:
-            return "참고할 컨텍스트가 없습니다."
-
-        return "\n\n".join(
-            f"[문서 {index}]\n{context}"
-            for index, context in enumerate(normalized_contexts, start=1)
-        )
-
     def _get_embedding_client(self) -> Any:
         # LangChain OpenAI 임베딩 클라이언트를 최초 1회만 생성합니다.
         if self._embedding_client is None:
             embeddings_cls = self._import_openai_embeddings()
             self._embedding_client = embeddings_cls(
                 model=self.EMBEDDING_MODEL,
-                api_key=Settings.require_openai_api_key(),
-                base_url=Settings.OPENAI_BASE_URL,
+                api_key=settings.require_openai_api_key(),
+                base_url=settings.openai_base_url,
             )
         return self._embedding_client
 
@@ -99,35 +125,10 @@ class LangChainClient:
                 model=self.CHAT_MODEL,
                 temperature=self.TEMPERATURE,
                 max_tokens=self.MAX_TOKENS,
-                api_key=Settings.require_openai_api_key(),
-                base_url=Settings.OPENAI_BASE_URL,
+                api_key=settings.require_openai_api_key(),
+                base_url=settings.openai_base_url,
             )
         return self._chat_client
-
-    def _get_prompt_template(self) -> Any:
-        # PromptTemplate를 재사용해서 프롬프트 규칙을 한 곳에서 관리합니다.
-        if self._prompt_template is None:
-            prompt_cls = self._import_prompt_template()
-            self._prompt_template = prompt_cls.from_template(
-                """
-당신은 어린이 금융 학습을 돕는 AI 튜터입니다.
-
-아래 규칙을 반드시 지켜 답변하세요.
-1. 답변은 한국어로 작성합니다.
-2. 제공된 컨텍스트를 가장 우선적으로 사용합니다.
-3. 컨텍스트에 근거가 없으면 추측하지 말고 모른다고 답변합니다.
-4. 어린이가 이해할 수 있도록 쉬운 표현을 사용합니다.
-
-[컨텍스트]
-{context}
-
-[질문]
-{question}
-
-[답변]
-                """.strip()
-            )
-        return self._prompt_template
 
     def _import_openai_embeddings(self) -> Any:
         # 의존성이 없을 때는 설치가 필요하다는 메시지를 명확히 전달합니다.
@@ -136,7 +137,7 @@ class LangChainClient:
         except ImportError as exc:
             raise RuntimeError(
                 "langchain_openai 패키지가 필요합니다. "
-                "LangChainClient를 사용하려면 관련 의존성을 설치해야 합니다."
+                "RagClient를 사용하려면 관련 의존성을 설치해야 합니다."
             ) from exc
         return OpenAIEmbeddings
 
@@ -147,17 +148,6 @@ class LangChainClient:
         except ImportError as exc:
             raise RuntimeError(
                 "langchain_openai 패키지가 필요합니다. "
-                "LangChainClient를 사용하려면 관련 의존성을 설치해야 합니다."
+                "RagClient를 사용하려면 관련 의존성을 설치해야 합니다."
             ) from exc
         return ChatOpenAI
-
-    def _import_prompt_template(self) -> Any:
-        # 프롬프트 템플릿도 LangChain core 의존성으로 분리되어 있을 수 있습니다.
-        try:
-            from langchain_core.prompts import PromptTemplate
-        except ImportError as exc:
-            raise RuntimeError(
-                "langchain_core 패키지가 필요합니다. "
-                "LangChainClient를 사용하려면 관련 의존성을 설치해야 합니다."
-            ) from exc
-        return PromptTemplate
