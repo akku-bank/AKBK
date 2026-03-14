@@ -32,6 +32,9 @@ class ChatService:
         state.policy_reason = policy_result.reason
 
         if not policy_result.allowed:
+            # 디버깅용 로그
+            print("policy_decision =", state.policy_decision)
+            print("policy_reason =", state.policy_reason)
             return ChatResponse(
                 remaining_credits=state.credits_balance,
                 ai_reply=policy_result.message or "",
@@ -47,6 +50,13 @@ class ChatService:
         if state.is_cheating:
             state.policy_decision = PolicyDecision.DENY
             state.policy_reason = PolicyReason.CHEATING
+    
+            # 디버깅용 로그
+            print("policy_decision =", state.policy_decision)
+            print("policy_reason =", state.policy_reason)
+            print("is_finance_related =", state.is_finance_related)
+            print("is_cheating =", state.is_cheating)
+            print("intent =", state.intent)
             return ChatResponse(
                 remaining_credits=state.credits_balance,
                 ai_reply="정답은 직접 제공할 수 없습니다.",
@@ -55,6 +65,13 @@ class ChatService:
         if not state.is_finance_related:
             state.policy_decision = PolicyDecision.DENY
             state.policy_reason = PolicyReason.OUT_OF_SCOPE
+
+            # 디버깅용 로그
+            print("policy_decision =", state.policy_decision)
+            print("policy_reason =", state.policy_reason)
+            print("is_finance_related =", state.is_finance_related)
+            print("is_cheating =", state.is_cheating)
+            print("intent =", state.intent)
             return ChatResponse(
                 remaining_credits=state.credits_balance,
                 ai_reply="금융 관련 질문만 가능합니다.",
@@ -65,12 +82,6 @@ class ChatService:
 
         state.route = result["route"]
         state.hint_level = result["hint_level"]
-
-        print("policy_decision =", state.policy_decision)
-        print("policy_reason =", state.policy_reason)
-        print("is_finance_related =", state.is_finance_related)
-        print("is_cheating =", state.is_cheating)
-        print("intent =", state.intent)
 
         return ChatResponse(
             remaining_credits=state.credits_balance,
