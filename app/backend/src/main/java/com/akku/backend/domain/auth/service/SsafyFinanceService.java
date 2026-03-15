@@ -232,6 +232,81 @@ public class SsafyFinanceService {
     public void linkAccount(String userKey, String bankCode, String accountNumber) {
     }
 
+    /**
+     * 카드 상품 목록 조회
+     */
+    public List<FinanceCardProductListResponse.CardProductDetails> getCardProducts(String userKey) {
+        FinanceRequestHeader header = createHeader("inquireCreditCardList", "inquireCreditCardList", userKey);
+        
+        FinanceRequest<Map<String, String>> request = new FinanceRequest<>(header, Map.of());
+
+        FinanceResponse<FinanceCardProductListResponse> response = restClient.post()
+                .uri("/edu/creditCard/inquireCreditCardList")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(request)
+                .retrieve()
+                .body(new ParameterizedTypeReference<>() {});
+
+        validateResponse(response);
+        if (response != null && response.data() != null && response.data().rec() != null) {
+            return response.data().rec();
+        }
+        
+        return Collections.emptyList();
+    }
+
+    /**
+     * 카드 생성
+     */
+    public FinanceCardCreateResponse.Rec createCard(String userKey, String cardUniqueNo, String withdrawalAccountNo, String withdrawalDate) {
+        FinanceRequestHeader header = createHeader("createCreditCard", "createCreditCard", userKey);
+        
+        FinanceCardCreateRequest data = new FinanceCardCreateRequest(
+                cardUniqueNo,
+                withdrawalAccountNo,
+                withdrawalDate
+        );
+
+        FinanceRequest<FinanceCardCreateRequest> request = new FinanceRequest<>(header, data);
+
+        FinanceResponse<FinanceCardCreateResponse> response = restClient.post()
+                .uri("/edu/creditCard/createCreditCard")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(request)
+                .retrieve()
+                .body(new ParameterizedTypeReference<>() {});
+
+        validateResponse(response);
+        if (response != null && response.data() != null && response.data().rec() != null) {
+            return response.data().rec();
+        }
+        
+        throw new RuntimeException("금융망 카드 생성 실패");
+    }
+
+    /**
+     * 내 카드 목록 조회
+     */
+    public List<FinanceUserCardListResponse.UserCardDetails> getUserCards(String userKey) {
+        FinanceRequestHeader header = createHeader("inquireSignUpCreditCardList", "inquireSignUpCreditCardList", userKey);
+        
+        FinanceRequest<Map<String, String>> request = new FinanceRequest<>(header, Map.of());
+
+        FinanceResponse<FinanceUserCardListResponse> response = restClient.post()
+                .uri("/edu/creditCard/inquireSignUpCreditCardList")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(request)
+                .retrieve()
+                .body(new ParameterizedTypeReference<>() {});
+
+        validateResponse(response);
+        if (response != null && response.data() != null && response.data().rec() != null) {
+            return response.data().rec();
+        }
+        
+        return Collections.emptyList();
+    }
+
     private void validateResponse(FinanceResponse<?> response) {
         if (response == null || response.header() == null) {
             throw new RuntimeException("금융 API 응답이 비어있습니다.");
