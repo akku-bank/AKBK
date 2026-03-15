@@ -32,4 +32,11 @@ public record ApiResponse<T>(
                 null
         );
     }
+
+    /*
+        데이터 없이 메세지만 반환할 때 사용하는 메서드 추가
+     */
+    public static <T> ApiResponse<T> success(String message) {
+        return new ApiResponse<>(true, message, null, null, null);
+    }
 }
