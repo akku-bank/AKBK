@@ -16,6 +16,7 @@ import java.util.UUID;
  */
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Builder
 @Entity
 @IdClass(UserQuizId.class)
 @Table(name = "user_quizzes")
@@ -29,11 +30,19 @@ public class UserQuiz {
     @Column(name = "quiz_id", nullable = false)
     private UUID quizId;
 
+    /**
+     * 초기 크레딧 100 — Builder 사용 시 명시적으로 지정하지 않아도 100으로 초기화됨.
+     */
+    @Builder.Default
     @Column(name = "remaining_credits", nullable = false)
-    private int remainingCredits;
+    private int remainingCredits = 100;
 
+    /**
+     * 제출 여부 — Builder 사용 시 기본값 false.
+     */
+    @Builder.Default
     @Column(name = "is_submitted", nullable = false)
-    private boolean isSubmitted;
+    private boolean isSubmitted = false;
 
     /**
      * 정답 여부 — 아직 제출 전이면 null
@@ -47,14 +56,6 @@ public class UserQuiz {
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
-
-    @Builder
-    public UserQuiz(UUID userId, UUID quizId, int remainingCredits) {
-        this.userId = userId;
-        this.quizId = quizId;
-        this.remainingCredits = remainingCredits;
-        this.isSubmitted = false;
-    }
 
     /**
      * 정답 제출 시 결과를 반영

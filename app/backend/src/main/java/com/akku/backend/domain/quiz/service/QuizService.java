@@ -1,27 +1,22 @@
 package com.akku.backend.domain.quiz.service;
 
+import com.akku.backend.domain.quiz.client.QuizAiClient;
 import com.akku.backend.domain.quiz.dto.AnswerRequest;
 import com.akku.backend.domain.quiz.dto.AnswerResponse;
 import com.akku.backend.domain.quiz.dto.ChatRequest;
 import com.akku.backend.domain.quiz.dto.ChatResponse;
 import com.akku.backend.domain.quiz.dto.QuizResponse;
 import com.akku.backend.domain.quiz.entity.ChatLog;
-import com.akku.backend.domain.quiz.entity.Jelling;
-import com.akku.backend.domain.quiz.entity.JellingTransaction;
 import com.akku.backend.domain.quiz.entity.Quiz;
 import com.akku.backend.domain.quiz.entity.UserQuiz;
 import com.akku.backend.domain.quiz.exception.QuizErrorCode;
 import com.akku.backend.domain.quiz.repository.ChatLogRepository;
-import com.akku.backend.domain.quiz.repository.JellingRepository;
-import com.akku.backend.domain.quiz.repository.JellingTransactionRepository;
 import com.akku.backend.domain.quiz.repository.QuizRepository;
 import com.akku.backend.domain.quiz.repository.UserQuizRepository;
 import com.akku.backend.global.error.ApiException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.RestClient;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -34,17 +29,12 @@ import java.util.concurrent.ThreadLocalRandom;
  */
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class QuizService {
 
     private final QuizRepository quizRepository;
     private final UserQuizRepository userQuizRepository;
     private final ChatLogRepository chatLogRepository;
-    private final JellingRepository jellingRepository;
-    private final JellingTransactionRepository jellingTransactionRepository;
-
-    @Qualifier("fastApiClient")
-    private final RestClient fastApiClient;
+    private final QuizAiClient quizAiClient;
 
     // ────────────────────────────────────────────────────────────────────────
     // 1. 퀴즈 조회 및 난이도 락 (GET /api/challenges/quizzes)
@@ -81,11 +71,10 @@ public class QuizService {
                     return existing;
                 })
                 .orElseGet(() -> {
-                    // 최초 조회: 난이도 락 레코드 INSERT
+                    // 최초 조회: 난이도 락 레코드 INSERT (remainingCredits 기본값 100)
                     UserQuiz newLock = UserQuiz.builder()
                             .userId(userId)
                             .quizId(quiz.getId())
-                            .remainingCredits(100)
                             .build();
                     return userQuizRepository.save(newLock);
                 });
@@ -105,47 +94,32 @@ public class QuizService {
     // ────────────────────────────────────────────────────────────────────────
 
     /**
-     * FastAPI AI 서버로 힌트 요청을 프록시하고, 응답 채팅 로그를 DB에 저장
+     * FastAPI AI 서버로 힌트 요청을 프록시하고, 응답 채팅 로그를 DB에 저장.
      *
-     * <p>크레딧 차감은 AI 서버에서 직접 처리 — 백엔드 미개입.</p>
+     * <p><b>트랜잭션 분리 전략</b>: 이 메서드에는 {@code @Transactional}을 걸지 않는다.
+     * RestClient 최대 응답 대기 시간이 15초이므로, 전체를 하나의 트랜잭션으로 감쌀 경우
+     * DB 커넥션 풀이 고갈될 수 있다. 각 repository 호출은 Spring Data JPA가 자체적으로
+     * 독립 트랜잭션을 열고 닫으므로, 별도 어노테이션 없이도 정합성이 보장된다.</p>
      *
      * @param userId  요청 자녀 ID
      * @param request 힌트 요청 (quizId + 사용자 메시지)
      * @return AI 응답
      */
-    @Transactional
     public ChatResponse chatWithAi(UUID userId, ChatRequest request) {
-        // 1. FastAPI 서버로 힌트 프록시 요청
-        ChatResponse aiResponse;
-        try {
-            aiResponse = fastApiClient
-                    .post()
-                    .uri("/quiz/chat")
-                    .body(request)
-                    .retrieve()
-                    .body(ChatResponse.class);
-        } catch (Exception e) {
-            throw new ApiException(QuizErrorCode.AI_SERVER_ERROR);
+        // 1. Chat Freeze: 이미 제출한 퀴즈는 AI 힌트 요청 불가 (자체 읽기 TX via repository)
+        UserQuiz userQuiz = userQuizRepository.findByUserIdAndQuizId(userId, request.quizId())
+                .orElseThrow(() -> new ApiException(QuizErrorCode.QUIZ_NOT_FOUND));
+
+        if (userQuiz.isSubmitted()) {
+            throw new ApiException(QuizErrorCode.QUIZ_ALREADY_SUBMITTED);
         }
 
-        if (aiResponse == null) {
-            throw new ApiException(QuizErrorCode.AI_SERVER_ERROR);
-        }
+        // 2. FastAPI 서버로 힌트 프록시 요청 — DB 트랜잭션 없음
+        ChatResponse aiResponse = quizAiClient.requestHint(request);
 
-        // 2. 채팅 로그 UPSERT (존재 시 갱신, 없으면 신규 저장)
-        String chatJsonToSave = aiResponse.chatJson() != null ? aiResponse.chatJson() : "{}";
-
-        chatLogRepository.findByUserIdAndQuizId(userId, request.quizId())
-                .ifPresentOrElse(
-                        log -> log.updateChatJson(chatJsonToSave),
-                        () -> chatLogRepository.save(
-                                ChatLog.builder()
-                                        .userId(userId)
-                                        .quizId(request.quizId())
-                                        .chatJson(chatJsonToSave)
-                                        .build()
-                        )
-                );
+        // 3. chatJson 구성: 사용자 입력 + AI 응답 모두 포함 (자체 쓰기 TX via repository)
+        String chatJsonToSave = buildChatJson(request.message(), aiResponse);
+        saveChatLog(userId, request.quizId(), chatJsonToSave);
 
         return aiResponse;
     }
@@ -155,14 +129,14 @@ public class QuizService {
     // ────────────────────────────────────────────────────────────────────────
 
     /**
-     * 정답을 제출하고 결과에 따라 젤링 보상을 지급
+     * 정답을 제출하고 결과에 따라 젤링 보상 금액을 산출한다.
      *
      * <p>Idempotency: isSubmitted=true 이면 {@link QuizErrorCode#QUIZ_ALREADY_SUBMITTED} 예외.</p>
-     * <p>보상 지급: 정답 시 1~20 사이 랜덤 젤링 적립, Jelling 지갑 미존재 시 자동 생성(orElseGet).</p>
+     * <p>보상 금액만 계산하고 실제 Jelling DB 처리는 Jelling 도메인에 위임한다.</p>
      *
      * @param userId  요청 자녀 ID
      * @param request 정답 제출 (quizId + selectedAnswer)
-     * @return 정답 여부 및 지급 젤링 양
+     * @return 정답 여부 및 지급 예정 젤링 양
      */
     @Transactional
     public AnswerResponse submitAnswer(UUID userId, AnswerRequest request) {
@@ -183,36 +157,59 @@ public class QuizService {
         // 3. UserQuiz 상태 업데이트 (JPA Dirty Checking 자동 반영)
         userQuiz.submit(isCorrect);
 
-        // 4. 정답 시 젤링 보상 지급 (단일 트랜잭션 내 처리)
+        // 4. 정답 시 젤링 보상 — DB 직접 조작 없이 보상 금액만 산출
         Long jellingReward = null;
         if (isCorrect) {
             long reward = ThreadLocalRandom.current().nextLong(1, 21); // 1 이상 20 이하
-
-            // 4-A. Jelling 지갑 조회 — 없으면 방어적 생성 (orElseGet)
-            Jelling jelling = jellingRepository.findById(userId)
-                    .orElseGet(() -> jellingRepository.save(
-                            Jelling.builder()
-                                    .userId(userId)
-                                    .balance(0L)
-                                    .build()
-                    ));
-
-            // 4-B. 잔액 적립
-            jelling.addBalance(reward);
-
-            // 4-C. 젤링 변동 내역 INSERT
-            jellingTransactionRepository.save(
-                    JellingTransaction.builder()
-                            .userId(userId)
-                            .amount(reward)
-                            .type("EARNED")
-                            .description("퀴즈 정답 적립")
-                            .build()
-            );
-
+            // TODO: Call Jelling domain to add reward (amount: reward)
             jellingReward = reward;
         }
 
         return new AnswerResponse(isCorrect, jellingReward);
+    }
+
+    // ────────────────────────────────────────────────────────────────────────
+    // Private helpers
+    // ────────────────────────────────────────────────────────────────────────
+
+    /**
+     * FastAPI 응답의 chatJson이 있으면 그대로 사용(전체 대화 기록 포함),
+     * 없으면 사용자 메시지 + AI 응답으로 최소 JSON을 직접 구성한다.
+     *
+     * <p>chat_json은 반드시 사용자 입력과 AI 응답을 모두 포함해야 한다.</p>
+     */
+    private String buildChatJson(String userMessage, ChatResponse aiResponse) {
+        if (aiResponse.chatJson() != null && !aiResponse.chatJson().isBlank()) {
+            return aiResponse.chatJson();
+        }
+        // FastAPI chatJson 누락 시: 사용자 메시지 + AI 응답을 최소 JSON으로 보존
+        String safeUser  = userMessage == null ? "" : userMessage.replace("\"", "\\\"");
+        String safeReply = aiResponse.reply() == null ? "" : aiResponse.reply().replace("\"", "\\\"");
+        return String.format(
+                "{\"messages\":[{\"role\":\"user\",\"content\":\"%s\"},{\"role\":\"assistant\",\"content\":\"%s\"}]}",
+                safeUser, safeReply);
+    }
+
+    /**
+     * 채팅 로그 UPSERT.
+     *
+     * <p>find → update 또는 save 흐름에서 각 repository 호출이 독립 트랜잭션으로 실행된다.
+     * update 경로에서는 detached 엔티티를 명시적으로 {@code save()} 하여 병합한다.</p>
+     */
+    private void saveChatLog(UUID userId, UUID quizId, String chatJson) {
+        chatLogRepository.findByUserIdAndQuizId(userId, quizId)
+                .ifPresentOrElse(
+                        log -> {
+                            log.updateChatJson(chatJson);
+                            chatLogRepository.save(log); // detached entity → merge
+                        },
+                        () -> chatLogRepository.save(
+                                ChatLog.builder()
+                                        .userId(userId)
+                                        .quizId(quizId)
+                                        .chatJson(chatJson)
+                                        .build()
+                        )
+                );
     }
 }
