@@ -10,10 +10,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.UUID;
@@ -38,5 +35,20 @@ public class ReportController {
         }
         WeeklyReportResponse response = reportService.getWeeklyReport(userId, date);
         return ResponseEntity.ok(ApiResponse.success("주간 리포트 조회 성공", response));
+    }
+
+    @Operation(summary = "자녀 주간 리포트 조회", description = "부모가 특정 자녀의 주간 소비 및 활동 리포트를 조회합니다.")
+    @GetMapping("/children/{childId}/weekly")
+    @PreAuthorize("hasRole('PARENT')")
+    public ResponseEntity<ApiResponse<WeeklyReportResponse>> getChildWeeklyReport(
+            @AuthenticationPrincipal UUID parentId,
+            @PathVariable UUID childId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
+    ) {
+        if (date == null) {
+            date = LocalDate.now();
+        }
+        WeeklyReportResponse response = reportService.getChildWeeklyReport(parentId, childId, date);
+        return ResponseEntity.ok(ApiResponse.success("자녀 주간 리포트 조회 성공", response));
     }
 }

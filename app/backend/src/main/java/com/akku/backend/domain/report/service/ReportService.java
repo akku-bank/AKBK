@@ -1,6 +1,7 @@
 package com.akku.backend.domain.report.service;
 
 import com.akku.backend.domain.auth.entity.User;
+import com.akku.backend.domain.auth.exception.AuthErrorCode;
 import com.akku.backend.domain.auth.repository.UserRepository;
 import com.akku.backend.domain.auth.service.SsafyFinanceService;
 import com.akku.backend.domain.report.dto.WeeklyReportResponse;
@@ -29,6 +30,25 @@ public class ReportService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ApiException(UserErrorCode.USER_NOT_FOUND));
 
+        return generateWeeklyReport(user, date);
+    }
+
+    public WeeklyReportResponse getChildWeeklyReport(UUID parentId, UUID childId, LocalDate date) {
+        User parent = userRepository.findById(parentId)
+                .orElseThrow(() -> new ApiException(UserErrorCode.USER_NOT_FOUND));
+
+        User child = userRepository.findById(childId)
+                .orElseThrow(() -> new ApiException(UserErrorCode.USER_NOT_FOUND));
+
+        // 부모와 자녀가 같은 가족인지 확인
+        if (parent.getFamilyId() == null || !parent.getFamilyId().equals(child.getFamilyId())) {
+            throw new ApiException(AuthErrorCode.ACCESS_DENIED);
+        }
+
+        return generateWeeklyReport(child, date);
+    }
+
+    private WeeklyReportResponse generateWeeklyReport(User user, LocalDate date) {
         // 주간 시작일(월요일)과 종료일(일요일) 계산
         LocalDate weekStart = date.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
         LocalDate weekEnd = weekStart.plusDays(6);
