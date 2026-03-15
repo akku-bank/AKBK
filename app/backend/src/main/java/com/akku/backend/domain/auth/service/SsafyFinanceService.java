@@ -307,6 +307,54 @@ public class SsafyFinanceService {
         return Collections.emptyList();
     }
 
+    /**
+     * 카드 결제
+     */
+    public FinanceCardPaymentResponse.Rec createCardTransaction(String userKey, String cardNo, String cvc, Long merchantId, Long paymentBalance) {
+        FinanceRequestHeader header = createHeader("createCreditCardTransaction", "createCreditCardTransaction", userKey);
+        
+        FinanceCardPaymentRequest data = new FinanceCardPaymentRequest(cardNo, cvc, merchantId, paymentBalance);
+        FinanceRequest<FinanceCardPaymentRequest> request = new FinanceRequest<>(header, data);
+
+        FinanceResponse<FinanceCardPaymentResponse> response = restClient.post()
+                .uri("/edu/creditCard/createCreditCardTransaction")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(request)
+                .retrieve()
+                .body(new ParameterizedTypeReference<>() {});
+
+        validateResponse(response);
+        if (response != null && response.data() != null && response.data().rec() != null) {
+            return response.data().rec();
+        }
+        
+        throw new RuntimeException("금융망 카드 결제 실패");
+    }
+
+    /**
+     * 카드 거래 내역 조회
+     */
+    public FinanceCardTransactionHistoryResponse.Rec getCardTransactionHistory(String userKey, String cardNo, String cvc, String startDate, String endDate) {
+        FinanceRequestHeader header = createHeader("inquireCreditCardTransactionHistoryList", "inquireCreditCardTransactionHistoryList", userKey);
+        
+        FinanceCardTransactionHistoryRequest data = new FinanceCardTransactionHistoryRequest(cardNo, cvc, startDate, endDate);
+        FinanceRequest<FinanceCardTransactionHistoryRequest> request = new FinanceRequest<>(header, data);
+
+        FinanceResponse<FinanceCardTransactionHistoryResponse> response = restClient.post()
+                .uri("/edu/creditCard/inquireCreditCardTransactionHistoryList")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(request)
+                .retrieve()
+                .body(new ParameterizedTypeReference<>() {});
+
+        validateResponse(response);
+        if (response != null && response.data() != null && response.data().rec() != null) {
+            return response.data().rec();
+        }
+        
+        throw new RuntimeException("금융망 카드 거래 내역 조회 실패");
+    }
+
     private void validateResponse(FinanceResponse<?> response) {
         if (response == null || response.header() == null) {
             throw new RuntimeException("금융 API 응답이 비어있습니다.");

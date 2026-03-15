@@ -1,8 +1,6 @@
 package com.akku.backend.domain.bank.service;
 
-import com.akku.backend.domain.bank.dto.CardCreateRequest;
-import com.akku.backend.domain.bank.dto.CardProductResponse;
-import com.akku.backend.domain.bank.dto.CardResponse;
+import com.akku.backend.domain.bank.dto.*;
 import com.akku.backend.domain.bank.entity.Card;
 import com.akku.backend.domain.bank.entity.CardProduct;
 import com.akku.backend.domain.auth.entity.User;
@@ -16,6 +14,8 @@ import com.akku.backend.global.error.ApiException;
 import com.akku.backend.global.finance.dto.FinanceCardCreateResponse;
 import com.akku.backend.global.finance.dto.FinanceCardProductListResponse;
 import com.akku.backend.global.finance.dto.FinanceUserCardListResponse;
+import com.akku.backend.global.finance.dto.FinanceCardPaymentResponse;
+import com.akku.backend.global.finance.dto.FinanceCardTransactionHistoryResponse;
 import com.akku.backend.global.error.ApiException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -169,5 +169,70 @@ public class CardService {
         return cardRepository.findAllByUserId(userId).stream()
                 .map(CardResponse::from)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * 카드 결제 처리
+     */
+    @Transactional
+    public void processPayment(UUID userId, CardPaymentRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ApiException(UserErrorCode.USER_NOT_FOUND));
+
+        Card card = cardRepository.findById(request.cardId())
+                .orElseThrow(() -> new ApiException(BankErrorCode.CARD_NOT_FOUND));
+
+        if (!card.getUserId().equals(userId)) {
+            throw new ApiException(BankErrorCode.CARD_NOT_FOUND);
+        }
+
+        // 금융망에 결제 요청
+        ssafyFinanceService.createCardTransaction(
+                user.getUserKey(),
+                card.getCardNo(),
+                card.getCvc(),
+                request.merchantId(),
+                request.paymentBalance()
+        );
+    }
+
+    /**
+     * 카드 거래 내역 조회
+     */
+    @Transactional(readOnly = true)
+    public CardHistoryResponse getCardHistory(UUID userId, CardHistoryRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ApiException(UserErrorCode.USER_NOT_FOUND));
+
+        Card card = cardRepository.findById(request.cardId())
+                .orElseThrow(() -> new ApiException(BankErrorCode.CARD_NOT_FOUND));
+
+        if (!card.getUserId().equals(userId)) {
+            throw new ApiException(BankErrorCode.CARD_NOT_FOUND);
+        }
+
+        // 금융망에서 거래 내역 조회
+        FinanceCardTransactionHistoryResponse.Rec rec = ssafyFinanceService.getCardTransactionHistory(
+                user.getUserKey(),
+                card.getCardNo(),
+                card.getCvc(),
+                request.startDate(),
+                request.endDate()
+        );
+
+        List<CardHistoryResponse.CardTransactionDetails> list = rec.list().stream()
+                .map(d -> new CardHistoryResponse.CardTransactionDetails(
+                        d.transactionUniqueNo(),
+                        d.categoryId(),
+                        d.categoryName(),
+                        d.merchantId(),
+                        d.merchantName(),
+                        d.transactionDate(),
+                        d.transactionTime(),
+                        d.transactionBalance()
+                ))
+                .collect(Collectors.toList());
+
+        return new CardHistoryResponse(rec.estimatedBalance(), list);
     }
 }
