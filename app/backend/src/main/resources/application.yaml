@@ -70,3 +70,8 @@ logging:
     # 프로젝트 기본 패키지(com.akku.backend)의 로그 레벨 설정
     # 로컬 개발 시에는 DEBUG로 두어 상세한 파라미터나 흐름을 확인하는 것이 좋음
     com.akku.backend: DEBUG
+
+# FAST API 연동용
+external:
+  fastapi:
+    base-url: "http://localhost:8000" # 로컬 테스트용. 개발/운영 환경에 맞춰 분리 필요
