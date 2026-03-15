@@ -1,0 +1,111 @@
+package com.akku.backend.domain.donation.service;
+
+import com.akku.backend.domain.auth.entity.User;
+import com.akku.backend.domain.auth.repository.UserRepository;
+import com.akku.backend.domain.donation.dto.CharityResponse;
+import com.akku.backend.domain.donation.entity.ActiveCharity;
+import com.akku.backend.domain.donation.entity.Charity;
+import com.akku.backend.domain.donation.exception.DonationErrorCode;
+import com.akku.backend.domain.donation.repository.ActiveCharityRepository;
+import com.akku.backend.domain.donation.repository.CharityRepository;
+import com.akku.backend.global.error.ApiException;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
+
+@ExtendWith(MockitoExtension.class)
+class DonationServiceTest {
+
+    @Mock
+    private CharityRepository charityRepository;
+    @Mock
+    private ActiveCharityRepository activeCharityRepository;
+    @Mock
+    private UserRepository userRepository;
+
+    @InjectMocks
+    private DonationService donationService;
+
+    @Test
+    @DisplayName("기부처 목록을 조회한다.")
+    void getCharityList() {
+        // given
+        Charity charity = Charity.builder()
+                .id(UUID.randomUUID())
+                .name("Test Charity")
+                .targetAmount(500)
+                .description("Test Description")
+                .build();
+        given(charityRepository.findAll()).willReturn(List.of(charity));
+
+        // when
+        List<CharityResponse> result = donationService.getCharityList();
+
+        // then
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).name()).isEqualTo("Test Charity");
+    }
+
+    @Test
+    @DisplayName("기부 목표를 성공적으로 설정한다.")
+    void setTargetCharity_success() {
+        // given
+        UUID userId = UUID.randomUUID();
+        UUID charityId = UUID.randomUUID();
+        User user = User.builder().id(userId).build();
+        Charity charity = Charity.builder().id(charityId).build();
+
+        given(activeCharityRepository.existsByUserIdAndStatus(userId, "IN_PROGRESS")).willReturn(false);
+        given(userRepository.findById(userId)).willReturn(Optional.of(user));
+        given(charityRepository.findById(charityId)).willReturn(Optional.of(charity));
+
+        // when
+        donationService.setTargetCharity(userId, charityId);
+
+        // then
+        verify(activeCharityRepository).save(any(ActiveCharity.class));
+    }
+
+    @Test
+    @DisplayName("이미 진행 중인 기부가 있으면 예외가 발생한다.")
+    void setTargetCharity_alreadyExists() {
+        // given
+        UUID userId = UUID.randomUUID();
+        UUID charityId = UUID.randomUUID();
+        given(activeCharityRepository.existsByUserIdAndStatus(userId, "IN_PROGRESS")).willReturn(true);
+
+        // when & then
+        assertThatThrownBy(() -> donationService.setTargetCharity(userId, charityId))
+                .isInstanceOf(ApiException.class)
+                .hasMessageContaining(DonationErrorCode.ACTIVE_CHARITY_ALREADY_EXISTS.getDefaultMessage());
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 기부처인 경우 예외가 발생한다.")
+    void setTargetCharity_charityNotFound() {
+        // given
+        UUID userId = UUID.randomUUID();
+        UUID charityId = UUID.randomUUID();
+        given(activeCharityRepository.existsByUserIdAndStatus(userId, "IN_PROGRESS")).willReturn(false);
+        given(userRepository.findById(userId)).willReturn(Optional.of(User.builder().build()));
+        given(charityRepository.findById(charityId)).willReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() -> donationService.setTargetCharity(userId, charityId))
+                .isInstanceOf(ApiException.class)
+                .hasMessageContaining(DonationErrorCode.CHARITY_NOT_FOUND.getDefaultMessage());
+    }
+}
