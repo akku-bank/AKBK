@@ -4,10 +4,12 @@ ALTER TABLE accounts
     ADD COLUMN bank_code VARCHAR(3),
     ADD COLUMN type VARCHAR(20) DEFAULT 'CASH';
 
--- 제약 조건 및 정합성 설정
-ALTER TABLE accounts
-    ALTER COLUMN account_number SET NOT NULL,
-    ALTER COLUMN type SET NOT NULL;
+-- 별도 migration에서 기존 rows의 account_number를 backfill 한 뒤 적용
+-- ALTER TABLE accounts
+--     ALTER COLUMN account_number SET NOT NULL;
+-- ALTER TABLE accounts
+--     ADD CONSTRAINT uq_account_number UNIQUE (account_number);
 
+-- type 필드는 기본값이 적용되므로 NOT NULL 설정이 안전함.
 ALTER TABLE accounts
-    ADD CONSTRAINT uq_account_number UNIQUE (account_number);
+    ALTER COLUMN type SET NOT NULL;

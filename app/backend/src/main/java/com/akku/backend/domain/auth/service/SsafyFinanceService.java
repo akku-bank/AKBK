@@ -15,7 +15,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 
 @Slf4j
 @Service
@@ -43,7 +43,7 @@ public class SsafyFinanceService {
         String time = now.format(DateTimeFormatter.ofPattern("HHmmss"));
         
         // 기관 거래 고유 번호
-        String uniqueNo = date + time + String.format("%06d", new Random().nextInt(1000000));
+        String uniqueNo = date + time + String.format("%06d", ThreadLocalRandom.current().nextInt(1000000));
 
         return FinanceRequestHeader.builder()
                 .apiName(apiName)
@@ -230,6 +230,7 @@ public class SsafyFinanceService {
      * 타행 계좌 연동
      */
     public void linkAccount(String userKey, String bankCode, String accountNumber) {
+        throw new UnsupportedOperationException("아직 구현되지 않은 기능입니다: 타행 계좌 연동");
     }
 
     private void validateResponse(FinanceResponse<?> response) {

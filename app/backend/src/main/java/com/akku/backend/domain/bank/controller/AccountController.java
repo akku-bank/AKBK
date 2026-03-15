@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -23,7 +24,7 @@ public class AccountController {
     @PostMapping
     public ApiResponse<AccountCreateResponse> createAccount(
             @AuthenticationPrincipal UUID parentId, 
-            @RequestBody AccountCreateRequest request
+            @Valid @RequestBody AccountCreateRequest request
     ) {
         AccountCreateResponse response = accountService.createAccount(parentId, request);
         return ApiResponse.success("계좌 생성 성공", response);
@@ -42,7 +43,7 @@ public class AccountController {
     @PostMapping("/link")
     public ApiResponse<Void> linkExternalAccount(
             @AuthenticationPrincipal UUID userId,
-            @RequestBody AccountLinkRequest request
+            @Valid @RequestBody AccountLinkRequest request
     ) {
         accountService.linkExternalAccount(userId, request);
         return ApiResponse.success("계좌 연동 성공");
@@ -52,7 +53,7 @@ public class AccountController {
     @PostMapping("/transfers")
     public ApiResponse<TransferResponse> transfer(
             @AuthenticationPrincipal UUID userId,
-            @RequestBody TransferRequest request
+            @Valid @RequestBody TransferRequest request
     ) {
         TransferResponse response = accountService.transfer(userId, request);
         return ApiResponse.success("계좌 이체 성공", response);

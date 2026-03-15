@@ -72,13 +72,22 @@ class AccountServiceTest {
         }
 
         @Test
-        @DisplayName("3. 타행 계좌 연동 - 성공")
-        void linkExternalAccount_Success() {
+        @DisplayName("3. 타행 계좌 연동 - 미구현 예외 발생 검증")
+        void linkExternalAccount_NotImplemented() {
             UUID userId = UUID.randomUUID();
             AccountLinkRequest request = new AccountLinkRequest("004", "1234567890");
             User user = User.builder().id(userId).userKey("user-key").build();
+            
             given(userRepository.findById(userId)).willReturn(Optional.of(user));
-            accountService.linkExternalAccount(userId, request);
+            
+            // 아직 미구현 상태이므로 예외가 발생하는지 검증
+            doThrow(new UnsupportedOperationException("아직 구현되지 않은 기능입니다: 타행 계좌 연동"))
+                .when(ssafyFinanceService).linkAccount(anyString(), anyString(), anyString());
+
+            assertThrows(UnsupportedOperationException.class, () -> {
+                accountService.linkExternalAccount(userId, request);
+            });
+            
             verify(ssafyFinanceService).linkAccount("user-key", "004", "1234567890");
         }
     }
