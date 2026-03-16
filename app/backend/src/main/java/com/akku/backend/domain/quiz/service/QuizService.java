@@ -52,20 +52,30 @@ public class QuizService {
         Quiz quiz = quizRepository.findTopByDifficultyAndCreatedAtBetween(difficulty, quizFrom, quizTo)
                 .orElseThrow(() -> new ApiException(QuizErrorCode.QUIZ_NOT_FOUND));
 
-        UserQuiz userQuiz = userQuizRepository.findByUserIdAndQuizId(userId, quiz.getId())
+        LocalDateTime lockFrom = LocalDateTime.of(LocalDate.now(), LocalTime.MIDNIGHT);
+        LocalDateTime lockTo   = LocalDateTime.now();
+
+        UserQuiz userQuiz = userQuizRepository
+                .findTopByUserIdAndCreatedAtBetweenOrderByCreatedAtDesc(userId, lockFrom, lockTo)
                 .map(existing -> {
-                    if (existing.getRemainingCredits() < 100) {
+                    // 다른 난이도(퀴즈)에서 이미 힌트를 사용했으면 변경 불가
+                    if (!existing.getQuizId().equals(quiz.getId()) && existing.getRemainingCredits() < 100) {
                         throw new ApiException(QuizErrorCode.DIFFICULTY_CHANGE_NOT_ALLOWED);
                     }
-                    return existing;
-                })
-                .orElseGet(() -> {
-                    UserQuiz newLock = UserQuiz.builder()
+                    // 같은 퀴즈면 기존 락 반환
+                    if (existing.getQuizId().equals(quiz.getId())) {
+                        return existing;
+                    }
+                    // 다른 퀴즈지만 힌트 미사용(credits=100) — 새 난이도로 락 생성
+                    return userQuizRepository.save(UserQuiz.builder()
                             .userId(userId)
                             .quizId(quiz.getId())
-                            .build(); // @Builder.Default로 remainingCredits=100 설정됨
-                    return userQuizRepository.save(newLock);
-                });
+                            .build());
+                })
+                .orElseGet(() -> userQuizRepository.save(UserQuiz.builder()
+                        .userId(userId)
+                        .quizId(quiz.getId())
+                        .build()));
 
         // 당일 채팅 로그만 조회
         String todayChatJson = chatLogRepository.findByUserIdAndQuizId(userId, quiz.getId())
