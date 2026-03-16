@@ -1,11 +1,11 @@
 -- 1. spending_challenges 테이블 컬럼명 및 외래키 수정
-ALTER TABLE spending_challenges DROP CONSTRAINT fk_sc_child;
+ALTER TABLE spending_challenges DROP CONSTRAINT IF EXISTS fk_sc_child;
 ALTER TABLE spending_challenges RENAME COLUMN child_id TO user_id;
 ALTER TABLE spending_challenges RENAME COLUMN category TO sub_category_name;
 ALTER TABLE spending_challenges ADD CONSTRAINT fk_sc_child FOREIGN KEY (user_id) REFERENCES users(id);
 
 -- 2. friend_invites 테이블 컬럼명 및 외래키 수정, 만료일 삭제
-ALTER TABLE friend_invites DROP CONSTRAINT fk_invites_inviter;
+ALTER TABLE friend_invites DROP CONSTRAINT IF EXISTS fk_invites_inviter;
 ALTER TABLE friend_invites RENAME COLUMN inviter_id TO user_id;
 ALTER TABLE friend_invites DROP COLUMN expires_at;
 ALTER TABLE friend_invites ADD CONSTRAINT fk_invites_inviter FOREIGN KEY (user_id) REFERENCES users(id);
