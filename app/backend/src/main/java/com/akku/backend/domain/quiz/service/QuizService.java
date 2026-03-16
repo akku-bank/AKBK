@@ -1,18 +1,21 @@
 package com.akku.backend.domain.quiz.service;
 
-import com.akku.backend.domain.quiz.client.QuizAiClient;
+import com.akku.backend.domain.auth.entity.User;
+import com.akku.backend.domain.auth.repository.UserRepository;
 import com.akku.backend.domain.quiz.dto.AnswerRequest;
 import com.akku.backend.domain.quiz.dto.AnswerResponse;
 import com.akku.backend.domain.quiz.dto.ChatRequest;
-import com.akku.backend.domain.quiz.dto.ChatResponse;
 import com.akku.backend.domain.quiz.dto.QuizResponse;
 import com.akku.backend.domain.quiz.entity.ChatLog;
 import com.akku.backend.domain.quiz.entity.Quiz;
 import com.akku.backend.domain.quiz.entity.UserQuiz;
+import com.akku.backend.domain.quiz.event.QuizChatEvent;
 import com.akku.backend.domain.quiz.exception.QuizErrorCode;
+import com.akku.backend.domain.quiz.kafka.QuizKafkaProducer;
 import com.akku.backend.domain.quiz.repository.ChatLogRepository;
 import com.akku.backend.domain.quiz.repository.QuizRepository;
 import com.akku.backend.domain.quiz.repository.UserQuizRepository;
+import com.akku.backend.domain.user.exception.UserErrorCode;
 import com.akku.backend.global.error.ApiException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -34,7 +37,8 @@ public class QuizService {
     private final QuizRepository quizRepository;
     private final UserQuizRepository userQuizRepository;
     private final ChatLogRepository chatLogRepository;
-    private final QuizAiClient quizAiClient; // RestClient를 감싼 래퍼 클래스
+    private final UserRepository userRepository;
+    private final QuizKafkaProducer quizKafkaProducer;
 
     // ────────────────────────────────────────────────────────────────────────
     // 1. 퀴즈 조회 및 난이도 락 (GET /api/challenges/quizzes)
@@ -81,14 +85,16 @@ public class QuizService {
     }
 
     // ────────────────────────────────────────────────────────────────────────
-    // 2. AI 챗봇 힌트 프록시 (POST /api/challenges/quizzes/chat)
+    // 2. AI 챗봇 힌트 — Kafka 이벤트 발행 (POST /api/challenges/quizzes/chat)
     // ────────────────────────────────────────────────────────────────────────
 
     /**
-     * @Transactional이 없음에 주의! 외부 통신 시 DB 커넥션 풀 고갈을 막기 위함.
+     * 동기 RestClient 호출 대신 Kafka CHAT_REQUEST 이벤트를 발행한다.
+     * AI 처리는 FastAPI 컨슈머가 비동기로 수행하며, 202 Accepted 로 즉시 응답한다.
+     * 트랜잭션 없음 — Kafka 발행은 DB 트랜잭션과 분리되어야 한다.
      */
-    public ChatResponse chatWithAi(UUID userId, ChatRequest request) {
-        // 1. DB 읽기 (자체 트랜잭션) - Chat Freeze 검증
+    public void chatWithAi(UUID userId, ChatRequest request) {
+        // 1. Chat Freeze 검증
         UserQuiz userQuiz = userQuizRepository.findByUserIdAndQuizId(userId, request.quizId())
                 .orElseThrow(() -> new ApiException(QuizErrorCode.QUIZ_NOT_FOUND));
 
@@ -96,14 +102,25 @@ public class QuizService {
             throw new ApiException(QuizErrorCode.QUIZ_ALREADY_SUBMITTED);
         }
 
-        // 2. 외부 API 통신 (트랜잭션 없음)
-        ChatResponse aiResponse = quizAiClient.requestHint(request);
+        // 2. 이벤트 조립에 필요한 데이터 조회
+        Quiz quiz = quizRepository.findById(request.quizId())
+                .orElseThrow(() -> new ApiException(QuizErrorCode.QUIZ_NOT_FOUND));
 
-        // 3. DB 쓰기 (자체 트랜잭션) - 사용자 메시지와 AI 응답 모두 포함하여 저장
-        String chatJsonToSave = buildChatJson(request.message(), aiResponse);
-        saveChatLog(userId, request.quizId(), chatJsonToSave);
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ApiException(UserErrorCode.USER_NOT_FOUND));
 
-        return aiResponse;
+        // 3. Kafka CHAT_REQUEST 이벤트 발행
+        QuizChatEvent event = QuizChatEvent.of(
+                userId,
+                request.quizId(),
+                request.message(),
+                userQuiz.getRemainingCredits(),
+                quiz.getDifficulty(),
+                user.getBirthDate()
+        );
+        quizKafkaProducer.publishChatRequest(event);
+
+        // TODO: 채팅 로그는 FastAPI → Kafka CHAT_RESPONSE 수신 후 컨슈머에서 저장
     }
 
     // ────────────────────────────────────────────────────────────────────────
@@ -112,7 +129,7 @@ public class QuizService {
 
     @Transactional
     public AnswerResponse submitAnswer(UUID userId, AnswerRequest request) {
-        UserQuiz userQuiz = userQuizRepository.findByUserIdAndQuizId(userId, request.quizId())
+        UserQuiz userQuiz = userQuizRepository.findByUserIdAndQuizIdForUpdate(userId, request.quizId())
                 .orElseThrow(() -> new ApiException(QuizErrorCode.QUIZ_NOT_FOUND));
 
         if (userQuiz.isSubmitted()) {
@@ -129,42 +146,9 @@ public class QuizService {
         if (isCorrect) {
             long reward = ThreadLocalRandom.current().nextLong(1, 21); // 1~20 랜덤 보상
             // TODO: Call Jelling domain to add reward (amount: reward)
-            // 예시: jellingService.addReward(userId, reward);
             jellingReward = reward;
         }
 
         return new AnswerResponse(isCorrect, jellingReward);
-    }
-
-    // ────────────────────────────────────────────────────────────────────────
-    // Private helpers
-    // ────────────────────────────────────────────────────────────────────────
-
-    private String buildChatJson(String userMessage, ChatResponse aiResponse) {
-        if (aiResponse.chatJson() != null && !aiResponse.chatJson().isBlank()) {
-            return aiResponse.chatJson();
-        }
-        String safeUser  = userMessage == null ? "" : userMessage.replace("\"", "\\\"");
-        String safeReply = aiResponse.reply() == null ? "" : aiResponse.reply().replace("\"", "\\\"");
-        return String.format(
-                "{\"messages\":[{\"role\":\"user\",\"content\":\"%s\"},{\"role\":\"assistant\",\"content\":\"%s\"}]}",
-                safeUser, safeReply);
-    }
-
-    private void saveChatLog(UUID userId, UUID quizId, String chatJson) {
-        chatLogRepository.findByUserIdAndQuizId(userId, quizId)
-                .ifPresentOrElse(
-                        log -> {
-                            log.updateChatJson(chatJson);
-                            chatLogRepository.save(log);
-                        },
-                        () -> chatLogRepository.save(
-                                ChatLog.builder()
-                                        .userId(userId)
-                                        .quizId(quizId)
-                                        .chatJson(chatJson)
-                                        .build()
-                        )
-                );
     }
 }

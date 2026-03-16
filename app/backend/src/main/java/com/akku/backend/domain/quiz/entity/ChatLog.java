@@ -36,7 +36,7 @@ public class ChatLog {
     @Column(name = "chat_json", nullable = false, columnDefinition = "jsonb")
     private String chatJson;
 
-    @Column(name = "created_at", nullable = false)
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDate createdAt;
 
     @Builder

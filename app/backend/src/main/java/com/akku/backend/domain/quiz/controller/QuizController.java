@@ -3,7 +3,6 @@ package com.akku.backend.domain.quiz.controller;
 import com.akku.backend.domain.quiz.dto.AnswerRequest;
 import com.akku.backend.domain.quiz.dto.AnswerResponse;
 import com.akku.backend.domain.quiz.dto.ChatRequest;
-import com.akku.backend.domain.quiz.dto.ChatResponse;
 import com.akku.backend.domain.quiz.dto.QuizResponse;
 import com.akku.backend.domain.quiz.service.QuizService;
 import com.akku.backend.global.dto.ApiResponse;
@@ -48,22 +47,21 @@ public class QuizController {
     }
 
     /**
-     * 2. AI 챗봇 힌트 요청 (FastAPI 프록시)
+     * 2. AI 챗봇 힌트 요청 — Kafka 이벤트 발행
      */
     @Operation(
             summary = "AI 챗봇 힌트",
-            description = "AI 서버에 힌트를 요청하고 응답 채팅 로그를 DB에 저장. 크레딧 차감은 AI 서버에서 처리."
+            description = "CHAT_REQUEST 이벤트를 Kafka에 발행한다. AI 처리는 FastAPI 컨슈머가 비동기로 수행한다."
     )
     @PostMapping("/chat")
-    public ResponseEntity<ApiResponse<ChatResponse>> chatWithAi(
+    public ResponseEntity<ApiResponse<Void>> chatWithAi(
             @RequestBody ChatRequest request,
             @RequestAttribute("userId") UUID userId) {
 
-        ChatResponse response = quizService.chatWithAi(userId, request);
+        quizService.chatWithAi(userId, request);
 
-        return ResponseEntity.ok(
-                ApiResponse.success("AI 힌트를 성공적으로 받아왔습니다.", response)
-        );
+        return ResponseEntity.accepted()
+                .body(ApiResponse.success("AI 힌트 요청이 접수되었습니다.", null));
     }
 
     /**
