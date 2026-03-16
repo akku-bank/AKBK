@@ -2,6 +2,8 @@ from pydantic import BaseModel
 from typing import Literal
 from uuid import UUID
 
+from ai.schemas.policy import PolicyDecision, PolicyReason
+
 
 class ChatContextState(BaseModel):
     user_id: UUID
@@ -13,6 +15,12 @@ class ChatContextState(BaseModel):
     difficulty: Literal["easy", "medium", "hard"]
     age_group: Literal["preschool", "elementary", "middle", "high"]
 
+    is_finance_related: bool | None = None
+    is_cheating: bool | None = None
     intent: Literal["DEFINE", "HINT", "EXPLAIN", "OTHER"] | None = None
+    
     route: Literal["DICT", "RAG", "LLM", "DENY"] | None = None
     hint_level: int | None = None
+
+    policy_decision: PolicyDecision | None = None
+    policy_reason: PolicyReason | None = None
