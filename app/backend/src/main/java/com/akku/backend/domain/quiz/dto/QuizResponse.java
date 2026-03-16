@@ -9,7 +9,8 @@ public record QuizResponse(
         UUID quizId,
         String topic,
         String difficulty,
-        String problemJson,   // JSONB 원본 String 그대로 반환 (프론트가 파싱)
+        String problemJson,
         String explanation,
-        int remainingCredits
+        int remainingCredits,
+        String chatJson // 금일 채팅 내역 포함
 ) {}

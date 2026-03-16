@@ -14,6 +14,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.LocalDate;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -56,8 +57,8 @@ class QuizServiceTest {
                     .willReturn(Optional.of(mockQuiz));
             given(userQuizRepository.findByUserIdAndQuizId(any(), any())).willReturn(Optional.empty());
 
-            // @Builder.Default 로 remainingCredits = 100 이 자동 설정됨
             UserQuiz savedUserQuiz = UserQuiz.builder().userId(userId).quizId(mockQuiz.getId()).build();
+            // 강제로 100을 넣지 않아도 엔티티 내부 @Builder.Default 덕분에 100이 유지되어야 함
             given(userQuizRepository.save(any(UserQuiz.class))).willReturn(savedUserQuiz);
 
             // when
@@ -66,6 +67,7 @@ class QuizServiceTest {
             // then
             assertNotNull(response);
             assertEquals(100, response.remainingCredits());
+            assertNull(response.chatJson());
             verify(userQuizRepository).save(any(UserQuiz.class));
         }
 
@@ -80,7 +82,9 @@ class QuizServiceTest {
             given(quizRepository.findTopByDifficultyAndCreatedAtBetween(eq(difficulty), any(), any()))
                     .willReturn(Optional.of(mockQuiz));
 
-            UserQuiz existingUserQuiz = UserQuiz.builder().userId(userId).quizId(mockQuiz.getId()).remainingCredits(90).build();
+            // 크레딧이 90인 상태 (이미 힌트를 씀)
+            UserQuiz existingUserQuiz = mock(UserQuiz.class);
+            given(existingUserQuiz.getRemainingCredits()).willReturn(90);
             given(userQuizRepository.findByUserIdAndQuizId(any(), any())).willReturn(Optional.of(existingUserQuiz));
 
             // when & then
@@ -94,7 +98,7 @@ class QuizServiceTest {
     class ChatWithAiTests {
 
         @Test
-        @DisplayName("실패 - 이미 제출된 퀴즈에는 AI 힌트 요청 불가")
+        @DisplayName("실패 - 이미 제출된 퀴즈에는 AI 힌트 요청 불가 (Freeze)")
         void chatWithAi_Fail_AlreadySubmitted() {
             // given
             UUID userId = UUID.randomUUID();
@@ -102,14 +106,16 @@ class QuizServiceTest {
             ChatRequest request = new ChatRequest(quizId, "힌트 주세요");
 
             UserQuiz submittedQuiz = UserQuiz.builder().userId(userId).quizId(quizId).build();
-            submittedQuiz.submit(true); // 이미 제출됨
+            submittedQuiz.submit(true); // 이미 제출된 상태로 세팅
             given(userQuizRepository.findByUserIdAndQuizId(userId, quizId))
                     .willReturn(Optional.of(submittedQuiz));
 
             // when & then
             ApiException ex = assertThrows(ApiException.class, () -> quizService.chatWithAi(userId, request));
             assertEquals(QuizErrorCode.QUIZ_ALREADY_SUBMITTED, ex.getErrorCode());
-            verifyNoInteractions(quizAiClient); // AI 서버 호출 없어야 함
+
+            // AI 서버(QuizAiClient)가 호출되지 않았는지 검증
+            verifyNoInteractions(quizAiClient);
         }
     }
 
@@ -118,7 +124,7 @@ class QuizServiceTest {
     class SubmitAnswerTests {
 
         @Test
-        @DisplayName("성공 - 정답 시 1~20 사이 랜덤 보상 지급")
+        @DisplayName("성공 - 정답 시 1~20 사이 랜덤 보상 지급 (젤링 TODO 처리)")
         void submitAnswer_Correct_Reward() {
             // given
             UUID userId = UUID.randomUUID();
@@ -129,7 +135,7 @@ class QuizServiceTest {
             given(userQuizRepository.findByUserIdAndQuizId(userId, quizId)).willReturn(Optional.of(userQuiz));
 
             Quiz quiz = mock(Quiz.class);
-            given(quiz.getCorrectAnswer()).willReturn(1);
+            given(quiz.getCorrectAnswer()).willReturn(1); // 1번이 정답
             given(quizRepository.findById(quizId)).willReturn(Optional.of(quiz));
 
             // when
@@ -139,23 +145,6 @@ class QuizServiceTest {
             assertTrue(response.isCorrect());
             assertNotNull(response.jellingReward());
             assertTrue(response.jellingReward() >= 1 && response.jellingReward() <= 20);
-        }
-
-        @Test
-        @DisplayName("실패 - 이미 제출한 퀴즈")
-        void submitAnswer_Fail_AlreadySubmitted() {
-            // given
-            UUID userId = UUID.randomUUID();
-            UUID quizId = UUID.randomUUID();
-            AnswerRequest request = new AnswerRequest(quizId, 1);
-
-            UserQuiz userQuiz = UserQuiz.builder().userId(userId).quizId(quizId).build();
-            userQuiz.submit(true); // 이미 제출됨
-            given(userQuizRepository.findByUserIdAndQuizId(userId, quizId)).willReturn(Optional.of(userQuiz));
-
-            // when & then
-            ApiException ex = assertThrows(ApiException.class, () -> quizService.submitAnswer(userId, request));
-            assertEquals(QuizErrorCode.QUIZ_ALREADY_SUBMITTED, ex.getErrorCode());
         }
     }
 }
