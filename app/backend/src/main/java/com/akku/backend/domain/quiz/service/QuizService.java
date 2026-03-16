@@ -151,4 +151,34 @@ public class QuizService {
 
         return new AnswerResponse(isCorrect, jellingReward);
     }
+
+    // ────────────────────────────────────────────────────────────────────────
+    // 4. 채팅 로그 UPSERT — Kafka 컨슈머 전용 (CHAT_RESPONSE 수신 시 호출)
+    // ────────────────────────────────────────────────────────────────────────
+
+    /**
+     * chat_logs 테이블에 대해 UPSERT를 수행한다.
+     * {@link com.akku.backend.domain.quiz.kafka.QuizKafkaConsumer}가 CHAT_RESPONSE를
+     * 수신한 직후 호출하며, 이 메서드의 트랜잭션이 커밋된 뒤에 SSE 푸시가 진행된다.
+     *
+     * <p>호출 전 컨슈머가 chatJson null/blank 여부를 반드시 검증해야 한다.
+     * 이 메서드는 chatJson이 유효함을 전제로 동작한다.</p>
+     */
+    @Transactional
+    public void upsertChatLog(UUID userId, UUID quizId, String chatJson) {
+        chatLogRepository.findByUserIdAndQuizId(userId, quizId)
+                .ifPresentOrElse(
+                        log -> {
+                            log.updateChatJson(chatJson);
+                            chatLogRepository.save(log);
+                        },
+                        () -> chatLogRepository.save(
+                                ChatLog.builder()
+                                        .userId(userId)
+                                        .quizId(quizId)
+                                        .chatJson(chatJson)
+                                        .build()
+                        )
+                );
+    }
 }

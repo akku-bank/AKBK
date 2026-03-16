@@ -23,7 +23,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class QuizKafkaProducer {
 
-    private static final String QUIZ_CHAT_REQUEST_TOPIC = "quiz-chat-request";
+    private static final String QUIZ_CHAT_REQUEST_TOPIC = "quiz.chat.request";
 
     // TODO: KafkaTemplate config — JsonSerializer 기반 ProducerFactory 빈 등록 필요
     private final KafkaTemplate<String, Object> kafkaTemplate;

@@ -5,13 +5,16 @@ import com.akku.backend.domain.quiz.dto.AnswerResponse;
 import com.akku.backend.domain.quiz.dto.ChatRequest;
 import com.akku.backend.domain.quiz.dto.QuizResponse;
 import com.akku.backend.domain.quiz.service.QuizService;
+import com.akku.backend.domain.quiz.sse.SseConnectionManager;
 import com.akku.backend.global.dto.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.UUID;
 
@@ -26,6 +29,7 @@ import java.util.UUID;
 public class QuizController {
 
     private final QuizService quizService;
+    private final SseConnectionManager sseConnectionManager;
 
     /**
      * 1. 오늘의 퀴즈 조회 및 난이도 락
@@ -47,7 +51,26 @@ public class QuizController {
     }
 
     /**
-     * 2. AI 챗봇 힌트 요청 — Kafka 이벤트 발행
+     * 2-a. AI 채팅 SSE 스트림 — Kafka 응답 수신 대기
+     *
+     * <p>클라이언트는 {@code POST /chat}으로 Kafka 이벤트를 발행한 뒤,
+     * 이 엔드포인트로 SSE 연결을 열어 AI 응답을 실시간 수신한다.</p>
+     *
+     * <p><b>인증 주의:</b> 브라우저 내장 {@code EventSource} API는 커스텀 헤더를 지원하지 않는다.
+     * {@code Authorization} 헤더가 필요한 이 엔드포인트는 {@code fetch()} + 수동 SSE 파싱 방식으로
+     * 호출해야 한다 (Option A). {@code EventSource} 사용이 필요하다면 팀 내 별도 협의가 필요하다.</p>
+     */
+    @Operation(
+            summary = "AI 채팅 SSE 스트림",
+            description = "AI 힌트 응답을 실시간으로 수신하는 SSE 연결을 수립한다. POST /chat 이후 호출."
+    )
+    @GetMapping(value = "/chat/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter streamChatResponse(@RequestAttribute("userId") UUID userId) {
+        return sseConnectionManager.connect(userId);
+    }
+
+    /**
+     * 2-b. AI 챗봇 힌트 요청 — Kafka 이벤트 발행
      */
     @Operation(
             summary = "AI 챗봇 힌트",

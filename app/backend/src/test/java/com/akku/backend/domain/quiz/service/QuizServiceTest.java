@@ -1,15 +1,19 @@
 package com.akku.backend.domain.quiz.service;
 
-import com.akku.backend.domain.quiz.client.QuizAiClient;
+import com.akku.backend.domain.auth.entity.User;
+import com.akku.backend.domain.auth.repository.UserRepository;
 import com.akku.backend.domain.quiz.dto.*;
 import com.akku.backend.domain.quiz.entity.*;
+import com.akku.backend.domain.quiz.event.QuizChatEvent;
 import com.akku.backend.domain.quiz.exception.QuizErrorCode;
+import com.akku.backend.domain.quiz.kafka.QuizKafkaProducer;
 import com.akku.backend.domain.quiz.repository.*;
 import com.akku.backend.global.error.ApiException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -17,8 +21,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.LocalDate;
 import java.util.Optional;
 import java.util.UUID;
-
-import org.mockito.ArgumentCaptor;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -41,7 +43,10 @@ class QuizServiceTest {
     private ChatLogRepository chatLogRepository;
 
     @Mock
-    private QuizAiClient quizAiClient;
+    private UserRepository userRepository;
+
+    @Mock
+    private QuizKafkaProducer quizKafkaProducer;
 
     @Nested
     @DisplayName("1. 퀴즈 조회 및 난이도 락 (fetchQuiz)")
@@ -61,7 +66,6 @@ class QuizServiceTest {
             given(chatLogRepository.findByUserIdAndQuizId(any(), any())).willReturn(Optional.empty());
 
             UserQuiz savedUserQuiz = UserQuiz.builder().userId(userId).quizId(mockQuiz.getId()).build();
-            // 강제로 100을 넣지 않아도 엔티티 내부 @Builder.Default 덕분에 100이 유지되어야 함
             given(userQuizRepository.save(any(UserQuiz.class))).willReturn(savedUserQuiz);
 
             // when
@@ -85,7 +89,6 @@ class QuizServiceTest {
             given(quizRepository.findTopByDifficultyAndCreatedAtBetween(eq(difficulty), any(), any()))
                     .willReturn(Optional.of(mockQuiz));
 
-            // 크레딧이 90인 상태 (이미 힌트를 씀)
             UserQuiz existingUserQuiz = mock(UserQuiz.class);
             given(existingUserQuiz.getRemainingCredits()).willReturn(90);
             given(userQuizRepository.findByUserIdAndQuizId(any(), any())).willReturn(Optional.of(existingUserQuiz));
@@ -101,45 +104,47 @@ class QuizServiceTest {
     class ChatWithAiTests {
 
         @Test
-        @DisplayName("성공 - AI 응답 수신 시 사용자 메시지와 AI 응답이 채팅 로그에 저장됨")
-        void chatWithAi_Success_SavesBothUserAndAiMessage() {
+        @DisplayName("성공 - Kafka CHAT_REQUEST 이벤트가 올바른 페이로드로 발행됨")
+        void chatWithAi_Success_PublishesKafkaEvent() {
+            // given
             UUID userId = UUID.randomUUID();
             UUID quizId = UUID.randomUUID();
             String userMessage = "힌트 주세요";
+            LocalDate birthDate = LocalDate.of(2015, 3, 10);
             ChatRequest request = new ChatRequest(quizId, userMessage);
 
-            // ── Scenario A: FastAPI가 chatJson을 직접 반환 ──────────────────────
-            String prebuiltChatJson = "{\"messages\":[{\"role\":\"user\",\"content\":\"힌트 주세요\"}]}";
+            // UserQuiz — @Builder.Default로 remainingCredits=100
+            UserQuiz userQuiz = UserQuiz.builder().userId(userId).quizId(quizId).build();
             given(userQuizRepository.findByUserIdAndQuizId(userId, quizId))
-                    .willReturn(Optional.of(UserQuiz.builder().userId(userId).quizId(quizId).build()));
-            given(quizAiClient.requestHint(request))
-                    .willReturn(new ChatResponse("AI answer", prebuiltChatJson));
-            given(chatLogRepository.findByUserIdAndQuizId(userId, quizId))
-                    .willReturn(Optional.empty());
+                    .willReturn(Optional.of(userQuiz));
 
+            Quiz mockQuiz = mock(Quiz.class);
+            given(mockQuiz.getDifficulty()).willReturn("HIGH");
+            given(quizRepository.findById(quizId)).willReturn(Optional.of(mockQuiz));
+
+            User mockUser = mock(User.class);
+            given(mockUser.getBirthDate()).willReturn(birthDate);
+            given(userRepository.findById(userId)).willReturn(Optional.of(mockUser));
+
+            // when
             quizService.chatWithAi(userId, request);
 
-            ArgumentCaptor<ChatLog> captorA = ArgumentCaptor.forClass(ChatLog.class);
-            verify(chatLogRepository).save(captorA.capture());
-            assertEquals(prebuiltChatJson, captorA.getValue().getChatJson());
+            // then — Kafka 이벤트 페이로드 전체 검증
+            ArgumentCaptor<QuizChatEvent> eventCaptor = ArgumentCaptor.forClass(QuizChatEvent.class);
+            verify(quizKafkaProducer).publishChatRequest(eventCaptor.capture());
+            QuizChatEvent published = eventCaptor.getValue();
 
-            // ── Scenario B: FastAPI가 chatJson=null 반환 → 서비스 레이어에서 조립 ──
-            reset(userQuizRepository, quizAiClient, chatLogRepository);
-            given(userQuizRepository.findByUserIdAndQuizId(userId, quizId))
-                    .willReturn(Optional.of(UserQuiz.builder().userId(userId).quizId(quizId).build()));
-            given(quizAiClient.requestHint(request))
-                    .willReturn(new ChatResponse("AI answer", null));
-            given(chatLogRepository.findByUserIdAndQuizId(userId, quizId))
-                    .willReturn(Optional.empty());
+            assertNotNull(published.eventId());            // auto-generated UUID
+            assertEquals("CHAT_REQUEST", published.eventType());
+            assertEquals(userId,         published.userId());
+            assertEquals(quizId,         published.quizId());
+            assertEquals(userMessage,    published.message());
+            assertEquals("HIGH",         published.difficulty());
+            assertEquals(birthDate,      published.birthDate());
+            assertEquals(100,            published.remainingCredits());
 
-            quizService.chatWithAi(userId, request);
-
-            ArgumentCaptor<ChatLog> captorB = ArgumentCaptor.forClass(ChatLog.class);
-            verify(chatLogRepository).save(captorB.capture());
-            String builtJson = captorB.getValue().getChatJson();
-            assertNotNull(builtJson);
-            assertTrue(builtJson.contains(userMessage));
-            assertTrue(builtJson.contains("AI answer"));
+            // chatWithAi는 더 이상 DB에 직접 쓰지 않음 — 저장은 Kafka 컨슈머 책임
+            verifyNoInteractions(chatLogRepository);
         }
 
         @Test
@@ -159,8 +164,8 @@ class QuizServiceTest {
             ApiException ex = assertThrows(ApiException.class, () -> quizService.chatWithAi(userId, request));
             assertEquals(QuizErrorCode.QUIZ_ALREADY_SUBMITTED, ex.getErrorCode());
 
-            // AI 서버(QuizAiClient)가 호출되지 않았는지 검증
-            verifyNoInteractions(quizAiClient);
+            // Freeze 이후에는 Kafka 이벤트가 발행되지 않아야 함
+            verifyNoInteractions(quizKafkaProducer);
         }
     }
 
@@ -180,7 +185,7 @@ class QuizServiceTest {
             given(userQuizRepository.findByUserIdAndQuizIdForUpdate(userId, quizId)).willReturn(Optional.of(userQuiz));
 
             Quiz quiz = mock(Quiz.class);
-            given(quiz.getCorrectAnswer()).willReturn(1); // 1번이 정답
+            given(quiz.getCorrectAnswer()).willReturn(1);
             given(quizRepository.findById(quizId)).willReturn(Optional.of(quiz));
 
             // when
@@ -190,6 +195,49 @@ class QuizServiceTest {
             assertTrue(response.isCorrect());
             assertNotNull(response.jellingReward());
             assertTrue(response.jellingReward() >= 1 && response.jellingReward() <= 20);
+        }
+    }
+
+    @Nested
+    @DisplayName("4. 채팅 로그 UPSERT (upsertChatLog)")
+    class UpsertChatLogTests {
+
+        @Test
+        @DisplayName("신규 생성 - 기존 로그가 없으면 새 ChatLog를 저장한다")
+        void upsertChatLog_Create_WhenNoExistingLog() {
+            // given
+            UUID userId = UUID.randomUUID();
+            UUID quizId = UUID.randomUUID();
+            String chatJson = "{\"messages\":[{\"role\":\"user\",\"content\":\"힌트\"},{\"role\":\"assistant\",\"content\":\"설명\"}]}";
+            given(chatLogRepository.findByUserIdAndQuizId(userId, quizId)).willReturn(Optional.empty());
+
+            // when
+            quizService.upsertChatLog(userId, quizId, chatJson);
+
+            // then — 새 엔티티로 save 호출, chatJson 일치 확인
+            ArgumentCaptor<ChatLog> captor = ArgumentCaptor.forClass(ChatLog.class);
+            verify(chatLogRepository).save(captor.capture());
+            assertEquals(chatJson, captor.getValue().getChatJson());
+        }
+
+        @Test
+        @DisplayName("업데이트 - 기존 로그가 있으면 chatJson을 갱신한 뒤 save한다")
+        void upsertChatLog_Update_WhenExistingLog() {
+            // given
+            UUID userId = UUID.randomUUID();
+            UUID quizId = UUID.randomUUID();
+            String oldChatJson = "{\"messages\":[{\"role\":\"user\",\"content\":\"이전 질문\"}]}";
+            String newChatJson = "{\"messages\":[{\"role\":\"user\",\"content\":\"이전 질문\"},{\"role\":\"assistant\",\"content\":\"새 답변\"}]}";
+
+            ChatLog existingLog = ChatLog.builder().userId(userId).quizId(quizId).chatJson(oldChatJson).build();
+            given(chatLogRepository.findByUserIdAndQuizId(userId, quizId)).willReturn(Optional.of(existingLog));
+
+            // when
+            quizService.upsertChatLog(userId, quizId, newChatJson);
+
+            // then — 동일 인스턴스를 갱신 후 save, chatJson이 교체됐는지 확인
+            verify(chatLogRepository).save(existingLog);
+            assertEquals(newChatJson, existingLog.getChatJson());
         }
     }
 }
