@@ -9,6 +9,8 @@ import com.akku.backend.domain.auth.dto.SignupRequest;
 import com.akku.backend.domain.auth.dto.SocialLoginData;
 import com.akku.backend.global.dto.ApiResponse;
 import com.akku.backend.domain.auth.service.AuthService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 
+@Tag(name = "Auth", description = "인증/인가 API")
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
@@ -29,12 +32,13 @@ public class AuthController {
      * POST /api/auth/social/{provider}
      * Body: { "socialToken": "카카오_액세스_토큰" }
      */
+    @Operation(summary = "소셜 로그인", description = "카카오 액세스 토큰으로 로그인을 시도합니다.")
     @PostMapping("/social/{provider}")
     public ResponseEntity<ApiResponse<SocialLoginData>> socialLogin(
             @PathVariable String provider,
-            @RequestBody KakaoLoginRequest request
+            @Valid @RequestBody KakaoLoginRequest request
     ) {
-        SocialLoginData data = authService.kakaoLogin(request.socialToken());
+        SocialLoginData data = authService.kakaoLogin(request.socialToken(), request.fcmToken());
 
         String message = data.isRegistered()
                 ? "로그인에 성공했습니다."
@@ -49,6 +53,7 @@ public class AuthController {
      * Header: Authorization: Bearer {tempToken}
      * Body: { "role": "PARENT", "name": "홍길동" }
      */
+    @Operation(summary = "회원가입", description = "역할(부모/자녀)과 이름을 등록합니다.")
     @PostMapping("/signup")
     public ResponseEntity<ApiResponse<SignupData>> signup(
             @AuthenticationPrincipal UUID userId,
@@ -66,6 +71,7 @@ public class AuthController {
      * POST /api/auth/logout
      * Header: Authorization: Bearer {accessToken}
      */
+    @Operation(summary = "로그아웃", description = "액세스 토큰을 무효화합니다.")
     @PostMapping("/logout")
     public ResponseEntity<ApiResponse<Void>> logout(
             @AuthenticationPrincipal UUID userId,
@@ -89,6 +95,7 @@ public class AuthController {
      * POST /api/auth/refresh
      * Body: { "refreshToken": "기존_refresh_token" }
      */
+    @Operation(summary = "토큰 재발급", description = "리프레시 토큰으로 새로운 액세스 토큰을 발급받습니다.")
     @PostMapping("/refresh")
     public ResponseEntity<ApiResponse<RefreshData>> refresh(
             @RequestBody RefreshRequest request

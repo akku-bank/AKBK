@@ -1,0 +1,8 @@
+langgraph
+langchain-openai
+psycopg2-binary
+pandas
+beautifulsoup4
+psycopg2-binary
+openai
+requests

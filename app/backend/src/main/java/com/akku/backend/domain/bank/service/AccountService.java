@@ -1,0 +1,106 @@
+package com.akku.backend.domain.bank.service;
+
+import com.akku.backend.domain.auth.entity.User;
+import com.akku.backend.domain.auth.repository.UserRepository;
+import com.akku.backend.domain.auth.exception.AuthErrorCode;
+import com.akku.backend.domain.auth.service.SsafyFinanceService;
+import com.akku.backend.domain.bank.dto.*;
+import com.akku.backend.domain.bank.entity.Account;
+import com.akku.backend.domain.bank.repository.AccountRepository;
+import com.akku.backend.domain.user.exception.UserErrorCode;
+import com.akku.backend.global.error.ApiException;
+import com.akku.backend.global.finance.dto.FinanceAccountCreateResponse;
+import com.akku.backend.global.finance.dto.FinanceAccountListResponse;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+@Service
+@RequiredArgsConstructor
+public class AccountService {
+
+    private final UserRepository userRepository;
+    private final AccountRepository accountRepository;
+    private final SsafyFinanceService ssafyFinanceService;
+
+    /**
+     * 계좌 생성 (부모가 자녀의 계좌를 생성)
+     */
+    @Transactional
+    public AccountCreateResponse createAccount(UUID parentId, AccountCreateRequest request) {
+        User parent = userRepository.findById(parentId)
+                .orElseThrow(() -> new ApiException(UserErrorCode.USER_NOT_FOUND));
+        
+        if (!"PARENT".equals(parent.getRole())) {
+            throw new ApiException(AuthErrorCode.ACCESS_DENIED);
+        }
+
+        User child = userRepository.findById(request.childId())
+                .orElseThrow(() -> new ApiException(UserErrorCode.USER_NOT_FOUND));
+
+        // 금융망 API 호출하여 계좌 생성
+        FinanceAccountCreateResponse.Rec rec = ssafyFinanceService.createAccount(child.getUserKey(), request.accountType());
+
+        // 우리 DB에 계좌 정보 저장
+        Account account = Account.builder()
+                .userId(child.getId())
+                .accountNumber(rec.accountNo())
+                .bankCode(rec.bankCode())
+                .type(request.accountType())
+                .balance(0L)
+                .build();
+        
+        Account savedAccount = accountRepository.save(account);
+
+        return new AccountCreateResponse(savedAccount.getId(), savedAccount.getBalance());
+    }
+
+    /**
+     * 내 계좌 목록 조회
+     */
+    public AccountListResponse getMyAccounts(UUID userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ApiException(UserErrorCode.USER_NOT_FOUND));
+
+        List<FinanceAccountListResponse.AccountDetails> finAccounts = ssafyFinanceService.getAccounts(user.getUserKey());
+        
+        List<AccountInfo> accounts = finAccounts.stream()
+                .map(acc -> new AccountInfo(
+                        acc.bankCode(),
+                        acc.bankName(),
+                        acc.accountNo(),
+                        acc.accountName(),
+                        acc.accountBalance()
+                ))
+                .collect(Collectors.toList());
+        
+        return new AccountListResponse(accounts);
+    }
+
+    /**
+     * 타행 계좌 연동
+     */
+    @Transactional
+    public void linkExternalAccount(UUID userId, AccountLinkRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ApiException(UserErrorCode.USER_NOT_FOUND));
+
+        // 금융망 API 호출하여 계좌 연동 처리
+        ssafyFinanceService.linkAccount(user.getUserKey(), request.bankCode(), request.accountNumber());
+
+        // 우리 DB에도 연동된 계좌 정보 저장
+        Account account = Account.builder()
+                .userId(user.getId())
+                .accountNumber(request.accountNumber())
+                .bankCode(request.bankCode())
+                .type("EXTERNAL") // 타행 계좌
+                .balance(0L) // 실제 잔액은 추후
+                .build();
+
+        accountRepository.save(account);
+    }
+}
