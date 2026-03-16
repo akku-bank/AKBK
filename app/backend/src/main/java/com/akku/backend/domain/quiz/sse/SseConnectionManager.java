@@ -47,12 +47,14 @@ public class SseConnectionManager {
 
         // 콜백 등록 — 모두 ConcurrentHashMap.remove(key, value) 로 정확한 인스턴스만 제거
         emitter.onTimeout(() -> {
-            log.warn("SSE 타임아웃 ({} ms) - userId: {}", SSE_TIMEOUT_MS, userId);
+            log.warn("SSE 타임아웃 ({} ms)", SSE_TIMEOUT_MS);
+            log.debug("SSE 타임아웃 상세 - userId: {}", userId);
             emitters.remove(userId, emitter);
             emitter.complete();
         });
         emitter.onError(ex -> {
-            log.warn("SSE 에러 - userId: {}, cause: {}", userId, ex.getMessage());
+            log.warn("SSE 에러 - cause: {}", ex.getMessage());
+            log.debug("SSE 에러 상세 - userId: {}", userId);
             emitters.remove(userId, emitter);
         });
         emitter.onCompletion(() -> emitters.remove(userId, emitter));
@@ -71,12 +73,15 @@ public class SseConnectionManager {
                     .name("connected")
                     .data("SSE 연결 완료", MediaType.TEXT_PLAIN));
         } catch (IOException e) {
-            log.warn("SSE 초기 이벤트 전송 실패 - userId: {}. 연결을 즉시 정리합니다.", userId, e);
+            log.warn("SSE 초기 이벤트 전송 실패. 연결을 즉시 정리합니다.", e);
+            log.debug("SSE 초기 이벤트 전송 실패 상세 - userId: {}", userId);
             emitters.remove(userId, emitter);
             emitter.completeWithError(e);
+            return emitter;
         }
 
-        log.info("SSE 연결 수립 - userId: {}, 현재 활성 연결 수: {}", userId, emitters.size());
+        log.info("SSE 연결 수립 완료 - 현재 활성 연결 수: {}", emitters.size());
+        log.debug("SSE 연결 수립 상세 - userId: {}", userId);
         return emitter;
     }
 
@@ -93,7 +98,8 @@ public class SseConnectionManager {
     public void send(UUID userId, Object payload, String eventName) {
         SseEmitter emitter = emitters.get(userId);
         if (emitter == null) {
-            log.warn("SSE 전송 실패 — 활성 연결 없음. userId: {}, event: {}", userId, eventName);
+            log.warn("SSE 전송 실패 — 활성 연결 없음. event: {}", eventName);
+            log.debug("SSE 전송 실패 상세 - userId: {}", userId);
             return;
         }
         try {
@@ -102,7 +108,8 @@ public class SseConnectionManager {
                     .data(payload, MediaType.APPLICATION_JSON));
             log.debug("SSE 이벤트 전송 완료 - userId: {}, event: {}", userId, eventName);
         } catch (IOException e) {
-            log.warn("SSE 전송 IOException - userId: {}. Emitter 제거.", userId, e);
+            log.warn("SSE 전송 IOException. Emitter 제거.", e);
+            log.debug("SSE 전송 IOException 상세 - userId: {}", userId);
             emitters.remove(userId, emitter);
         }
     }
@@ -114,7 +121,8 @@ public class SseConnectionManager {
         SseEmitter emitter = emitters.remove(userId);
         if (emitter != null) {
             emitter.complete();
-            log.info("SSE 연결 정상 종료 - userId: {}", userId);
+            log.info("SSE 연결 정상 종료");
+            log.debug("SSE 연결 정상 종료 상세 - userId: {}", userId);
         }
     }
 }
