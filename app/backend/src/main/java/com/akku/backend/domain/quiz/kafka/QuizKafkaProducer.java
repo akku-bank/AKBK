@@ -35,8 +35,16 @@ public class QuizKafkaProducer {
      * 파티션 키로 userId를 사용해 동일 사용자의 메시지 순서를 보장한다.
      */
     public void publishChatRequest(QuizChatEvent event) {
-        kafkaTemplate.send(quizChatRequestTopic, event.userId().toString(), event);
-        log.info("Kafka CHAT_REQUEST 발행 완료 - eventId: {}, userId: {}, quizId: {}",
-                event.eventId(), event.userId(), event.quizId());
+        kafkaTemplate.send(quizChatRequestTopic, event.userId().toString(), event)
+                .whenComplete((result, ex) -> {
+                    if (ex != null) {
+                        log.error("Kafka CHAT_REQUEST 발행 실패 - eventId: {}, userId: {}, quizId: {}",
+                                event.eventId(), event.userId(), event.quizId(), ex);
+                    } else {
+                        log.info("Kafka CHAT_REQUEST 발행 완료 - eventId: {}, userId: {}, quizId: {}, offset: {}",
+                                event.eventId(), event.userId(), event.quizId(),
+                                result.getRecordMetadata().offset());
+                    }
+                });
     }
 }
