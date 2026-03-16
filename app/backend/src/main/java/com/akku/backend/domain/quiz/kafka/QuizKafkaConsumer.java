@@ -85,21 +85,23 @@ public class QuizKafkaConsumer {
             return;
         }
 
-        // ── 1. DB UPSERT ─────────────────────────────────────────────────────
-        // quizService.upsertChatLog()의 @Transactional 경계 내에서 실행된다.
-        // 이 호출이 반환된 시점 = 트랜잭션 커밋 완료. 이후에만 SSE 전송을 진행한다.
-        quizService.upsertChatLog(event.userId(), event.quizId(), event.chatJson());
-        log.debug("채팅 로그 UPSERT 완료 - userId: {}, quizId: {}", event.userId(), event.quizId());
+        // ── 1. DB UPSERT + 2. SSE 푸시 ───────────────────────────────────────
+        // finally로 complete() 보장 — upsert/send 예외 시에도 SSE 연결이 hang되지 않음
+        try {
+            // quizService.upsertChatLog()의 @Transactional 경계 내에서 실행된다.
+            // 이 호출이 반환된 시점 = 트랜잭션 커밋 완료. 이후에만 SSE 전송을 진행한다.
+            quizService.upsertChatLog(event.userId(), event.quizId(), event.chatJson());
+            log.debug("채팅 로그 UPSERT 완료 - userId: {}, quizId: {}", event.userId(), event.quizId());
 
-        // ── 2. SSE 푸시 ───────────────────────────────────────────────────────
-        // 재사용 기존 ChatResponse DTO: reply(AI 텍스트) + chatJson(전체 누적 기록)
-        sseConnectionManager.send(
-                event.userId(),
-                new ChatResponse(event.reply(), event.chatJson()),
-                "chat-response"
-        );
-
-        // ── 3. SSE 스트림 정상 종료 ───────────────────────────────────────────
-        sseConnectionManager.complete(event.userId());
+            // 재사용 기존 ChatResponse DTO: reply(AI 텍스트) + chatJson(전체 누적 기록)
+            sseConnectionManager.send(
+                    event.userId(),
+                    new ChatResponse(event.reply(), event.chatJson()),
+                    "chat-response"
+            );
+        } finally {
+            // ── 3. SSE 스트림 정상 종료 ─────────────────────────────────────
+            sseConnectionManager.complete(event.userId());
+        }
     }
 }
