@@ -14,6 +14,8 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.UUID;
@@ -78,7 +80,7 @@ public class QuizController {
     )
     @PostMapping("/chat")
     public ResponseEntity<ApiResponse<Void>> chatWithAi(
-            @RequestBody ChatRequest request,
+            @Valid @RequestBody ChatRequest request,
             @RequestAttribute("userId") UUID userId) {
 
         quizService.chatWithAi(userId, request);
@@ -96,7 +98,7 @@ public class QuizController {
     )
     @PostMapping("/answer")
     public ResponseEntity<ApiResponse<AnswerResponse>> submitAnswer(
-            @RequestBody AnswerRequest request,
+            @Valid @RequestBody AnswerRequest request,
             @RequestAttribute("userId") UUID userId) {
 
         AnswerResponse response = quizService.submitAnswer(userId, request);
