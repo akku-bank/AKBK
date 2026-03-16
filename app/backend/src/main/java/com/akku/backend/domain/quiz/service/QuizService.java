@@ -176,19 +176,6 @@ public class QuizService {
      */
     @Transactional
     public void upsertChatLog(UUID userId, UUID quizId, String chatJson) {
-        chatLogRepository.findByUserIdAndQuizId(userId, quizId)
-                .ifPresentOrElse(
-                        log -> {
-                            log.updateChatJson(chatJson);
-                            chatLogRepository.save(log);
-                        },
-                        () -> chatLogRepository.save(
-                                ChatLog.builder()
-                                        .userId(userId)
-                                        .quizId(quizId)
-                                        .chatJson(chatJson)
-                                        .build()
-                        )
-                );
+        chatLogRepository.upsertChatJson(userId, quizId, chatJson);
     }
 }
