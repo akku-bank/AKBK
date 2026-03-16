@@ -3,6 +3,7 @@ package com.akku.backend.domain.quiz.kafka;
 import com.akku.backend.domain.quiz.event.QuizChatEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 
@@ -23,7 +24,8 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class QuizKafkaProducer {
 
-    private static final String QUIZ_CHAT_REQUEST_TOPIC = "quiz.chat.request";
+    @Value("${akku.kafka.topic.quiz-chat-request:quiz.chat.request}")
+    private String quizChatRequestTopic;
 
     // TODO: KafkaTemplate config — JsonSerializer 기반 ProducerFactory 빈 등록 필요
     private final KafkaTemplate<String, Object> kafkaTemplate;
@@ -33,7 +35,7 @@ public class QuizKafkaProducer {
      * 파티션 키로 userId를 사용해 동일 사용자의 메시지 순서를 보장한다.
      */
     public void publishChatRequest(QuizChatEvent event) {
-        kafkaTemplate.send(QUIZ_CHAT_REQUEST_TOPIC, event.userId().toString(), event);
+        kafkaTemplate.send(quizChatRequestTopic, event.userId().toString(), event);
         log.info("Kafka CHAT_REQUEST 발행 완료 - eventId: {}, userId: {}, quizId: {}",
                 event.eventId(), event.userId(), event.quizId());
     }
