@@ -80,8 +80,8 @@ public class QuizKafkaConsumer {
                         new ChatResponse(event.reply(), null),
                         "chat-response"
                 );
-                sseConnectionManager.complete(event.userId());
             }
+            sseConnectionManager.complete(event.userId());
             return;
         }
 
