@@ -12,16 +12,16 @@ services:
     environment:
       - TZ=Asia/Seoul
 
-  ngrok:
-    image: ngrok/ngrok:latest
-    container_name: ngrok-tunnel
-    restart: always
-    ports:
-      - "4040:4040"
-    environment:
-      - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
-    command:
-      - "http"
-      - "jenkins:8080" # 젠킨스 서비스 이름과 내부 포트 지정
-    depends_on:
-      - jenkins
+  # ngrok:
+  #   image: ngrok/ngrok:latest
+  #   container_name: ngrok-tunnel
+  #   restart: always
+  #   ports:
+  #     - "4040:4040"
+  #   environment:
+  #     - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
+  #   command:
+  #     - "http"
+  #     - "jenkins:8080" # 젠킨스 서비스 이름과 내부 포트 지정
+  #   depends_on:
+  #     - jenkins

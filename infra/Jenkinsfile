@@ -10,8 +10,8 @@ pipeline {
             steps {
                 // 깃랩에서 소스코드 가져오기
                 git url: 'https://lab.ssafy.com/s14-fintech-finance-sub1/S14P21B101.git',
-                    credentialsId: 'gitlab_auth', 
-                    branch: 'master'
+                    credentialsId: 'gitlab-ci-token', 
+                    branch: 'develop'
             }
         }
 
