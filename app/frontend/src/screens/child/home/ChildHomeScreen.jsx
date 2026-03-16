@@ -4,6 +4,7 @@ import { scale, verticalScale } from 'react-native-size-matters';
 import ChildAvatar from '../../../components/child/avatar/ChildAvatar';
 import { AvatarContext } from '../../../components/child/avatar/AvatarContext';
 import CustomText from '../../../components/common/CustomText';
+import Pet from '../../../components/child/avatar/Pet';
 
 const { width, height } = Dimensions.get('window');
 
@@ -11,7 +12,6 @@ const ChildHomeScreen = ({ navigation }) => {
     const [isQrModalVisible, setQrModalVisible] = useState(false);
     const { equipState } = useContext(AvatarContext);
 
-    // 디바이스 전체 높이에 비례하여 아바타 크기 결정 (비율 축소)
     const avatarSize = height > 750 ? 270 : 200;
 
     return (
@@ -32,7 +32,7 @@ const ChildHomeScreen = ({ navigation }) => {
 
                 <View style={styles.divider} />
 
-                {/* 친구, 알림 버튼 행 */}
+                {/* 친구, 알림 버튼 */}
                 <View style={styles.actionRow}>
                     <TouchableOpacity style={styles.pillButton} onPress={() => navigation.navigate('FriendList')}>
                         <CustomText style={styles.pillButtonText}>친구</CustomText>
@@ -50,7 +50,7 @@ const ChildHomeScreen = ({ navigation }) => {
                     <CustomText style={styles.donationContentText}>준비 중</CustomText>
                 </TouchableOpacity>
 
-                {/* 아바타 영역 (남은 공간을 모두 차지하도록 flex: 1) */}
+                {/* 아바타 영역 */}
                 <View style={styles.avatarSection}>
                     <CustomText style={styles.levelText}>LV.15</CustomText>
                     <CustomText style={styles.nameText}>김싸피</CustomText>
@@ -66,12 +66,17 @@ const ChildHomeScreen = ({ navigation }) => {
 
                     <View style={styles.avatarWrapper}>
                         <ChildAvatar equipState={equipState} size={avatarSize} />
+
+                        {/* 펫 배치 */}
+                        <View style={{ position: 'absolute', right: scale(-120), bottom: verticalScale(-115) }}>
+                            <Pet petType="shiba" size={scale(350)} />
+                        </View>
                     </View>
                 </View>
 
             </View>
 
-            {/* QR 결제 모달 (전체화면) */}
+            {/* QR 결제 모달 */}
             <Modal visible={isQrModalVisible} transparent={true} animationType="fade">
                 <View style={styles.qrModalBackground}>
                     <TouchableOpacity style={styles.qrModalCloseBtn} onPress={() => setQrModalVisible(false)}>
@@ -87,10 +92,10 @@ const ChildHomeScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
     fullscreen: {
         flex: 1,
-        backgroundColor: '#FFFFFF', // 전체 흰색 배경
+        backgroundColor: '#FFFFFF',
     },
     container: {
-        flex: 1, // 화면 높이에 맞춤 (스크롤 제거)
+        flex: 1,
         paddingTop: verticalScale(16),
         paddingBottom: verticalScale(10),
     },
@@ -115,7 +120,7 @@ const styles = StyleSheet.create({
         fontSize: scale(32),
         fontWeight: '900',
         color: '#111',
-        letterSpacing: -1, // 약간의 픽셀/레트로 느낌 강조를 위해 자간 좁힘
+        letterSpacing: -1,
     },
     balanceCurrency: {
         fontSize: scale(18),
@@ -165,7 +170,7 @@ const styles = StyleSheet.create({
         marginHorizontal: scale(20),
         borderRadius: scale(20),
         padding: scale(16),
-        height: verticalScale(90), // 세로 길이 조금 축소
+        height: verticalScale(90),
         marginBottom: verticalScale(20),
         position: 'relative',
         justifyContent: 'center',
@@ -192,7 +197,7 @@ const styles = StyleSheet.create({
         marginTop: verticalScale(10),
     },
     avatarSection: {
-        flex: 1, // 화면의 남은 빈 공간을 꽉 채우도록
+        flex: 1,
         alignItems: 'center',
         justifyContent: 'flex-start',
     },
@@ -225,10 +230,10 @@ const styles = StyleSheet.create({
         color: '#374151',
     },
     avatarWrapper: {
-        flex: 1, // 아바타 컨테이너가 avatarSection 내부 빈칸 차지
+        flex: 1,
         width: '100%',
         alignItems: 'center',
-        justifyContent: 'flex-end', // 하단에 딱 붙도록 정렬
+        justifyContent: 'flex-end',
     },
     qrModalBackground: {
         flex: 1,
