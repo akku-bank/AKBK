@@ -43,13 +43,6 @@ public class SseConnectionManager {
      * (브라우저 탭 새로고침 등에서 발생하는 중복 연결 방어)</p>
      */
     public SseEmitter connect(UUID userId) {
-        // 기존 연결이 있으면 먼저 정리 (중복 연결 방지)
-        SseEmitter existing = emitters.remove(userId);
-        if (existing != null) {
-            existing.complete();
-            log.debug("기존 SSE 연결 교체 - userId: {}", userId);
-        }
-
         SseEmitter emitter = new SseEmitter(SSE_TIMEOUT_MS);
 
         // 콜백 등록 — 모두 ConcurrentHashMap.remove(key, value) 로 정확한 인스턴스만 제거
@@ -64,7 +57,13 @@ public class SseConnectionManager {
         });
         emitter.onCompletion(() -> emitters.remove(userId, emitter));
 
-        emitters.put(userId, emitter);
+        // 새 emitter를 먼저 등록한 뒤 기존 emitter를 정리 — 교체 중 이벤트 소실 방지
+        SseEmitter existing = emitters.put(userId, emitter);
+        if (existing != null) {
+            existing.complete();
+            emitters.remove(userId, existing);  // 콜백이 이미 no-op으로 처리하지만 명시적으로 정리
+            log.debug("기존 SSE 연결 교체 - userId: {}", userId);
+        }
 
         // 초기 핸드셰이크 이벤트 — 클라이언트가 연결 성공을 즉시 확인할 수 있도록 전송
         try {
