@@ -38,12 +38,14 @@ public class QuizKafkaProducer {
         kafkaTemplate.send(quizChatRequestTopic, event.userId().toString(), event)
                 .whenComplete((result, ex) -> {
                     if (ex != null) {
-                        log.error("Kafka CHAT_REQUEST 발행 실패 - eventId: {}, userId: {}, quizId: {}",
-                                event.eventId(), event.userId(), event.quizId(), ex);
+                        log.error("Kafka CHAT_REQUEST 발행 실패 - eventId: {}", event.eventId(), ex);
+                        log.debug("Kafka CHAT_REQUEST 발행 실패 상세 - userId: {}, quizId: {}",
+                                event.userId(), event.quizId());
                     } else {
-                        log.info("Kafka CHAT_REQUEST 발행 완료 - eventId: {}, userId: {}, quizId: {}, offset: {}",
-                                event.eventId(), event.userId(), event.quizId(),
-                                result.getRecordMetadata().offset());
+                        log.info("Kafka CHAT_REQUEST 발행 완료 - eventId: {}, offset: {}",
+                                event.eventId(), result.getRecordMetadata().offset());
+                        log.debug("Kafka CHAT_REQUEST 발행 완료 상세 - userId: {}, quizId: {}",
+                                event.userId(), event.quizId());
                     }
                 });
     }
