@@ -49,9 +49,10 @@ class AccountServiceTest {
         void createAccount_Success() {
             UUID parentId = UUID.randomUUID();
             UUID childId = UUID.randomUUID();
+            UUID familyId = UUID.randomUUID();
             AccountCreateRequest request = new AccountCreateRequest(childId, "CASH");
-            User parent = User.builder().id(parentId).role("PARENT").build();
-            User child = User.builder().id(childId).userKey("child-key").build();
+            User parent = User.builder().id(parentId).role("PARENT").familyId(familyId).build();
+            User child = User.builder().id(childId).userKey("child-key").familyId(familyId).build();
             given(userRepository.findById(parentId)).willReturn(Optional.of(parent));
             given(userRepository.findById(childId)).willReturn(Optional.of(child));
             
