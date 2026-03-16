@@ -62,7 +62,8 @@ class QuizServiceTest {
             given(mockQuiz.getId()).willReturn(UUID.randomUUID());
             given(quizRepository.findTopByDifficultyAndCreatedAtBetween(eq(difficulty), any(), any()))
                     .willReturn(Optional.of(mockQuiz));
-            given(userQuizRepository.findByUserIdAndQuizId(any(), any())).willReturn(Optional.empty());
+            given(userQuizRepository.findTopByUserIdAndCreatedAtBetweenOrderByCreatedAtDesc(any(), any(), any()))
+                    .willReturn(Optional.empty());
             given(chatLogRepository.findByUserIdAndQuizId(any(), any())).willReturn(Optional.empty());
 
             UserQuiz savedUserQuiz = UserQuiz.builder().userId(userId).quizId(mockQuiz.getId()).build();
@@ -91,7 +92,9 @@ class QuizServiceTest {
 
             UserQuiz existingUserQuiz = mock(UserQuiz.class);
             given(existingUserQuiz.getRemainingCredits()).willReturn(90);
-            given(userQuizRepository.findByUserIdAndQuizId(any(), any())).willReturn(Optional.of(existingUserQuiz));
+            given(existingUserQuiz.getQuizId()).willReturn(UUID.randomUUID()); // 다른 난이도의 퀴즈 ID
+            given(userQuizRepository.findTopByUserIdAndCreatedAtBetweenOrderByCreatedAtDesc(any(), any(), any()))
+                    .willReturn(Optional.of(existingUserQuiz));
 
             // when & then
             ApiException ex = assertThrows(ApiException.class, () -> quizService.fetchQuiz(userId, difficulty));
