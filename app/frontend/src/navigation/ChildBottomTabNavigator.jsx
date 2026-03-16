@@ -2,8 +2,8 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { View, Text } from 'react-native';
 import ChildHomeScreen from '../screens/child/home/ChildHomeScreen';
-import ChildChallengeScreen from '../screens/child/challenge/ChildChallengeScreen';
-import ChildSafeBoxScreen from '../screens/child/safeBox/ChildSafeBoxScreen';
+import ChildChallengeScreen from '../screens/child/challenge/ChallengeScreen';
+import ChildSafeBoxScreen from '../screens/child/safeBox/SafeBoxScreen';
 import ChildAccountScreen from '../screens/child/account/ChildAccountScreen';
 import ChildMyPageScreen from '../screens/child/mypage/ChildMyPageScreen';
 
@@ -46,12 +46,12 @@ const ChildBottomTabNavigator = () => {
         >
             <Tab.Screen
                 name="Challenge"
-                component={ChildChallengeScreen}
+                component={ChallengeScreen}
                 options={{ tabBarLabel: '챌린지' }}
             />
             <Tab.Screen
                 name="SafeBox"
-                component={ChildSafeBoxScreen}
+                component={SafeBoxScreen}
                 options={{ tabBarLabel: '젤링' }}
             />
             <Tab.Screen
