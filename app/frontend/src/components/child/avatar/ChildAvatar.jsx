@@ -74,7 +74,7 @@ const ChildAvatar = ({
 
     const renderDefaultAvatar = () => (
         <View style={[styles.canvasContainer, { width: responsiveSize, height: responsiveSize }]}>
-            {/* 호흡 시 날개도 상체 따라 움직이기 */}
+            {/* 1. 호흡 시 날개도 상체 따라 움직이기 */}
             <View style={[styles.layer, { transform: [{ translateY: bodyOffsetY }] }]}>
                 {equipState.wing !== 'none' && AVATAR_ASSETS.acc[equipState.wing] && (
                     <Image source={AVATAR_ASSETS.acc[equipState.wing]} style={styles.layer} />
