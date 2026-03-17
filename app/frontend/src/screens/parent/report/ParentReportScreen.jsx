@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView } from 'react-native';
+import { View, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Platform } from 'react-native';
 import Svg, { Circle, G, Path } from 'react-native-svg';
 import { scale, verticalScale } from 'react-native-size-matters';
 import CustomText from '../../../components/common/CustomText';
@@ -61,6 +61,7 @@ const CATEGORY_DATA = [
 ];
 
 const formatCurrency = (amount) => `${amount.toLocaleString()}원`;
+const formatChartAmount = (amount) => amount.toLocaleString();
 
 const polarToCartesian = (cx, cy, radius, angle) => {
     const radian = ((angle - 90) * Math.PI) / 180;
@@ -86,6 +87,12 @@ const createArcPath = (cx, cy, outerRadius, innerRadius, startAngle, endAngle) =
         'Z',
     ].join(' ');
 };
+
+const bodyFontFamily = Platform.select({
+    ios: 'Apple SD Gothic Neo',
+    android: 'sans-serif',
+    default: undefined,
+});
 
 const ParentReportScreen = ({ navigation, route }) => {
     const childName = route.params?.childName || '김싸피';
@@ -133,29 +140,30 @@ const ParentReportScreen = ({ navigation, route }) => {
                         <CustomText style={styles.cardCaption}>더미 데이터</CustomText>
                     </View>
                     <View style={styles.barChart}>
-                        <View style={styles.gridArea}>
-                            <View style={styles.topGuide} />
-                            <View style={styles.middleGuide} />
-                            <View style={styles.bottomGuide} />
-                        </View>
-                        <View style={styles.barRow}>
-                            {WEEKLY_FLOW_DATA.map((item) => {
-                                const incomeHeight = Math.max((item.income / maxFlowAmount) * scale(92), scale(8));
-                                const expenseHeight = Math.max((item.expense / maxFlowAmount) * scale(92), scale(8));
+                        <View style={styles.plotArea}>
+                            <View style={styles.chartMidLine} />
+                            <View style={styles.barRow}>
+                                {WEEKLY_FLOW_DATA.map((item) => {
+                                    const incomeHeight = Math.max((item.income / maxFlowAmount) * verticalScale(70), scale(8));
+                                    const expenseHeight = Math.max((item.expense / maxFlowAmount) * verticalScale(70), scale(8));
 
-                                return (
-                                    <View key={item.day} style={styles.barColumn}>
-                                        <CustomText style={styles.barValuePositive}>{`+${Math.round(item.income / 1000)}k`}</CustomText>
-                                        <View style={styles.barTrack}>
-                                            <View style={[styles.positiveBar, { height: incomeHeight }]} />
-                                            <View style={styles.zeroLine} />
-                                            <View style={[styles.negativeBar, { height: expenseHeight }]} />
+                                    return (
+                                        <View key={item.day} style={styles.barColumn}>
+                                            <View style={styles.barTrack}>
+                                                <View style={styles.positiveZone}>
+                                                    <CustomText style={styles.barValuePositive}>{`+${formatChartAmount(item.income)}`}</CustomText>
+                                                    <View style={[styles.positiveBar, { height: incomeHeight }]} />
+                                                </View>
+                                                <View style={styles.negativeZone}>
+                                                    <View style={[styles.negativeBar, { height: expenseHeight }]} />
+                                                    <CustomText style={styles.barValueNegative}>{`-${formatChartAmount(item.expense)}`}</CustomText>
+                                                </View>
+                                            </View>
+                                            <CustomText style={styles.dayLabel}>{item.day}</CustomText>
                                         </View>
-                                        <CustomText style={styles.barValueNegative}>{`-${Math.round(item.expense / 1000)}k`}</CustomText>
-                                        <CustomText style={styles.dayLabel}>{item.day}</CustomText>
-                                    </View>
-                                );
-                            })}
+                                    );
+                                })}
+                            </View>
                         </View>
                     </View>
                     <View style={styles.chartSummaryRow}>
@@ -172,7 +180,7 @@ const ParentReportScreen = ({ navigation, route }) => {
 
                 <View style={styles.aiReviewCard}>
                     <CustomText style={styles.aiReviewTitle}>AI 부모님 조언 가이드</CustomText>
-                    <CustomText style={styles.aiReviewText}>
+                    <CustomText style={[styles.aiReviewText, styles.bodyCopyText]}>
                         금요일과 토요일에 소비가 집중됐고, 간식과 오락이 전체 지출의 대부분을 차지합니다. 자녀와 함께
                         주말 예산 상한선을 정해두면 지출 통제가 쉬워질 수 있어요.
                     </CustomText>
@@ -310,95 +318,81 @@ const styles = StyleSheet.create({
     sectionTitle: { fontSize: scale(16), fontWeight: 'bold', color: '#111827' },
     cardCaption: { fontSize: scale(12), color: '#94A3B8' },
     barChart: {
-        height: verticalScale(240),
+        height: verticalScale(280),
         borderRadius: scale(16),
         backgroundColor: '#F8FAFC',
         paddingHorizontal: scale(10),
         paddingTop: verticalScale(16),
-        paddingBottom: verticalScale(12),
+        paddingBottom: verticalScale(18),
         overflow: 'hidden',
     },
-    gridArea: {
-        ...StyleSheet.absoluteFillObject,
-        top: verticalScale(16),
-        bottom: verticalScale(32),
-        left: scale(10),
-        right: scale(10),
-    },
-    topGuide: {
-        position: 'absolute',
-        left: 0,
-        right: 0,
-        top: verticalScale(36),
-        borderTopWidth: 1,
-        borderTopColor: '#D7DEE8',
-    },
-    middleGuide: {
-        position: 'absolute',
-        left: 0,
-        right: 0,
-        top: '50%',
-        marginTop: -0.5,
-        borderTopWidth: 1.5,
-        borderTopColor: '#CBD5E1',
-    },
-    bottomGuide: {
-        position: 'absolute',
-        left: 0,
-        right: 0,
-        bottom: verticalScale(36),
-        borderTopWidth: 1,
-        borderTopColor: '#D7DEE8',
+    plotArea: {
+        flex: 1,
+        position: 'relative',
     },
     barRow: {
         flex: 1,
         flexDirection: 'row',
-        alignItems: 'flex-end',
+        alignItems: 'flex-start',
         justifyContent: 'space-between',
+    },
+    chartMidLine: {
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        top: verticalScale(100),
+        borderTopWidth: 1.5,
+        borderTopColor: '#94A3B8',
     },
     barColumn: {
         width: scale(36),
         alignItems: 'center',
     },
     barValuePositive: {
-        fontSize: scale(11),
+        fontSize: scale(8),
         color: '#0F766E',
         fontWeight: 'bold',
         marginBottom: verticalScale(6),
+        textAlign: 'center',
     },
     barTrack: {
-        width: scale(24),
-        height: verticalScale(168),
+        width: scale(36),
+        height: verticalScale(200),
         alignItems: 'center',
-        justifyContent: 'center',
+        justifyContent: 'space-between',
+    },
+    positiveZone: {
+        width: '100%',
+        height: '50%',
+        alignItems: 'center',
+        justifyContent: 'flex-end',
+        paddingBottom: verticalScale(10),
+    },
+    negativeZone: {
+        width: '100%',
+        height: '50%',
+        alignItems: 'center',
+        justifyContent: 'flex-start',
+        paddingTop: verticalScale(10),
     },
     positiveBar: {
-        width: '100%',
-        position: 'absolute',
-        bottom: '50%',
+        width: scale(28),
         backgroundColor: '#34D399',
         borderTopLeftRadius: scale(8),
         borderTopRightRadius: scale(8),
     },
-    zeroLine: {
-        position: 'absolute',
-        width: scale(28),
-        borderTopWidth: 2,
-        borderTopColor: '#94A3B8',
-    },
     negativeBar: {
-        width: '100%',
-        position: 'absolute',
-        top: '50%',
+        width: scale(28),
         backgroundColor: '#F87171',
         borderBottomLeftRadius: scale(8),
         borderBottomRightRadius: scale(8),
     },
     barValueNegative: {
-        fontSize: scale(11),
+        fontSize: scale(8),
         color: '#DC2626',
         fontWeight: 'bold',
         marginTop: verticalScale(6),
+        textAlign: 'center',
     },
     dayLabel: {
         marginTop: verticalScale(6),
@@ -444,6 +438,7 @@ const styles = StyleSheet.create({
     },
     aiReviewTitle: { fontSize: scale(16), fontWeight: 'bold', color: '#0F172A', marginBottom: verticalScale(8) },
     aiReviewText: { fontSize: scale(14), color: '#334155', lineHeight: 22 },
+    bodyCopyText: { fontFamily: bodyFontFamily, letterSpacing: 0 },
     categoryCard: {
         backgroundColor: '#FFFFFF',
         padding: scale(20),
