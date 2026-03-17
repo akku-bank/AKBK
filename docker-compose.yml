@@ -161,7 +161,13 @@
     volumes:
       - ./data/spark:/opt/spark/work-dir
     # 공식 이미지는 실행 명령어를 명시해주는 것이 안정적
-    command: /opt/spark/bin/spark-class org.apache.spark.deploy.master.Master
+    command: >
+      /bin/bash -c "
+      /opt/spark/bin/spark-class org.apache.spark.deploy.master.Master &
+      sleep 10;
+      /opt/spark/bin/spark-submit 
+      --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.1 
+      /opt/spark/work-dir/realtime_report.py"
 
   spark-worker:
     image: apache/spark:3.5.1-python3
