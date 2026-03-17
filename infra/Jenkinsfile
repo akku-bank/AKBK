@@ -139,7 +139,7 @@ pipeline {
                         "de": "DATA",
                         "be": "BACKEND",
                         "fe": "FRONTEND",
-                        "in": "INFRA"
+                        "infra": "INFRA"
                     ]
 
                     env.TARGET_TEAM = teamMap.get(teamCode, "COMMON_OPS")
