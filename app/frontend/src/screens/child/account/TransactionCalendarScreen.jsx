@@ -1,0 +1,366 @@
+import React, { useState } from 'react';
+import { View, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView } from 'react-native';
+import { scale, verticalScale } from 'react-native-size-matters';
+import useTransactionStore from '../../../store/transactionStore';
+import CustomText from '../../../components/common/CustomText';
+
+// 임시 달력/내역 데이터 (키: YYYY-MM-DD)
+const MOCK_DAYS = ['일', '월', '화', '수', '목', '금', '토'];
+
+const MOCK_TRANSACTIONS_BY_DATE = {
+    '2024-03-12': [
+        { id: '1', time: '14:30', title: '다이소 강남점', amount: -5000, type: 'PAYMENT' },
+        { id: '2', time: '09:00', title: '아빠 주말 용돈', amount: +10000, type: 'DEPOSIT' },
+    ],
+    '2024-03-10': [
+        { id: '3', time: '18:20', title: 'GS25 역삼점', amount: -1500, type: 'PAYMENT' }
+    ],
+    '2024-03-05': [
+        { id: '4', time: '20:00', title: '칭찬 송금 (방청소)', amount: +3000, type: 'DEPOSIT' }
+    ],
+    '2024-02-28': [
+        { id: '5', time: '12:00', title: '맥도날드 강남점', amount: -8000, type: 'PAYMENT' }
+    ]
+};
+
+const TransactionCalendarScreen = ({ navigation }) => {
+    // 기본 시작 날짜를 2024년 3월 12일로 설정 (데이터 보유 기준)
+    const [currentDate, setCurrentDate] = useState(new Date(2024, 2, 12));
+    const [selectedDate, setSelectedDate] = useState(12);
+    const hiddenTransactions = useTransactionStore(state => state.hiddenTransactionIds);
+
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth(); // 0-indexed
+
+    const prevMonth = () => {
+        setCurrentDate(new Date(year, month - 1, 1));
+        setSelectedDate(1);
+    };
+
+    const nextMonth = () => {
+        setCurrentDate(new Date(year, month + 1, 1));
+        setSelectedDate(1);
+    };
+
+    // YYYY-MM-DD 포맷 변환
+    const formatDateKey = (y, m, d) => `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+
+    // 실제 달력 계산 로직
+    const renderCalendarGrid = () => {
+        const firstDayOfMonth = new Date(year, month, 1).getDay();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+        let days = [];
+
+        // 빈 칸 (시작 요일 맞추기)
+        for (let i = 0; i < firstDayOfMonth; i++) {
+            days.push(<View key={`empty-${i}`} style={styles.dayCell} />);
+        }
+
+        for (let i = 1; i <= daysInMonth; i++) {
+            const isSelected = selectedDate === i;
+            const dateKey = formatDateKey(year, month, i);
+            const hasHistory = !!MOCK_TRANSACTIONS_BY_DATE[dateKey];
+
+            days.push(
+                <TouchableOpacity
+                    key={i}
+                    style={[styles.dayCell, isSelected && styles.selectedDayCell]}
+                    onPress={() => setSelectedDate(i)}
+                >
+                    <CustomText style={[styles.dayText, isSelected && styles.selectedDayText]}>{i}</CustomText>
+                    {hasHistory && !isSelected && <View style={styles.historyDot} />}
+                </TouchableOpacity>
+            );
+        }
+
+        return days;
+    };
+
+    const renderTransactionItem = (item) => {
+        const isDeposit = item.amount > 0;
+        const isHidden = hiddenTransactions.includes(item.id);
+
+        return (
+            <TouchableOpacity
+                key={item.id}
+                style={styles.transactionItem}
+                activeOpacity={0.7}
+                onPress={() => navigation.navigate('TransactionDetail', { transaction: item })}
+            >
+                <View style={styles.transactionIconBox}>
+                    <CustomText style={styles.transactionIcon}>{isHidden ? '🔒' : (isDeposit ? '💰' : '🏪')}</CustomText>
+                </View>
+                <View style={styles.transactionInfo}>
+                    <CustomText style={[styles.transactionTitle, isHidden && styles.hiddenText]}>
+                        {isHidden ? '비공개 내역' : item.title}
+                    </CustomText>
+                    <CustomText style={styles.transactionTime}>{item.time}</CustomText>
+                </View>
+                <View style={styles.transactionAmountWrapper}>
+                    <CustomText style={[styles.transactionAmount, isDeposit ? styles.depositColor : styles.withdrawColor]}>
+                        {isDeposit ? '+' : ''}{item.amount.toLocaleString()}원
+                    </CustomText>
+                </View>
+            </TouchableOpacity>
+        );
+    };
+
+    return (
+        <SafeAreaView style={styles.safeArea}>
+            {/* 상단 헤더 */}
+            <View style={styles.header}>
+                <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+                    <CustomText style={styles.backButtonText}>←</CustomText>
+                </TouchableOpacity>
+                <CustomText style={styles.headerTitle}>거래 내역</CustomText>
+                <View style={{ width: 40 }} />
+            </View>
+
+            <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+
+                {/* 달력 영역 */}
+                <View style={styles.calendarCard}>
+                    <View style={styles.monthSelector}>
+                        <TouchableOpacity onPress={prevMonth} style={styles.monthNavButton}>
+                            <CustomText style={styles.monthNavText}>{'<'}</CustomText>
+                        </TouchableOpacity>
+                        <CustomText style={styles.monthText}>{year}년 {month + 1}월</CustomText>
+                        <TouchableOpacity onPress={nextMonth} style={styles.monthNavButton}>
+                            <CustomText style={styles.monthNavText}>{'>'}</CustomText>
+                        </TouchableOpacity>
+                    </View>
+                    <View style={styles.weekRow}>
+                        {MOCK_DAYS.map((day, index) => (
+                            <View key={index} style={styles.dayHeaderCell}>
+                                <CustomText style={[styles.dayHeaderText, index === 0 && styles.sundayText]}>{day}</CustomText>
+                            </View>
+                        ))}
+                    </View>
+                    <View style={styles.calendarGrid}>
+                        {renderCalendarGrid()}
+                    </View>
+                </View>
+
+                {/* 선택된 날짜의 거래 내역 */}
+                <View style={styles.dailyDetailSection}>
+                    <CustomText style={styles.detailDateTitle}>{month + 1}월 {selectedDate}일 소비</CustomText>
+                    <View style={styles.transactionList}>
+                        {(() => {
+                            const dateKey = formatDateKey(year, month, selectedDate);
+                            const dailyTransactions = MOCK_TRANSACTIONS_BY_DATE[dateKey];
+
+                            if (dailyTransactions && dailyTransactions.length > 0) {
+                                return dailyTransactions.map(renderTransactionItem);
+                            } else {
+                                return (
+                                    <View style={styles.emptyState}>
+                                        <CustomText style={styles.emptyStateText}>이 날은 거래 내역이 없어요.</CustomText>
+                                    </View>
+                                );
+                            }
+                        })()}
+                    </View>
+                </View>
+            </ScrollView>
+        </SafeAreaView >
+    );
+};
+
+const styles = StyleSheet.create({
+    safeArea: {
+        flex: 1,
+        backgroundColor: '#F3F4F6',
+    },
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: scale(16),
+        paddingVertical: verticalScale(16),
+        backgroundColor: '#F3F4F6',
+    },
+    backButton: {
+        width: scale(32),
+        height: scale(32),
+        justifyContent: 'center',
+    },
+    backButtonText: {
+        fontSize: scale(22),
+        fontWeight: 'bold',
+        color: '#111',
+    },
+    headerTitle: {
+        fontSize: scale(18),
+        fontWeight: 'bold',
+        color: '#111',
+    },
+    container: {
+        flexGrow: 1,
+        paddingHorizontal: scale(16),
+        paddingBottom: verticalScale(40),
+    },
+    calendarCard: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: scale(20),
+        paddingHorizontal: scale(16),
+        paddingVertical: verticalScale(20),
+        marginBottom: verticalScale(20),
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: verticalScale(2) },
+        shadowOpacity: 0.05,
+        shadowRadius: scale(8),
+        elevation: 2,
+    },
+    monthSelector: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: verticalScale(16),
+        gap: scale(16),
+    },
+    monthNavButton: {
+        paddingHorizontal: scale(12),
+        paddingVertical: verticalScale(4),
+    },
+    monthNavText: {
+        fontSize: scale(18),
+        color: '#9CA3AF',
+        fontWeight: 'bold',
+    },
+    monthText: {
+        fontSize: scale(18),
+        fontWeight: 'bold',
+        color: '#111',
+        minWidth: scale(90),
+        textAlign: 'center',
+    },
+    weekRow: {
+        flexDirection: 'row',
+        marginBottom: verticalScale(8),
+    },
+    dayHeaderCell: {
+        flex: 1,
+        alignItems: 'center',
+    },
+    dayHeaderText: {
+        fontSize: scale(13),
+        fontWeight: '600',
+        color: '#9CA3AF',
+    },
+    sundayText: {
+        color: '#EF4444', // 일요일 빨간색
+    },
+    calendarGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+    },
+    dayCell: {
+        width: '14.28%', // 7등분
+        aspectRatio: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: verticalScale(4),
+    },
+    selectedDayCell: {
+        backgroundColor: '#111',
+        borderRadius: scale(20), // 둥근 원형 선택 표시
+    },
+    dayText: {
+        fontSize: scale(15),
+        fontWeight: '600',
+        color: '#4B5563',
+    },
+    selectedDayText: {
+        color: '#FFFFFF',
+    },
+    historyDot: {
+        width: scale(4),
+        height: scale(4),
+        borderRadius: scale(2),
+        backgroundColor: '#3B82F6',
+        position: 'absolute',
+        bottom: scale(6),
+    },
+    dailyDetailSection: {
+        flex: 1,
+    },
+    detailDateTitle: {
+        fontSize: scale(16),
+        fontWeight: 'bold',
+        color: '#111',
+        marginBottom: verticalScale(12),
+        paddingHorizontal: scale(4),
+    },
+    transactionList: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: scale(20),
+        padding: scale(16),
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: verticalScale(2) },
+        shadowOpacity: 0.05,
+        shadowRadius: scale(8),
+        elevation: 2,
+        minHeight: verticalScale(150),
+    },
+    emptyState: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    emptyStateText: {
+        color: '#9CA3AF',
+        fontSize: scale(14),
+    },
+    transactionItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: verticalScale(12),
+        borderBottomWidth: 1,
+        borderBottomColor: '#F3F4F6',
+    },
+    transactionIconBox: {
+        width: scale(40),
+        height: scale(40),
+        borderRadius: scale(20),
+        backgroundColor: '#F3F4F6',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: scale(12),
+    },
+    transactionIcon: {
+        fontSize: scale(20),
+    },
+    transactionInfo: {
+        flex: 1,
+    },
+    transactionTitle: {
+        fontSize: scale(15),
+        fontWeight: '600',
+        color: '#111',
+        marginBottom: verticalScale(2),
+    },
+    transactionTime: {
+        fontSize: scale(12),
+        color: '#9CA3AF',
+    },
+    transactionAmountWrapper: {
+        alignItems: 'flex-end',
+    },
+    transactionAmount: {
+        fontSize: scale(16),
+        fontWeight: 'bold',
+    },
+    depositColor: {
+        color: '#3B82F6',
+    },
+    withdrawColor: {
+        color: '#111',
+    },
+    hiddenText: {
+        color: '#9CA3AF',
+        fontStyle: 'italic',
+    }
+});
+
+export default TransactionCalendarScreen;

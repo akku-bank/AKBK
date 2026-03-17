@@ -1,251 +1,257 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform, Image } from 'react-native';
-import { RFValue } from 'react-native-responsive-fontsize';
-
-const MapView = null;
-const Marker = null;
-
+import React, { useState, useContext } from 'react';
+import { View, StyleSheet, TouchableOpacity, SafeAreaView, Dimensions, Image, Modal, Platform, StatusBar } from 'react-native';
+import { scale, verticalScale } from 'react-native-size-matters';
 import ChildAvatar from '../../../components/child/avatar/ChildAvatar';
-import FriendListOverlayModal from '../../../components/child/modals/FriendListOverlayModal';
 import { AvatarContext } from '../../../components/child/avatar/AvatarContext';
-import { useContext } from 'react';
+import CustomText from '../../../components/common/CustomText';
+
+const { width, height } = Dimensions.get('window');
 
 const ChildHomeScreen = ({ navigation }) => {
-    const [isFriendModalVisible, setFriendModalVisible] = useState(false);
+    const [isQrModalVisible, setQrModalVisible] = useState(false);
     const { equipState } = useContext(AvatarContext);
+
+    // 디바이스 전체 높이에 비례하여 아바타 크기 결정 (비율 축소)
+    const avatarSize = height > 750 ? 270 : 200;
+
     return (
-        <View style={styles.fullscreen}>
-            <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
-                {/* 헤더 */}
-                <View style={styles.headerContainer}>
-                    <View style={styles.headerTopRow}>
-                        <View style={styles.balanceWrapper}>
-                            <Text style={styles.balanceLabel}>잔액</Text>
-                            <Text style={styles.balanceAmount}>140,000<Text style={styles.balanceCurrency}> 원</Text></Text>
-                        </View>
-                        <TouchableOpacity style={styles.qrButton} onPress={() => { }}>
-                            <Image
-                                source={require('../../../assets/qr.png')}
-                                style={styles.qrImage}
-                                resizeMode="contain"
-                            />
-                        </TouchableOpacity>
-                    </View>
+        <SafeAreaView style={styles.fullscreen}>
+            <View style={styles.container}>
 
-                    <View style={styles.headerBottomRow}>
-                        <TouchableOpacity style={styles.actionButton} onPress={() => setFriendModalVisible(true)}>
-                            <Text style={styles.actionButtonText}>친구</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.actionButton}>
-                            <Text style={styles.actionButtonText}>알림</Text>
-                        </TouchableOpacity>
+                {/* 상단 헤더: 잔액 및 QR */}
+                <View style={styles.headerRow}>
+                    <View style={styles.balanceWrapper}>
+                        <CustomText style={styles.balanceLabel}>잔액</CustomText>
+                        <CustomText style={styles.balanceAmount}>140,000</CustomText>
+                        <CustomText style={styles.balanceCurrency}>원</CustomText>
                     </View>
-                </View>
-
-                {/* 기부 */}
-                <TouchableOpacity style={styles.donationBox} activeOpacity={0.8} onPress={() => { navigation.navigate('BadgeMap') }}>
-                    <View style={styles.mapContainer} pointerEvents="none">
-                        <View style={[styles.map, styles.webMapPlaceholder]}>
-                            <br></br>
-                            <br></br>
-                            <Text style={styles.webMapText}>준비 중</Text>
-                        </View>
-                    </View>
-                    <View style={styles.donationOverlay}>
-                        <Text style={styles.donationText}>내가 기부한 장소</Text>
-                    </View>
-                </TouchableOpacity>
-
-                <View style={[styles.avatarSection]}>
-                    <View style={styles.avatarNameHeader}>
-                        <Text style={styles.avatarLevelText}>LV.15</Text>
-                        <View style={styles.avatarNameRow}>
-                            <Text style={styles.avatarNameText}>김싸피</Text>
-                        </View>
-                    </View>
-
-                    <ChildAvatar equipState={equipState} size={200} />
-
-                    {/* 옷장 */}
-                    <TouchableOpacity style={styles.wardrobeButton} onPress={() => navigation.navigate('Wardrobe')}>
-                        <Text style={styles.wardrobeButtonText}>옷장</Text>
+                    <TouchableOpacity style={styles.qrButton} onPress={() => setQrModalVisible(true)}>
+                        <Image source={require('../../../assets/qr.png')} style={styles.qrImage} />
                     </TouchableOpacity>
                 </View>
-            </ScrollView>
 
-            {/* 친구 목록 */}
-            <FriendListOverlayModal
-                visible={isFriendModalVisible}
-                onClose={() => setFriendModalVisible(false)}
-            />
-        </View>
+                <View style={styles.divider} />
+
+                {/* 친구, 알림 버튼 행 */}
+                <View style={styles.actionRow}>
+                    <TouchableOpacity style={styles.pillButton} onPress={() => navigation.navigate('FriendList')}>
+                        <CustomText style={styles.pillButtonText}>친구</CustomText>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.pillButton}>
+                        <CustomText style={styles.pillButtonText}>알림</CustomText>
+                    </TouchableOpacity>
+                </View>
+
+                {/* 내가 기부한 장소 카드 */}
+                <TouchableOpacity style={styles.donationCard} activeOpacity={0.9} onPress={() => navigation.navigate('BadgeMap')}>
+                    <View style={styles.donationBadge}>
+                        <CustomText style={styles.donationBadgeText}>내가 기부한 장소</CustomText>
+                    </View>
+                    <CustomText style={styles.donationContentText}>준비 중</CustomText>
+                </TouchableOpacity>
+
+                {/* 아바타 영역 (남은 공간을 모두 차지하도록 flex: 1) */}
+                <View style={styles.avatarSection}>
+                    <CustomText style={styles.levelText}>LV.15</CustomText>
+                    <CustomText style={styles.nameText}>김싸피</CustomText>
+
+                    <View style={styles.avatarActionRow}>
+                        <TouchableOpacity style={styles.avatarActionBtn} onPress={() => navigation.navigate('ItemShopScreen')}>
+                            <CustomText style={styles.avatarActionText}>🎒 내 도감</CustomText>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.avatarActionBtn} onPress={() => navigation.navigate('Wardrobe')}>
+                            <CustomText style={styles.avatarActionText}>🎨 꾸미기</CustomText>
+                        </TouchableOpacity>
+                    </View>
+
+                    <View style={styles.avatarWrapper}>
+                        <ChildAvatar equipState={equipState} size={avatarSize} />
+                    </View>
+                </View>
+
+            </View>
+
+            {/* QR 결제 모달 (전체화면) */}
+            <Modal visible={isQrModalVisible} transparent={true} animationType="fade">
+                <View style={styles.qrModalBackground}>
+                    <TouchableOpacity style={styles.qrModalCloseBtn} onPress={() => setQrModalVisible(false)}>
+                        <CustomText style={styles.qrModalCloseText}>✕</CustomText>
+                    </TouchableOpacity>
+                    <Image source={require('../../../assets/qr.png')} style={styles.qrModalImage} />
+                </View>
+            </Modal>
+        </SafeAreaView>
     );
 };
 
 const styles = StyleSheet.create({
     fullscreen: {
         flex: 1,
-        backgroundColor: '#ffffffff',
-        overflow: 'hidden',
+        backgroundColor: '#FFFFFF', // 전체 흰색 배경
     },
     container: {
-        flexGrow: 1,
-        paddingHorizontal: RFValue(20),
-        paddingBottom: RFValue(15),
-        paddingTop: RFValue(20),
+        flex: 1, // 화면 높이에 맞춤 (스크롤 제거)
+        paddingTop: verticalScale(16),
+        paddingBottom: verticalScale(10),
     },
-    headerContainer: {
-        marginBottom: RFValue(15),
-    },
-    headerTopRow: {
+    headerRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingBottom: RFValue(15),
-        borderBottomWidth: 1.5,
-        borderBottomColor: '#F3F4F6',
-        marginBottom: RFValue(15),
-        marginHorizontal: -RFValue(20),
-        paddingHorizontal: RFValue(20),
+        paddingHorizontal: scale(20),
+        marginBottom: verticalScale(16),
     },
     balanceWrapper: {
         flexDirection: 'row',
         alignItems: 'baseline',
     },
     balanceLabel: {
-        fontSize: RFValue(16),
-        fontWeight: 'bold',
-        color: '#4B5563',
-        marginRight: RFValue(8),
+        fontSize: scale(16),
+        fontWeight: '900',
+        color: '#2A303C',
+        marginRight: scale(6),
     },
     balanceAmount: {
-        fontSize: RFValue(28),
-        fontWeight: 'bold',
+        fontSize: scale(32),
+        fontWeight: '900',
         color: '#111',
+        letterSpacing: -1, // 약간의 픽셀/레트로 느낌 강조를 위해 자간 좁힘
     },
     balanceCurrency: {
-        fontSize: RFValue(20),
-        fontWeight: 'bold',
+        fontSize: scale(18),
+        fontWeight: '900',
         color: '#111',
-    },
-    headerBottomRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-    },
-    actionButton: {
-        backgroundColor: '#F3F4F6',
-        paddingVertical: RFValue(10),
-        paddingHorizontal: RFValue(24),
-        borderRadius: RFValue(20),
-        minWidth: RFValue(70),
-        alignItems: 'center',
-    },
-    actionButtonText: {
-        fontSize: RFValue(14),
-        fontWeight: 'bold',
-        color: '#4B5563',
+        marginLeft: scale(4),
     },
     qrButton: {
-        width: RFValue(40),
-        height: RFValue(40),
+        width: scale(40),
+        height: scale(40),
         justifyContent: 'center',
         alignItems: 'center',
+        backgroundColor: '#F3F4F6',
+        borderRadius: scale(8),
+        overflow: 'hidden',
     },
     qrImage: {
         width: '100%',
         height: '100%',
+        resizeMode: 'cover',
+    },
+    divider: {
+        height: 1,
+        backgroundColor: '#F3F4F6',
+        width: '100%',
+        marginBottom: verticalScale(20),
+    },
+    actionRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        paddingHorizontal: scale(20),
+        marginBottom: verticalScale(20),
+    },
+    pillButton: {
+        backgroundColor: '#F3F4F6',
+        paddingVertical: verticalScale(8),
+        paddingHorizontal: scale(24),
+        borderRadius: scale(20),
+    },
+    pillButtonText: {
+        fontSize: scale(15),
+        fontWeight: '900',
+        color: '#374151',
+    },
+    donationCard: {
+        backgroundColor: '#E5E7EB',
+        marginHorizontal: scale(20),
+        borderRadius: scale(20),
+        padding: scale(16),
+        height: verticalScale(90), // 세로 길이 조금 축소
+        marginBottom: verticalScale(20),
+        position: 'relative',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    donationBadge: {
+        position: 'absolute',
+        top: scale(16),
+        left: scale(16),
+        backgroundColor: '#FFFFFF',
+        paddingVertical: verticalScale(6),
+        paddingHorizontal: scale(12),
+        borderRadius: scale(16),
+    },
+    donationBadgeText: {
+        fontSize: scale(13),
+        fontWeight: '900',
+        color: '#111',
+    },
+    donationContentText: {
+        fontSize: scale(14),
+        fontWeight: '700',
+        color: '#6B7280',
+        marginTop: verticalScale(10),
     },
     avatarSection: {
-        flex: 1,
+        flex: 1, // 화면의 남은 빈 공간을 꽉 채우도록
         alignItems: 'center',
-        justifyContent: 'center',
-        marginVertical: RFValue(5),
-        position: 'relative',
-        minHeight: RFValue(150),
+        justifyContent: 'flex-start',
     },
-    avatarNameHeader: {
-        alignItems: 'center',
-        marginBottom: RFValue(10),
-        zIndex: 10,
-    },
-    avatarLevelText: {
-        fontSize: RFValue(13),
+    levelText: {
+        fontSize: scale(13),
+        fontWeight: '900',
         color: '#6B7280',
-        fontWeight: 'bold',
+        marginBottom: verticalScale(2),
     },
-    avatarNameRow: {
+    nameText: {
+        fontSize: scale(22),
+        fontWeight: '900',
+        color: '#111',
+        marginBottom: verticalScale(6),
+    },
+    avatarActionRow: {
         flexDirection: 'row',
-        alignItems: 'center',
-        marginTop: RFValue(2),
+        gap: scale(10),
+        marginBottom: verticalScale(10),
     },
-    avatarNameText: {
-        fontSize: RFValue(18),
-        fontWeight: 'bold',
-        color: '#111',
+    avatarActionBtn: {
+        backgroundColor: '#F3F4F6',
+        paddingVertical: verticalScale(6),
+        paddingHorizontal: scale(14),
+        borderRadius: scale(16),
     },
-    wardrobeButton: {
-        position: 'absolute',
-        bottom: 0,
-        right: '10%',
-        backgroundColor: '#FFFFFF',
-        paddingVertical: RFValue(10),
-        paddingHorizontal: RFValue(16),
-        borderRadius: RFValue(20),
-        elevation: 4,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: RFValue(2) },
-        shadowOpacity: 0.1,
-        shadowRadius: RFValue(5),
+    avatarActionText: {
+        fontSize: scale(13),
+        fontWeight: '900',
+        color: '#374151',
     },
-    wardrobeButtonText: {
-        fontSize: RFValue(14),
-        fontWeight: 'bold',
-        color: '#4B5563',
-    },
-    donationBox: {
+    avatarWrapper: {
+        flex: 1, // 아바타 컨테이너가 avatarSection 내부 빈칸 차지
         width: '100%',
-        height: RFValue(100),
-        borderRadius: RFValue(20),
-        marginBottom: RFValue(10),
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: RFValue(2) },
-        shadowOpacity: 0.1,
-        shadowRadius: RFValue(5),
-        elevation: 3,
-        overflow: 'hidden',
-        backgroundColor: '#fff',
+        alignItems: 'center',
+        justifyContent: 'flex-end', // 하단에 딱 붙도록 정렬
     },
-    mapContainer: {
+    qrModalBackground: {
         flex: 1,
-    },
-    map: {
-        width: '100%',
-        height: '100%',
-    },
-    webMapPlaceholder: {
-        backgroundColor: '#E5E7EB',
-        alignItems: 'center',
+        backgroundColor: 'rgba(0, 0, 0, 0.9)',
         justifyContent: 'center',
+        alignItems: 'center',
     },
-    webMapText: {
-        color: '#6B7280',
-        fontSize: RFValue(12),
-        fontWeight: 'bold',
-    },
-    donationOverlay: {
+    qrModalCloseBtn: {
         position: 'absolute',
-        top: RFValue(12),
-        left: RFValue(15),
-        backgroundColor: 'rgba(255, 255, 255, 0.9)',
-        paddingVertical: RFValue(6),
-        paddingHorizontal: RFValue(12),
-        borderRadius: RFValue(12),
+        top: verticalScale(50),
+        right: scale(20),
+        padding: scale(10),
+        zIndex: 100,
     },
-    donationText: {
-        fontSize: RFValue(14),
+    qrModalCloseText: {
+        fontSize: scale(30),
+        color: '#FFFFFF',
         fontWeight: 'bold',
-        color: '#111',
+    },
+    qrModalImage: {
+        width: '80%',
+        height: '80%',
+        resizeMode: 'contain',
     }
 });
 

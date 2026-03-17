@@ -1,8 +1,10 @@
-import React, { useContext, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, Dimensions } from 'react-native';
+﻿import React, { useContext, useState } from 'react';
+import { View, StyleSheet, TouchableOpacity, ScrollView, Image, Dimensions } from 'react-native';
 import { AvatarContext } from '../../../components/child/avatar/AvatarContext';
 import { AVATAR_ITEMS } from '../../../components/child/avatar/AvatarAssets';
 import ChildAvatar from '../../../components/child/avatar/ChildAvatar';
+import FacePaintingModal from '../../../components/child/modals/FacePaintingModal';
+import CustomText from '../../../components/common/CustomText';
 
 const CATEGORIES = [
     { id: 'gender', label: '성별' },
@@ -18,8 +20,9 @@ const CATEGORIES = [
 const { width } = Dimensions.get('window');
 
 const AvatarCustomScreen = ({ navigation }) => {
-    const { equipState, updateEquip, setEquipState } = useContext(AvatarContext);
+    const { equipState, updateEquip, setEquipState, facePaintPaths, setFacePaintPaths } = useContext(AvatarContext);
     const [selectedCategory, setSelectedCategory] = useState('hair');
+    const [isFacePaintingModalVisible, setFacePaintingModalVisible] = useState(false);
 
     const handleGenderChange = (gender) => {
         setEquipState(prev => ({
@@ -36,13 +39,13 @@ const AvatarCustomScreen = ({ navigation }) => {
                 style={[styles.genderButton, equipState.gender === 'boy' && styles.selectedGender]}
                 onPress={() => handleGenderChange('boy')}
             >
-                <Text style={styles.genderText}>남자</Text>
+                <CustomText style={styles.genderText}>남자</CustomText>
             </TouchableOpacity>
             <TouchableOpacity
                 style={[styles.genderButton, equipState.gender === 'girl' && styles.selectedGender]}
                 onPress={() => handleGenderChange('girl')}
             >
-                <Text style={styles.genderText}>여자</Text>
+                <CustomText style={styles.genderText}>여자</CustomText>
             </TouchableOpacity>
         </View>
     );
@@ -80,10 +83,10 @@ const AvatarCustomScreen = ({ navigation }) => {
                                 {item.img ? (
                                     <Image source={item.img} style={styles.itemThumbnail} resizeMode="contain" />
                                 ) : (
-                                    <Text style={styles.noneText}>X</Text>
+                                    <CustomText style={styles.noneText}>X</CustomText>
                                 )}
                             </View>
-                            <Text style={styles.itemName} numberOfLines={1}>{item.name}</Text>
+                            <CustomText style={styles.itemName} numberOfLines={1}>{item.name}</CustomText>
                         </TouchableOpacity>
                     );
                 })}
@@ -93,19 +96,34 @@ const AvatarCustomScreen = ({ navigation }) => {
 
     return (
         <View style={styles.fullscreen}>
-            {/* 헤더 */}
+            {/* 상단 헤더 */}
             <View style={styles.header}>
                 <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-                    <Text style={styles.backButtonText}>뒤로 가기</Text>
+                    <CustomText style={styles.backButtonText}>뒤로</CustomText>
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>아바타 꾸미기</Text>
+                <CustomText style={styles.headerTitle}>아바타 꾸미기</CustomText>
                 <View style={{ width: 60 }} />
             </View>
 
             {/* 아바타 영역 */}
             <View style={styles.previewSection}>
-                <View style={styles.podium} />
-                <ChildAvatar equipState={equipState} size={320} />
+                <View style={styles.avatarWrapper}>
+                    <ChildAvatar equipState={equipState} size={280} />
+                </View>
+
+                <TouchableOpacity
+                    style={styles.paintLaunchButton}
+                    onPress={() => setFacePaintingModalVisible(true)}
+                >
+                    <CustomText style={styles.paintLaunchIcon}>🎨</CustomText>
+                    <CustomText style={styles.paintLaunchText}>페이스 페인팅</CustomText>
+                </TouchableOpacity>
+                <TouchableOpacity
+                    style={styles.paintClearButton}
+                    onPress={() => setFacePaintPaths([])}
+                >
+                    <CustomText style={styles.paintLaunchText}>초기화 🗑️</CustomText>
+                </TouchableOpacity>
             </View>
 
             {/* 인벤토리 영역 */}
@@ -123,18 +141,27 @@ const AvatarCustomScreen = ({ navigation }) => {
                             style={[styles.tabButton, selectedCategory === cat.id && styles.activeTabButton]}
                             onPress={() => setSelectedCategory(cat.id)}
                         >
-                            <Text style={[styles.tabText, selectedCategory === cat.id && styles.activeTabText]}>
+                            <CustomText style={[styles.tabText, selectedCategory === cat.id && styles.activeTabText]}>
                                 {cat.label}
-                            </Text>
+                            </CustomText>
                         </TouchableOpacity>
                     ))}
                 </ScrollView>
 
-                {/* 그리드 */}
+                {/* 그리드 영역 */}
                 <View style={styles.gridWrapper}>
                     {renderItemGrid()}
                 </View>
             </View>
+
+            {/* 페이스 페인팅 모달 */}
+            <FacePaintingModal
+                visible={isFacePaintingModalVisible}
+                onClose={() => setFacePaintingModalVisible(false)}
+                onSave={(paths) => setFacePaintPaths(paths)}
+                initialPaths={facePaintPaths}
+                equipState={equipState}
+            />
         </View>
     );
 };
@@ -174,14 +201,49 @@ const styles = StyleSheet.create({
         position: 'relative',
         backgroundColor: '#EDF2F7',
     },
-    podium: {
+    avatarWrapper: {
+        position: 'relative',
+        width: 280,
+        height: 280,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+
+    paintLaunchButton: {
         position: 'absolute',
-        bottom: '20%',
-        width: 150,
-        height: 40,
-        backgroundColor: '#E2E8F0',
-        borderRadius: 100,
-        transform: [{ scaleY: 0.5 }],
+        top: 20,
+        right: 20,
+        backgroundColor: '#FFF',
+        paddingVertical: 10,
+        paddingHorizontal: 16,
+        borderRadius: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
+        shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 2
+    },
+    paintClearButton: {
+        position: 'absolute',
+        top: 85,
+        right: 20,
+        backgroundColor: '#FEE2E2',
+        paddingVertical: 10,
+        paddingHorizontal: 16,
+        borderRadius: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
+        shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 2
+    },
+    paintLaunchIcon: {
+        fontSize: 24,
+        marginBottom: 4,
+    },
+    paintLaunchText: {
+        fontSize: 12,
+        fontWeight: 'bold',
+        color: '#4B5563',
+    },
+    podium: {
+        display: 'none',
     },
     inventorySection: {
         flex: 1,
@@ -195,14 +257,15 @@ const styles = StyleSheet.create({
         elevation: 10,
     },
     tabScroll: {
-        maxHeight: 60,
+        flexGrow: 0,
+        height: 65,
         borderBottomWidth: 1,
         borderBottomColor: '#E5E7EB',
     },
     tabContainer: {
         paddingHorizontal: 15,
-        paddingTop: 15,
-        paddingBottom: 10,
+        paddingTop: 12,
+        paddingBottom: 12,
         alignItems: 'center',
     },
     tabButton: {
@@ -246,8 +309,8 @@ const styles = StyleSheet.create({
         borderColor: 'transparent',
     },
     selectedItemCard: {
-        borderColor: '#3B82F6',
-        backgroundColor: '#EFF6FF',
+        borderColor: '#A3E635',
+        backgroundColor: '#F7FEE7',
     },
     itemImageContainer: {
         flex: 1,
@@ -285,9 +348,9 @@ const styles = StyleSheet.create({
         borderRadius: 24,
     },
     selectedGender: {
-        backgroundColor: '#DBEAFE',
+        backgroundColor: '#F7FEE7',
         borderWidth: 2,
-        borderColor: '#3B82F6',
+        borderColor: '#A3E635',
     },
     genderText: {
         fontSize: 20,
