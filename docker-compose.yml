@@ -92,7 +92,8 @@
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
     volumes:
-      - zookeeper_data:/var/lib/zookeeper/data
+      - ./data/zookeeper/data:/var/lib/zookeeper/data
+      - ./data/zookeeper/log:/var/lib/zookeeper/log
 
   # Kafka 메시지 브로커
   kafka:
@@ -147,6 +148,32 @@
       kafka:
         condition: service_healthy
     restart: "no"
+
+  # Spark Master: 클러스터 매니저 역할
+  spark-master:
+    image: apache/spark:3.5.1-python3
+    container_name: akkubangkku_spark_master
+    environment:
+      - SPARK_MODE=master
+    ports:
+      - "18080:8080"  # Web UI
+      - "7077:7077"   # Master URL
+    volumes:
+      - ./data/spark:/opt/spark/work-dir
+    # 공식 이미지는 실행 명령어를 명시해주는 것이 안정적
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.master.Master
+
+  spark-worker:
+    image: apache/spark:3.5.1-python3
+    container_name: akkubangkku_spark_worker
+    depends_on:
+      - spark-master
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+    volumes:
+      - ./data/spark:/opt/spark/work-dir
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077
 
 volumes:
   postgres_data:
