@@ -1,6 +1,7 @@
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import from_json, col
 from pyspark.sql.types import StructType, StructField, StringType, IntegerType, LongType, TimestampType
+from pyspark.sql.functions import from_json, col, to_timestamp, date_format, date_sub, next_day
 
 # 1. Spark 세션 생성 (Kafka 커넥터 포함)
 spark = SparkSession.builder \
@@ -32,13 +33,27 @@ df = spark.readStream \
     .option("startingOffsets", "latest") \
     .load()
 
-# 4. 바이너리 데이터를 JSON으로 변환
-parsed_df = df.selectExpr("CAST(value AS STRING)") \
+# 4. 바이너리 데이터를 JSON으로 변환 (기존 코드)
+raw_df = df.selectExpr("CAST(value AS STRING)") \
     .select(from_json(col("value"), schema).alias("data")) \
     .select("data.data.*")
 
-# 5. 콘솔로 데이터 출력 (테스트용)
-query = parsed_df.writeStream \
+# 5. 날짜 가공 로직
+transformed_df = raw_df.withColumn(
+    "ts", to_timestamp(col("created_at"), "yyyy-MM-dd HH:mm:ss")
+).withColumn(
+    # 요일 추출 (소문자 3글자: mon, tue, wed...) - Redis 필드명과 일치시키기 위함
+    "day_of_week", date_format(col("ts"), "E").cast("string").substr(1, 3)
+).withColumn(
+    # 주간 시작일(월요일) 계산
+    # 'next_day(date_sub(ts, 7), "Monday")'는 해당 날짜가 포함된 주의 월요일을 구하는 공식입니다.
+    "start_day", next_day(date_sub(col("ts"), 7), "Monday")
+)
+
+# 6. 콘솔 출력 (가공된 컬럼 확인)
+query = transformed_df.select(
+    "user_id", "amount", "sub_category_name", "day_of_week", "start_day"
+).writeStream \
     .outputMode("append") \
     .format("console") \
     .start()

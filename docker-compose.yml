@@ -150,22 +150,26 @@
     restart: "no"
 
   # Spark Master: 클러스터 매니저 역할
+  # Spark Master: 클러스터 매니저 역할
   spark-master:
     image: apache/spark:3.5.1-python3
     container_name: akkubangkku_spark_master
+    user: root
     environment:
       - SPARK_MODE=master
     ports:
-      - "18080:8080"  # Web UI
-      - "7077:7077"   # Master URL
+      - "18080:8080"  # Web UI (마스터 상태 확인용)
+      - "7077:7077"   # Master URL (애플리케이션 제출용)
     volumes:
       - ./data/spark:/opt/spark/work-dir
-    # 공식 이미지는 실행 명령어를 명시해주는 것이 안정적
     command: >
       /bin/bash -c "
       /opt/spark/bin/spark-class org.apache.spark.deploy.master.Master &
-      sleep 10;
+      echo 'Waiting 30s for Worker to register...';
+      sleep 30;
+      echo 'Submitting Spark application to Cluster...';
       /opt/spark/bin/spark-submit 
+      --master spark://spark-master:7077 
       --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.1 
       /opt/spark/work-dir/realtime_report.py"
 
