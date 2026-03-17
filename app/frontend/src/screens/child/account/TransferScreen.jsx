@@ -3,6 +3,7 @@ import { View, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, Alert, Ke
 import { scale, verticalScale } from 'react-native-size-matters';
 import CustomText from '../../../components/common/CustomText';
 import CustomTextInput from '../../../components/common/CustomTextInput';
+import api from '../../../api/axios';
 
 const TransferScreen = ({ navigation }) => {
     const [amount, setAmount] = useState('');
@@ -17,6 +18,16 @@ const TransferScreen = ({ navigation }) => {
             Alert.alert('알림', '받는 사람을 입력해주세요.');
             return;
         }
+
+        /* ==========================================
+           [진짜 송금 API]
+           ========================================== 
+        try {
+            // await api.post('/transactions/transfer', { amount: parseInt(amount), targetAccountName: recipient });
+            // Alert.alert('송금 완료', '송금이 성공적으로 완료되었습니다.', [{ text: '확인', onPress: () => navigation.goBack() }]);
+            // return; // 성공시 여기서 리턴
+        } catch(e) { console.error('Transfer Error:', e); }
+        ========================================== */
 
         Alert.alert(
             '송금 완료',

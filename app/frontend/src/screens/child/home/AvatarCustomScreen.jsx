@@ -5,6 +5,7 @@ import { AVATAR_ITEMS } from '../../../components/child/avatar/AvatarAssets';
 import ChildAvatar from '../../../components/child/avatar/ChildAvatar';
 import FacePaintingModal from '../../../components/child/modals/FacePaintingModal';
 import CustomText from '../../../components/common/CustomText';
+import api from '../../../api/axios';
 
 const CATEGORIES = [
     { id: 'gender', label: '성별' },
@@ -98,7 +99,17 @@ const AvatarCustomScreen = ({ navigation }) => {
         <View style={styles.fullscreen}>
             {/* 상단 헤더 */}
             <View style={styles.header}>
-                <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+                <TouchableOpacity style={styles.backButton} onPress={async () => {
+                    /* ==========================================
+                       [진짜 아바타 장착 상태 저장 API]
+                       ========================================== 
+                    try {
+                        // 서버에 변경된 아바타 장착 옷차림 저장
+                        // await api.put('/avatar/equip', equipState);
+                    } catch(e) { console.error('Avatar Save Error', e); }
+                    ========================================== */
+                    navigation.goBack();
+                }}>
                     <CustomText style={styles.backButtonText}>뒤로</CustomText>
                 </TouchableOpacity>
                 <CustomText style={styles.headerTitle}>아바타 꾸미기</CustomText>

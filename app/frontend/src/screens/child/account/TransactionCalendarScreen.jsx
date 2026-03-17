@@ -3,6 +3,7 @@ import { View, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView } from 're
 import { scale, verticalScale } from 'react-native-size-matters';
 import useTransactionStore from '../../../store/transactionStore';
 import CustomText from '../../../components/common/CustomText';
+import api from '../../../api/axios';
 
 // 임시 달력/내역 데이터 (키: YYYY-MM-DD)
 const MOCK_DAYS = ['일', '월', '화', '수', '목', '금', '토'];
@@ -31,6 +32,22 @@ const TransactionCalendarScreen = ({ navigation }) => {
 
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth(); // 0-indexed
+
+    /* ==========================================
+       [진짜 월별 거래 내역 조회 API]
+       ========================================== 
+    useEffect(() => {
+        const fetchMonthlyTransactions = async () => {
+            try {
+                // 백엔드 명세에 맞게 year, month 파라미터 전달
+                // const res = await api.get('/transactions', { params: { year, month: month + 1 } });
+                // const data = res.data.data; // 서버에서 그룹핑된 형태로 오거나 프론트에서 재가공
+                // MOCK_TRANSACTIONS_BY_DATE 형태(키: YYYY-MM-DD, 값: 내역 배열)로 상태에 저장
+            } catch(e) { console.error('Transaction Fetch Error:', e); }
+        };
+        fetchMonthlyTransactions();
+    }, [year, month]);
+    ========================================== */
 
     const prevMonth = () => {
         setCurrentDate(new Date(year, month - 1, 1));

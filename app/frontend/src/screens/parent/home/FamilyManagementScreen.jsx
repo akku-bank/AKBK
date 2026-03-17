@@ -12,12 +12,38 @@ const MOCK_PROFILES = [
 const FamilyManagementScreen = ({ navigation }) => {
     const [profiles, setProfiles] = useState(MOCK_PROFILES);
 
+    /* ==========================================
+       [진짜 가족 명단 조회 API]
+       ========================================== 
+    useEffect(() => {
+        const fetchProfiles = async () => {
+            try {
+                const response = await api.get('/families/members');
+                setProfiles(response.data.data || []);
+            } catch (error) {
+                console.error("Failed to fetch family members:", error);
+            }
+        };
+        fetchProfiles();
+    }, []);
+    ========================================== */
+
     const handleCreateProfile = () => {
-        // 원래는 ParentAccountCreateScreen 이나 다른 생성 화면으로 이동
-        // 여기서는 간단히 프롬프트 대신 Mock 으로 추가
+        /* ==========================================
+           [진짜 자녀 프로필 생성 API]
+           ========================================== 
+        try {
+            // 실제 구현 시에는 프롬프트 창이나 추가 모달을 띄워 이름과 생일을 받아야 함
+            // const response = await api.post('/families/members', { name: "아이 이름", birthDate: "2015-01-01" });
+            // setProfiles([...profiles, response.data.data]);
+        } catch (error) { ... }
+        ========================================== */
+
+        // --- 실제 연동 시 아래 블록 전체 삭제 ---
         const newProfile = { id: Date.now(), name: `아이 ${profiles.length + 1}`, status: '연동 대기중' };
         setProfiles([...profiles, newProfile]);
-        Alert.alert('프로필 생성 완료', `${newProfile.name}의 프로필이 생성되었습니다.`);
+        Alert.alert('프로필 생성 완료', `${newProfile.name}의 계정이 추가되었습니다.`);
+        // ------------------------------------
     };
 
     return (

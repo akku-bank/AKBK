@@ -21,8 +21,25 @@ const ParentInitialSetupScreen = ({ navigation, route }) => {
                 Alert.alert('알림', '연결할 계좌번호를 입력해주세요.');
                 return;
             }
-            // 모든 설정 완료 시 -> 핀 번호 설정으로
+            /* ==========================================
+               [진짜 가족 생성 및 계좌 연동 API 연동 코드]
+               ========================================== 
+            try {
+                // 1. 가족 그룹 생성
+                // const familyRes = await api.post('/families', { familyName }, { headers: { Authorization: `Bearer ${tempToken}` }});
+                
+                // 2. 부모 자산/계좌 연동 (선택적)
+                // await api.post('/parents/accounts', { bankAccount }, { headers: { Authorization: `Bearer ${tempToken}` }});
+                
+                navigation.replace('PinNumberSetup', { tempToken, role, name, familyName, bankAccount });
+            } catch (error) {
+                Alert.alert('오류', '가족 정보 등록 중 문제가 발생했습니다.');
+            }
+            ========================================== */
+
+            // --- 실제 연동 시 아래 블록 전체 삭제 ---
             navigation.replace('PinNumberSetup', { tempToken, role, name, familyName, bankAccount });
+            // ------------------------------------
         }
     };
 

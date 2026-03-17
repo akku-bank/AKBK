@@ -6,7 +6,11 @@ const RoleSelectScreen = ({ navigation, route }) => {
     const { tempToken } = route.params || {};
 
     const handleSelectRole = (role) => {
-        navigation.navigate('QrCheck', { tempToken, role });
+        if (role === 'PARENT') {
+            navigation.navigate('SignUp', { tempToken, role });
+        } else {
+            navigation.navigate('QrCheck', { tempToken, role });
+        }
     };
 
     return (

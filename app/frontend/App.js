@@ -104,7 +104,6 @@ export default function App() {
               <Stack.Screen name="ParentMain" component={ParentBottomTabNavigator} />
               <Stack.Screen name="FamilyQrGenerator" component={FamilyQrGeneratorScreen} />
 
-              {/* Other Specific Screens */}
               <Stack.Screen name="Wardrobe" component={AvatarCustomScreen} />
               <Stack.Screen name="ItemShopScreen" component={ItemShopScreen} />
               <Stack.Screen name="GachaScreen" component={GachaScreen} />
@@ -113,13 +112,11 @@ export default function App() {
               <Stack.Screen name="AttendanceScreen" component={AttendanceScreen} />
               <Stack.Screen name="BadgeMap" component={BadgeMapScreen} />
 
-              {/* Banking/Account Flow */}
               <Stack.Screen name="TransactionCalendar" component={TransactionCalendarScreen} />
               <Stack.Screen name="TransactionDetail" component={TransactionDetailScreen} />
               <Stack.Screen name="Transfer" component={TransferScreen} />
               <Stack.Screen name="Payment" component={PaymentScreen} />
 
-              {/* Parent Flow */}
               <Stack.Screen name="ParentHome" component={ParentHomeScreen} />
               <Stack.Screen name="ParentTransferScreen" component={ParentTransferScreen} />
               <Stack.Screen name="ParentReportScreen" component={ParentReportScreen} />
@@ -128,11 +125,9 @@ export default function App() {
               <Stack.Screen name="ParentChallengeManage" component={ParentChallengeManageScreen} />
               <Stack.Screen name="FamilyManagementScreen" component={FamilyManagementScreen} />
 
-              {/* Education/Challenge Flow */}
               <Stack.Screen name="QuizScreen" component={QuizScreen} />
               <Stack.Screen name="ChallengePropose" component={ChallengeProposeScreen} />
 
-              {/* Profile/Settings Flow */}
               <Stack.Screen name="WeeklyReport" component={WeeklyReportScreen} />
 
               <Stack.Screen name="ParentEditProfile" component={ParentEditProfileScreen} />

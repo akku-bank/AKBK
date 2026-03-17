@@ -2,6 +2,7 @@
 import { View, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Image } from 'react-native';
 import { scale, verticalScale } from 'react-native-size-matters';
 import CustomText from '../../../components/common/CustomText';
+import api from '../../../api/axios';
 
 // 더미 데이터 (유저 소비 레벨)
 const MOCK_USER_LEVEL = 3;
@@ -27,6 +28,22 @@ const CATEGORIES = ['모자', '상의', '하의'];
 
 const ItemShopScreen = ({ navigation }) => {
     const [selectedCategory, setSelectedCategory] = useState(CATEGORIES[0]);
+
+    /* ==========================================
+       [진짜 아이템 도감/인벤토리 조회 API]
+       ========================================== 
+    useEffect(() => {
+        const fetchInventory = async () => {
+            try {
+                // 사용자가 보유한 아이템과 전체 도감 목록, 유저 레벨 조회
+                // const res = await api.get('/inventory');
+                // setInventoryItems(res.data.data.items);
+                // setUserLevel(res.data.data.level);
+            } catch(e) { console.error('Inventory Fetch Error:', e); }
+        };
+        fetchInventory();
+    }, []);
+    ========================================== */
 
     return (
         <SafeAreaView style={styles.safeArea}>

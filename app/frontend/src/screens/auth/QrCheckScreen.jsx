@@ -11,16 +11,11 @@ const QrCheckScreen = ({ navigation, route }) => {
     };
 
     const handleNoQr = () => {
-        if (role === 'CHILD') {
-            Alert.alert(
-                '앗! 안타깝게도',
-                '자녀 가입은 부모님이 먼저 가입하신 후\n초대 QR 코드를 스캔해야만 가능해요.\n\n부모님께 우리 가족 수첩을 만들어달라고 조르러 가볼까요?',
-                [{ text: '확인', style: 'default' }]
-            );
-        } else {
-            // 부모인 경우 -> 새로운 가족 생성 화면으로
-            navigation.navigate('SignUp', { tempToken, role });
-        }
+        Alert.alert(
+            '앗! 안타깝게도',
+            '자녀 가입은 부모님이 먼저 가입하신 후\n초대 QR 코드를 스캔해야만 가능해요.\n\n부모님께 아꾸뱅꾸를 만들어달라고 조르러 가볼까요?',
+            [{ text: '확인', style: 'default' }]
+        );
     };
 
     return (
@@ -58,7 +53,7 @@ const QrCheckScreen = ({ navigation, route }) => {
                         </View>
                         <View style={styles.cardTextContainer}>
                             <Text style={styles.cardTitle}>아니요, 아직 없어요</Text>
-                            <Text style={styles.cardDesc}>{role === 'PARENT' ? '제가 비바를 처음 설정할게요.' : '부모님이 먼저 가입하셔야 해요.'}</Text>
+                            <Text style={styles.cardDesc}>부모님이 먼저 가입하셔야 해요.</Text>
                         </View>
                     </TouchableOpacity>
                 </View>

@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { View, StyleSheet, TouchableOpacity, SafeAreaView, Dimensions, Image, Modal, Platform, StatusBar } from 'react-native';
 import { scale, verticalScale } from 'react-native-size-matters';
 import ChildAvatar from '../../../components/child/avatar/ChildAvatar';
@@ -10,6 +10,7 @@ const { width, height } = Dimensions.get('window');
 
 const ChildHomeScreen = ({ navigation }) => {
     const [isQrModalVisible, setQrModalVisible] = useState(false);
+    const [isLevelUpModalVisible, setLevelUpModalVisible] = useState(false);
     const { equipState } = useContext(AvatarContext);
 
     const avatarSize = height > 750 ? 270 : 200;
@@ -25,9 +26,14 @@ const ChildHomeScreen = ({ navigation }) => {
                         <CustomText style={styles.balanceAmount}>140,000</CustomText>
                         <CustomText style={styles.balanceCurrency}>원</CustomText>
                     </View>
-                    <TouchableOpacity style={styles.qrButton} onPress={() => setQrModalVisible(true)}>
-                        <Image source={require('../../../assets/qr.png')} style={styles.qrImage} />
-                    </TouchableOpacity>
+                    <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
+                        <TouchableOpacity style={{ backgroundColor: '#A3E635', padding: 8, borderRadius: 8 }} onPress={() => setLevelUpModalVisible(true)}>
+                            <CustomText style={{ fontSize: 12, fontWeight: 'bold' }}>LvUP 테스트</CustomText>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.qrButton} onPress={() => setQrModalVisible(true)}>
+                            <Image source={require('../../../assets/qr.png')} style={styles.qrImage} />
+                        </TouchableOpacity>
+                    </View>
                 </View>
 
                 <View style={styles.divider} />
@@ -83,6 +89,20 @@ const ChildHomeScreen = ({ navigation }) => {
                         <CustomText style={styles.qrModalCloseText}>✕</CustomText>
                     </TouchableOpacity>
                     <Image source={require('../../../assets/qr.png')} style={styles.qrModalImage} />
+                </View>
+            </Modal>
+
+            {/* 레벨업 축하 모달 */}
+            <Modal visible={isLevelUpModalVisible} transparent={true} animationType="fade">
+                <View style={styles.levelUpModalBackground}>
+                    <View style={styles.levelUpModalCard}>
+                        <CustomText style={styles.levelUpEmoji}>🎉</CustomText>
+                        <CustomText style={styles.levelUpTitle}>레벨 업 축하해요!</CustomText>
+                        <CustomText style={styles.levelUpDesc}>새로운 레벨이 되었어요.{'\n'}상점에서 새로운 아이템이 해금되었습니다!</CustomText>
+                        <TouchableOpacity style={styles.levelUpCloseBtn} onPress={() => setLevelUpModalVisible(false)}>
+                            <CustomText style={styles.levelUpCloseText}>확인</CustomText>
+                        </TouchableOpacity>
+                    </View>
                 </View>
             </Modal>
         </SafeAreaView>
@@ -257,6 +277,55 @@ const styles = StyleSheet.create({
         width: '80%',
         height: '80%',
         resizeMode: 'contain',
+    },
+    levelUpModalBackground: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.6)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: scale(20),
+    },
+    levelUpModalCard: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: scale(24),
+        padding: scale(24),
+        alignItems: 'center',
+        width: '100%',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: verticalScale(4) },
+        shadowOpacity: 0.1,
+        shadowRadius: scale(12),
+        elevation: 5,
+    },
+    levelUpEmoji: {
+        fontSize: scale(48),
+        marginBottom: verticalScale(16),
+    },
+    levelUpTitle: {
+        fontSize: scale(22),
+        fontWeight: '900',
+        color: '#111',
+        marginBottom: verticalScale(8),
+    },
+    levelUpDesc: {
+        fontSize: scale(14),
+        color: '#4B5563',
+        textAlign: 'center',
+        lineHeight: 22,
+        marginBottom: verticalScale(24),
+    },
+    levelUpCloseBtn: {
+        backgroundColor: '#A3E635',
+        paddingVertical: verticalScale(14),
+        paddingHorizontal: scale(32),
+        borderRadius: scale(16),
+        width: '100%',
+        alignItems: 'center',
+    },
+    levelUpCloseText: {
+        fontSize: scale(16),
+        fontWeight: 'bold',
+        color: '#111',
     }
 });
 

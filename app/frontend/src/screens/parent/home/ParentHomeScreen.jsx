@@ -2,6 +2,7 @@ import React from 'react';
 import { View, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Image } from 'react-native';
 import { scale, verticalScale } from 'react-native-size-matters';
 import CustomText from '../../../components/common/CustomText';
+import api from '../../../api/axios';
 
 // 더미 자녀 데이터
 const MOCK_CHILDREN = [
@@ -10,6 +11,22 @@ const MOCK_CHILDREN = [
 ];
 
 const ParentHomeScreen = ({ navigation }) => {
+    /* ==========================================
+       [진짜 부모 홈(자녀 목록) 조회 API]
+       ========================================== 
+    const [childrenData, setChildrenData] = useState([]);
+    useEffect(() => {
+        const fetchChildren = async () => {
+            try {
+                // 부모 계정에 연결된 자녀 목록 및 각 자녀의 잔액 조회
+                // const res = await api.get('/families/members');
+                // setChildrenData(res.data.data);
+            } catch(e) { console.error('Parent Home Fetch Error', e); }
+        };
+        fetchChildren();
+    }, []);
+    ========================================== */
+
     return (
         <SafeAreaView style={styles.safeArea}>
             <View style={styles.header}>

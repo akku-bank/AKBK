@@ -12,18 +12,48 @@ const SocialLoginScreen = ({ navigation }) => {
     const handleKakaoLogin = async () => {
         setIsLoading(true);
 
-        // (임시) 카카오톡 인앱 로그인 시뮬 (원래는 kakaoLogin() 호출)
+        /* ==========================================
+           !! 카카오 로그인 연동 코드 !!
+           네이티브 앱 키(iOS/Android) 세팅 후 주석 풀면 완료 !
+           ========================================== 
+        try {
+            const token = await kakaoLogin();
+            console.log('Kakao Token:', token);
+            
+            // 백엔드로 카카오 액세스 토큰 전송
+            // const response = await api.post('/auth/social/kakao', { accessToken: token.accessToken });
+            // const { jwt, isRegistered, role, name } = response.data;
+            
+            // await setAuthInfo(jwt, role, name);
+            // if (isRegistered) {
+            //     navigation.replace('PinNumberLogin');
+            // } else {
+            //     navigation.replace('RoleSelect', { tempToken: jwt });
+            // }
+        } catch (error) {
+            console.error('Kakao Login Error:', error);
+            Alert.alert('로그인 에러', '카카오 로그인에 실패했습니다.');
+        } finally {
+            setIsLoading(false);
+        }
+        ========================================== */
+
+        // (테스트용 임시  - 실제 연동 전까지만)
         setTimeout(async () => {
             setIsLoading(false);
 
             if (Platform.OS === 'web') {
                 const isExistingUser = window.confirm(
-                    '(임시) \n\n[확인]을 누르면 "기존 유저 로그인"으로 진행합니다.\n[취소]를 누르면 "신규 가입"으로 진행합니다.'
+                    '(임시) \n\n[확인]을 누르면 "기존 유저 로그인"으로 진행\n[취소]를 누르면 "신규 가입"으로 진행'
                 );
 
                 if (isExistingUser) {
                     const mockToken = "dev-bypass-existing-token";
-                    await setAuthInfo(mockToken, 'PARENT', '아이부모');
+                    const isParent = window.confirm('(임시) 부모 계정으로 진입할까요?\n[확인]=부모, [취소]=자녀');
+                    const role = isParent ? 'PARENT' : 'CHILD';
+                    const name = isParent ? '부모님' : '아이짱';
+
+                    await setAuthInfo(mockToken, role, name);
                     navigation.replace('PinNumberLogin');
                 } else {
                     const mockToken = "dev-bypass-new-token";
@@ -37,7 +67,7 @@ const SocialLoginScreen = ({ navigation }) => {
                     '실제로는 이 단계에서 서버가 isRegistered 값을 내려줍니다. 테스트할 흐름을 선택하세요.',
                     [
                         {
-                            text: '기존 유저 (isRegistered: true)',
+                            text: '기존 유저 (부모)',
                             onPress: async () => {
                                 const mockToken = "dev-bypass-existing-token";
                                 await setAuthInfo(mockToken, 'PARENT', '아이부모');
@@ -45,7 +75,15 @@ const SocialLoginScreen = ({ navigation }) => {
                             }
                         },
                         {
-                            text: '신규 가입 (isRegistered: false)',
+                            text: '기존 유저 (자녀)',
+                            onPress: async () => {
+                                const mockToken = "dev-bypass-existing-token";
+                                await setAuthInfo(mockToken, 'CHILD', '아이짱');
+                                navigation.replace('PinNumberLogin');
+                            }
+                        },
+                        {
+                            text: '신규 가입',
                             onPress: async () => {
                                 const mockToken = "dev-bypass-new-token";
                                 await setAuthInfo(mockToken, null, null);
@@ -53,7 +91,7 @@ const SocialLoginScreen = ({ navigation }) => {
                             }
                         }
                     ],
-                    { cancelable: false }
+                    { cancelable: true }
                 );
             }
         }, 500);
@@ -73,7 +111,7 @@ const SocialLoginScreen = ({ navigation }) => {
                 </View>
 
                 {/* 로그인 버튼 영역 */}
-                <View style={styles.buttonSection}>
+                <View style={[styles.buttonSection, { gap: 10 }]}>
                     <TouchableOpacity
                         style={[styles.kakaoButton, { backgroundColor: '#FEE500' }]}
                         onPress={handleKakaoLogin}

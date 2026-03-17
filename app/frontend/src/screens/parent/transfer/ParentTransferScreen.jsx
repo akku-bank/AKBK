@@ -3,6 +3,7 @@ import { View, StyleSheet, SafeAreaView, TouchableOpacity, Alert } from 'react-n
 import { scale, verticalScale } from 'react-native-size-matters';
 import CustomText from '../../../components/common/CustomText';
 import CustomTextInput from '../../../components/common/CustomTextInput';
+import api from '../../../api/axios';
 
 const ParentTransferScreen = ({ navigation, route }) => {
     const child = route.params?.child || { name: '자녀' };
@@ -21,8 +22,20 @@ const ParentTransferScreen = ({ navigation, route }) => {
                 { text: '취소', style: 'cancel' },
                 {
                     text: '보내기',
-                    onPress: () => {
+                    onPress: async () => {
+                        /* ==========================================
+                           [진짜 자녀 용돈 송금 API]
+                           ========================================== 
+                        try {
+                            // await api.post('/transactions/transfer', { amount: parseInt(amount), targetAccountName: child.name });
+                            // Alert.alert('송금 완료!', `${child.name}의 계좌로 입금되었습니다.`, [{ text: '확인', onPress: () => navigation.goBack() }]);
+                            // return;
+                        } catch(e) { console.error('Transfer Error:', e); }
+                        ========================================== */
+
+                        // --- 실제 연동 시 아래 임시 로직 삭제 ---
                         Alert.alert('송금 완료!', `${child.name}의 계좌로 입금되었습니다.`, [{ text: '확인', onPress: () => navigation.goBack() }]);
+                        // ------------------------------------
                     }
                 }
             ]

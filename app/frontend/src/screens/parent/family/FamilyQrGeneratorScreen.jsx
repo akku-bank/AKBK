@@ -2,9 +2,27 @@
 import { View, StyleSheet, SafeAreaView, TouchableOpacity, Image } from 'react-native';
 import { scale, verticalScale } from 'react-native-size-matters';
 import CustomText from '../../../components/common/CustomText';
+import api from '../../../api/axios';
 
 const FamilyQrGeneratorScreen = ({ navigation }) => {
     const [timeLeft, setTimeLeft] = useState(300); // 5분
+
+    const [qrData, setQrData] = useState(null);
+
+    /* ==========================================
+       [진짜 가족 초대 QR 조회 API]
+       ========================================== 
+    useEffect(() => {
+        const fetchQr = async () => {
+            try {
+                const res = await api.get('/families/qr');
+                setQrData(res.data.data.qrCode);
+                setTimeLeft(res.data.data.expiresIn || 300);
+            } catch(e) { console.error('QR Fetch Error:', e); }
+        };
+        fetchQr();
+    }, []);
+    ========================================== */
 
     useEffect(() => {
         const timer = setInterval(() => {
@@ -41,7 +59,18 @@ const FamilyQrGeneratorScreen = ({ navigation }) => {
                     <CustomText style={styles.timerText}>인증 유효시간 {formatTime(timeLeft)}</CustomText>
                 </View>
 
-                <TouchableOpacity style={styles.refreshBtn} onPress={() => setTimeLeft(300)}>
+                <TouchableOpacity style={styles.refreshBtn} onPress={() => {
+                    /* ==========================================
+                       [진짜 QR 재발급 API]
+                       ========================================== 
+                    try {
+                        const res = await api.post('/families/qr/reissue');
+                        setQrData(res.data.data.qrCode);
+                        setTimeLeft(res.data.data.expiresIn || 300);
+                    } catch(e) { console.error('QR Reissue Error', e); }
+                    ========================================== */
+                    setTimeLeft(300);
+                }}>
                     <CustomText style={styles.refreshBtnText}>🔄 QR 코드 갱신</CustomText>
                 </TouchableOpacity>
             </View>
