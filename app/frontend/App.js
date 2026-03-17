@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, StyleSheet, Platform, Text, TextInput } from 'react-native';
+import { View, StyleSheet, Platform, StatusBar } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -8,15 +8,49 @@ import * as SplashScreen from 'expo-splash-screen';
 
 import ChildBottomTabNavigator from './src/navigation/ChildBottomTabNavigator';
 import AvatarCustomScreen from './src/screens/child/home/AvatarCustomScreen';
+import ItemShopScreen from './src/screens/child/home/ItemShopScreen';
+import TransactionCalendarScreen from './src/screens/child/account/TransactionCalendarScreen';
+import TransactionDetailScreen from './src/screens/child/account/TransactionDetailScreen';
+import TransferScreen from './src/screens/child/account/TransferScreen';
+import PaymentScreen from './src/screens/child/account/PaymentScreen';
+import QuizScreen from './src/screens/child/challenge/QuizScreen';
+import ChallengeProposeScreen from './src/screens/child/challenge/ChallengeProposeScreen';
+import WeeklyReportScreen from './src/screens/child/report/WeeklyReportScreen';
+import ChildMyPageScreen from './src/screens/child/mypage/ChildMyPageScreen';
+import ParentHomeScreen from './src/screens/parent/home/ParentHomeScreen';
+import ParentTransferScreen from './src/screens/parent/transfer/ParentTransferScreen';
+import ParentReportScreen from './src/screens/parent/report/ParentReportScreen';
+import MissionApprovalScreen from './src/screens/parent/mission/MissionApprovalScreen';
+import ParentChallengeManageScreen from './src/screens/parent/mission/ParentChallengeManageScreen';
+import FamilyManagementScreen from './src/screens/parent/home/FamilyManagementScreen';
 import { AvatarProvider } from './src/components/child/avatar/AvatarContext';
 
-SplashScreen.preventAutoHideAsync().catch(() => { });
+import OnboardingTutorialScreen from './src/screens/auth/OnboardingTutorialScreen';
+import FamilyInvitationScreen from './src/screens/auth/FamilyInvitationScreen';
+import SocialLoginScreen from './src/screens/auth/SocialLoginScreen';
+import RoleSelectScreen from './src/screens/auth/RoleSelectScreen';
+import QrCheckScreen from './src/screens/auth/QrCheckScreen';
+import SignUpScreen from './src/screens/auth/SignUpScreen';
+import ParentInitialSetupScreen from './src/screens/auth/ParentInitialSetupScreen';
+import PinNumberLoginScreen from './src/screens/auth/PinNumberLoginScreen';
+import PinNumberSetupScreen from './src/screens/auth/PinNumberSetupScreen';
+import QRScanScreen from './src/screens/auth/QRScanScreen';
+import ChildFamilyJoinScreen from './src/screens/auth/ChildFamilyJoinScreen';
 
-// 폰트 일괄 적용
-if (Text.defaultProps == null) Text.defaultProps = {};
-Text.defaultProps.style = { fontFamily: 'Mulmaru' };
-if (TextInput.defaultProps == null) TextInput.defaultProps = {};
-TextInput.defaultProps.style = { fontFamily: 'Mulmaru' };
+import ParentBottomTabNavigator from './src/navigation/ParentBottomTabNavigator';
+import FamilyQrGeneratorScreen from './src/screens/parent/family/FamilyQrGeneratorScreen';
+
+import ParentEditProfileScreen from './src/screens/parent/mypage/ParentEditProfileScreen';
+import ChildEditProfileScreen from './src/screens/child/mypage/ChildEditProfileScreen';
+import ParentAccountCreateScreen from './src/screens/parent/transfer/ParentAccountCreateScreen';
+import ParentHistoryScreen from './src/screens/parent/account/ParentHistoryScreen';
+import GachaScreen from './src/screens/child/safeBox/GachaScreen';
+import FriendListScreen from './src/screens/child/social/FriendListScreen';
+import FriendTownScreen from './src/screens/child/social/FriendTownScreen';
+import AttendanceScreen from './src/screens/child/challenge/AttendanceScreen';
+import BadgeMapScreen from './src/screens/child/safeBox/BadgeMapScreen';
+
+SplashScreen.preventAutoHideAsync().catch(() => { });
 
 const Stack = createNativeStackNavigator();
 
@@ -48,12 +82,62 @@ export default function App() {
 
   return (
     <View style={styles.webRoot}>
+      <StatusBar translucent={false} backgroundColor="#FFFFFF" barStyle="dark-content" />
       <SafeAreaProvider style={{ flex: 1 }}>
         <AvatarProvider>
           <NavigationContainer>
-            <Stack.Navigator screenOptions={{ headerShown: false }}>
-              <Stack.Screen name="MainTab" component={ChildBottomTabNavigator} />
+            <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="OnboardingTutorial">
+              {/* Auth Flow */}
+              <Stack.Screen name="OnboardingTutorial" component={OnboardingTutorialScreen} />
+              <Stack.Screen name="FamilyInvitation" component={FamilyInvitationScreen} />
+              <Stack.Screen name="SocialLogin" component={SocialLoginScreen} />
+              <Stack.Screen name="RoleSelect" component={RoleSelectScreen} />
+              <Stack.Screen name="QrCheck" component={QrCheckScreen} />
+              <Stack.Screen name="SignUp" component={SignUpScreen} />
+              <Stack.Screen name="ParentInitialSetup" component={ParentInitialSetupScreen} />
+              <Stack.Screen name="PinNumberLogin" component={PinNumberLoginScreen} />
+              <Stack.Screen name="PinNumberSetup" component={PinNumberSetupScreen} />
+              <Stack.Screen name="QRScan" component={QRScanScreen} />
+              <Stack.Screen name="ChildFamilyJoin" component={ChildFamilyJoinScreen} />
+
+              <Stack.Screen name="ChildMain" component={ChildBottomTabNavigator} />
+              <Stack.Screen name="ParentMain" component={ParentBottomTabNavigator} />
+              <Stack.Screen name="FamilyQrGenerator" component={FamilyQrGeneratorScreen} />
+
+              {/* Other Specific Screens */}
               <Stack.Screen name="Wardrobe" component={AvatarCustomScreen} />
+              <Stack.Screen name="ItemShopScreen" component={ItemShopScreen} />
+              <Stack.Screen name="GachaScreen" component={GachaScreen} />
+              <Stack.Screen name="FriendList" component={FriendListScreen} />
+              <Stack.Screen name="FriendTown" component={FriendTownScreen} />
+              <Stack.Screen name="AttendanceScreen" component={AttendanceScreen} />
+              <Stack.Screen name="BadgeMap" component={BadgeMapScreen} />
+
+              {/* Banking/Account Flow */}
+              <Stack.Screen name="TransactionCalendar" component={TransactionCalendarScreen} />
+              <Stack.Screen name="TransactionDetail" component={TransactionDetailScreen} />
+              <Stack.Screen name="Transfer" component={TransferScreen} />
+              <Stack.Screen name="Payment" component={PaymentScreen} />
+
+              {/* Parent Flow */}
+              <Stack.Screen name="ParentHome" component={ParentHomeScreen} />
+              <Stack.Screen name="ParentTransferScreen" component={ParentTransferScreen} />
+              <Stack.Screen name="ParentReportScreen" component={ParentReportScreen} />
+              <Stack.Screen name="ParentHistoryScreen" component={ParentHistoryScreen} />
+              <Stack.Screen name="MissionApprovalScreen" component={MissionApprovalScreen} />
+              <Stack.Screen name="ParentChallengeManage" component={ParentChallengeManageScreen} />
+              <Stack.Screen name="FamilyManagementScreen" component={FamilyManagementScreen} />
+
+              {/* Education/Challenge Flow */}
+              <Stack.Screen name="QuizScreen" component={QuizScreen} />
+              <Stack.Screen name="ChallengePropose" component={ChallengeProposeScreen} />
+
+              {/* Profile/Settings Flow */}
+              <Stack.Screen name="WeeklyReport" component={WeeklyReportScreen} />
+
+              <Stack.Screen name="ParentEditProfile" component={ParentEditProfileScreen} />
+              <Stack.Screen name="ChildEditProfile" component={ChildEditProfileScreen} />
+              <Stack.Screen name="ParentAccountCreate" component={ParentAccountCreateScreen} />
             </Stack.Navigator>
           </NavigationContainer>
         </AvatarProvider>
