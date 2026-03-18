@@ -130,7 +130,7 @@
     image: provectuslabs/kafka-ui:latest
     container_name: akkubangkku_kafka_ui
     ports:
-      - "8080:8080"
+      - "28080:8080"
     environment:
       KAFKA_CLUSTERS_0_NAME: Akkubangkku-Cluster
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: akkubangkku_kafka:29092
@@ -147,8 +147,31 @@
       kafka:
         condition: service_healthy
     restart: "no"
+  # 백엔드 컨테이너
+  backend:
+    build:
+      context: ./app/backend  # 백엔드 코드가 있는 경로
+      dockerfile: Dockerfile
+    container_name: akku_backend
+    depends_on:
+      postgres:
+        condition: service_healthy # DB가 완전히 뜬 후에 백엔드 실행
+    ports:
+      - "8080:8080" # 외부에서 localhost:8080으로 API 호출 가능
+    env_file:
+      - .env # 최상단 .env 파일의 변수들(JWT, KAKAO 등)을 주입받음
+    environment:
+      # application.yml의 기본값을 도커 내부 통신용으로 덮어쓰기
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=${DB_NAME}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - EXTERNAL_FASTAPI_BASE_URL=http://ai-server:8000 # localhost:8000 대신 ai_server 컨테이너 이름 사용
+    restart: always
 
 volumes:
   postgres_data:
   zookeeper_data:
   kafka_data:
+  
