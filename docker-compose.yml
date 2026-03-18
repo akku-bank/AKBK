@@ -131,7 +131,7 @@
     image: provectuslabs/kafka-ui:latest
     container_name: akkubangkku_kafka_ui
     ports:
-      - "8080:8080"
+      - "28080:8080"
     environment:
       KAFKA_CLUSTERS_0_NAME: Akkubangkku-Cluster
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: akkubangkku_kafka:29092
@@ -150,42 +150,73 @@
     restart: "no"
 
   # Spark Master: 클러스터 매니저 역할
-  # Spark Master: 클러스터 매니저 역할
   spark-master:
     image: apache/spark:3.5.1-python3
     container_name: akkubangkku_spark_master
     user: root
+    env_file:
+      - .env
+    depends_on:
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
     environment:
       - SPARK_MODE=master
     ports:
-      - "18080:8080"  # Web UI (마스터 상태 확인용)
-      - "7077:7077"   # Master URL (애플리케이션 제출용)
+      - "18080:8080"
+      - "7077:7077"
     volumes:
       - ./data/spark:/opt/spark/work-dir
     command: >
       /bin/bash -c "
-      /opt/spark/bin/spark-class org.apache.spark.deploy.master.Master &
-      echo 'Waiting 30s for Worker to register...';
-      sleep 30;
-      echo 'Submitting Spark application to Cluster...';
+      pip install --no-cache-dir redis psycopg2-binary &&
+      /opt/spark/bin/spark-class org.apache.spark.deploy.master.Master & 
+      echo 'Waiting for Master to start...';
+      sleep 20;
       /opt/spark/bin/spark-submit 
       --master spark://spark-master:7077 
+      --conf spark.sql.streaming.checkpointLocation=/opt/spark/work-dir/checkpoints/realtime-report
       --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.1 
       /opt/spark/work-dir/realtime_report.py"
 
   spark-worker:
     image: apache/spark:3.5.1-python3
     container_name: akkubangkku_spark_worker
+    user: root
+    env_file:
+      - .env
     depends_on:
       - spark-master
     environment:
       - SPARK_MODE=worker
       - SPARK_MASTER_URL=spark://spark-master:7077
+      - SPARK_WORKER_CORES=2
+      - SPARK_WORKER_MEMORY=2G
     volumes:
       - ./data/spark:/opt/spark/work-dir
-    command: /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077
+    command: >
+      /bin/bash -c "pip install redis psycopg2-binary && 
+      /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077"
+
+  # Redis: 실시간 리포트용 Hot-Data 저장소
+  redis:
+    image: redis:latest
+    container_name: akkubangkku_redis
+    command: redis-server --appendonly yes  # [중요] AOF 기능 활성화
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: always
+    healthcheck: # 명령 받을 준비 되었는지 확인
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
 
 volumes:
   postgres_data:
   zookeeper_data:
   kafka_data:
+  redis_data:
