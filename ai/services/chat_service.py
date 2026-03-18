@@ -1,15 +1,19 @@
 from uuid import UUID
 
 from ai.clients.langgraph_client import LangGraphClient
+from ai.schemas.policy import PolicyDecision, PolicyReason
 from ai.schemas.request import ChatRequest
 from ai.schemas.response import ChatResponse
 from ai.schemas.state import ChatContextState
+from ai.services.intent_service import IntentService
 from ai.services.policy_service import PolicyService
+
 
 class ChatService:
     def __init__(self) -> None:
         self.langgraph_client = LangGraphClient()
         self.policy_service = PolicyService()
+        self.intent_service = IntentService()
 
     async def handle_message(self, request: ChatRequest) -> ChatResponse:
         state = ChatContextState(
@@ -22,33 +26,68 @@ class ChatService:
             age_group="elementary",
         )
 
-        # 정책 검사
+        # 1. credit pre-check
         policy_result = self.policy_service.run_policy_gate(state)
-
         state.policy_decision = policy_result.decision
         state.policy_reason = policy_result.reason
 
-        # 정책 차단이면 바로 응답
         if not policy_result.allowed:
+            # 디버깅용 로그
+            print("policy_decision =", state.policy_decision)
+            print("policy_reason =", state.policy_reason)
             return ChatResponse(
                 remaining_credits=state.credits_balance,
-                ai_reply=policy_result.message,
+                ai_reply=policy_result.message or "",
             )
 
-        # 정책 통과 → LangGraph 실행
+        # 2. LLM classification
+        classification = self.intent_service.classify_message(state.message)
+        state.is_finance_related = classification.is_finance_related
+        state.is_cheating = classification.is_cheating
+        state.intent = classification.intent.value
+
+        # 3. semantic policy deny
+        if state.is_cheating:
+            state.policy_decision = PolicyDecision.DENY
+            state.policy_reason = PolicyReason.CHEATING
+    
+            # 디버깅용 로그
+            print("policy_decision =", state.policy_decision)
+            print("policy_reason =", state.policy_reason)
+            print("is_finance_related =", state.is_finance_related)
+            print("is_cheating =", state.is_cheating)
+            print("intent =", state.intent)
+            return ChatResponse(
+                remaining_credits=state.credits_balance,
+                ai_reply="정답은 직접 제공할 수 없습니다.",
+            )
+
+        if not state.is_finance_related:
+            state.policy_decision = PolicyDecision.DENY
+            state.policy_reason = PolicyReason.OUT_OF_SCOPE
+
+            # 디버깅용 로그
+            print("policy_decision =", state.policy_decision)
+            print("policy_reason =", state.policy_reason)
+            print("is_finance_related =", state.is_finance_related)
+            print("is_cheating =", state.is_cheating)
+            print("intent =", state.intent)
+            return ChatResponse(
+                remaining_credits=state.credits_balance,
+                ai_reply="금융 관련 질문만 가능합니다.",
+            )
+
+        # 4. LangGraph 실행
         result = await self.langgraph_client.generate_answer(state)
 
-        # 내부 처리용 메타데이터 반영
         state.route = result["route"]
-        state.intent = result["intent"]
         state.hint_level = result["hint_level"]
 
-        # TODO:
-        # - route / intent / hint_level 기반 로깅
-        # - 크레딧 차감 처리
-        # - 정책 판단 결과 저장
-        # - chat_logs 저장
-
+        print("policy_decision =", state.policy_decision)
+        print("policy_reason =", state.policy_reason)
+        print("is_finance_related =", state.is_finance_related)
+        print("is_cheating =", state.is_cheating)
+        print("intent =", state.intent)
         return ChatResponse(
             remaining_credits=state.credits_balance,
             ai_reply=result["answer"],
