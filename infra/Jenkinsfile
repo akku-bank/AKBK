@@ -1,0 +1,133 @@
+pipeline {
+    agent any
+
+    environment {
+        MM_WEBHOOK = credentials('mattermost-webhook-url')
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                echo 'Checkout already handled by Pipeline SCM'
+            }
+        }
+
+        stage('Prepare Metadata') {
+            steps {
+                script {
+                    env.BUILT_BRANCH = env.gitlabBranch ?: env.BRANCH_NAME ?: "unknown"
+                    env.TRIGGER_USER = env.gitlabUserName ?: "unknown"
+
+                    // 최신 커밋 메시지 읽기
+                    def commitMessage = sh(
+                        script: "git log -1 --pretty=%B",
+                        returnStdout: true
+                    ).trim()
+
+                    echo "COMMIT_MESSAGE=${commitMessage}"
+
+                    def sourceBranch = ""
+                    def targetBranch = env.BUILT_BRANCH
+
+                    // merge commit 메시지 예시:
+                    // Merge branch 'fix/infra/S14P21B101-120_jenkins-alert-message' into 'develop'
+                    def matcher = (commitMessage =~ /Merge branch '(.+)' into '(.+)'/)
+
+                    if (matcher) {
+                        sourceBranch = matcher[0][1]
+                        targetBranch = matcher[0][2]
+                    }
+
+                    // 팀 판별용 기준 브랜치
+                    def branchForTeam = sourceBranch?.trim() ? sourceBranch : env.BUILT_BRANCH
+                    def parts = branchForTeam.tokenize('/')
+                    def teamCode = parts.size() >= 2 ? parts[1].toLowerCase() : "unknown"
+
+                    def teamMap = [
+                        "ai": "AI",
+                        "de": "DATA",
+                        "be": "BACKEND",
+                        "fe": "FRONTEND",
+                        "in": "INFRA",
+                        "infra": "INFRA"
+                    ]
+
+                    env.TARGET_TEAM = teamMap.get(teamCode, "COMMON_OPS")
+
+                    env.BRANCH_DISPLAY = sourceBranch?.trim()
+                        ? "${sourceBranch} → ${targetBranch}"
+                        : env.BUILT_BRANCH
+
+                    echo "BUILT_BRANCH=${env.BUILT_BRANCH}"
+                    echo "SOURCE_BRANCH=${sourceBranch}"
+                    echo "TARGET_BRANCH=${targetBranch}"
+                    echo "TRIGGER_USER=${env.TRIGGER_USER}"
+                    echo "TARGET_TEAM=${env.TARGET_TEAM}"
+                    echo "BRANCH_DISPLAY=${env.BRANCH_DISPLAY}"
+                }
+            }
+        }
+
+        stage('Infrastructure Check') {
+            steps {
+                sh '[ -f infra/docker-compose.yml ] && echo "Docker config found" || echo "Skip check"'
+            }
+        }
+
+        stage('Build & Test') {
+            steps {
+                script {
+                    echo "빌드를 시작합니다..."
+                    // sh './gradlew build'
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            sh """
+            curl -X POST -H 'Content-Type: application/json' \
+            -d '{
+              "text":"✅ **[${env.TARGET_TEAM}] Jenkins 빌드 성공**\\n- 프로젝트: ${env.JOB_NAME}\\n- 빌드 번호: #${env.BUILD_NUMBER}\\n- 브랜치: ${env.BRANCH_DISPLAY}\\n- 요청자: ${env.TRIGGER_USER}\\n- 확인: ${env.BUILD_URL}"
+            }' \
+            ${MM_WEBHOOK}
+            """
+        }
+
+        failure {
+            script {
+                def logFile = "${env.WORKSPACE}/extracted_log.txt"
+
+                sh """
+                if [ -f /var/jenkins_home/jobs/${env.JOB_NAME}/builds/${env.BUILD_NUMBER}/log ]; then
+                  tail -n 50 /var/jenkins_home/jobs/${env.JOB_NAME}/builds/${env.BUILD_NUMBER}/log > ${logFile}
+                else
+                  echo "No Jenkins raw log file found" > ${logFile}
+                fi
+                """
+
+                def analyzeStatus = sh(
+                    script: "python3 infra/jenkins/analyze_log.py ${logFile} ${env.JOB_NAME} ${env.BUILD_NUMBER} ${env.BUILD_URL}",
+                    returnStatus: true
+                )
+
+                if (analyzeStatus == 0) {
+                    sh """
+                    curl -X POST -H 'Content-Type: application/json' \
+                    -d @${env.WORKSPACE}/mattermost_payload.json \
+                    ${MM_WEBHOOK}
+                    """
+                } else {
+                    sh """
+                    curl -X POST -H 'Content-Type: application/json' \
+                    -d '{
+                      "text":"❌ **[${env.TARGET_TEAM}] Jenkins 빌드 실패**\\n- 프로젝트: ${env.JOB_NAME}\\n- 빌드 번호: #${env.BUILD_NUMBER}\\n- 브랜치: ${env.BRANCH_DISPLAY}\\n- 요청자: ${env.TRIGGER_USER}\\n- 확인: ${env.BUILD_URL}console\\n- 비고: analyze_log.py 실행 실패"
+                    }' \
+                    ${MM_WEBHOOK}
+                    """
+                }
+            }
+        }
+    }
+}
