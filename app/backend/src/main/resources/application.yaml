@@ -17,6 +17,10 @@ spring:
   flyway:
     enabled: true
     baseline-on-migrate: true
+  kafka:
+    bootstrap-servers: localhost:28080
+    consumer:
+      group-id: quiz-chat-group
 
 # 카카오 소셜 로그인
 kakao:
