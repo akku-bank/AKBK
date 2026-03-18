@@ -47,6 +47,17 @@ public class AccountService {
         User child = userRepository.findById(request.childId())
                 .orElseThrow(() -> new ApiException(UserErrorCode.USER_NOT_FOUND));
 
+        // 부모와 자녀가 같은 가족 그룹에 속해 있는지 검증
+        if (parent.getFamilyId() == null || !parent.getFamilyId().equals(child.getFamilyId())) {
+            throw new ApiException(AuthErrorCode.ACCESS_DENIED);
+        }
+
+        // 금융망 호출 전에 우리 DB에 이미 계좌가 있는지 중복 검증 (자녀 계좌가 이미 개설되었는지 여부 확인)
+        boolean hasAccount = accountRepository.existsByUserId(child.getId());
+        if (hasAccount) {
+            throw new ApiException(BankErrorCode.ALREADY_EXISTS_ACCOUNT);
+        }
+
         // 금융망 API 호출하여 계좌 생성
         FinanceAccountCreateResponse.Rec rec = ssafyFinanceService.createAccount(child.getUserKey(), request.accountType());
 
@@ -93,6 +104,12 @@ public class AccountService {
     public void linkExternalAccount(UUID userId, AccountLinkRequest request) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ApiException(UserErrorCode.USER_NOT_FOUND));
+
+        // 금융망 연동 호출 전 우리 DB 중복 검사
+        boolean isAlreadyLinked = accountRepository.existsByAccountNumberAndBankCode(request.accountNumber(), request.bankCode());
+        if (isAlreadyLinked) {
+             throw new ApiException(BankErrorCode.ALREADY_EXISTS_ACCOUNT);
+        }
 
         // 금융망 API 호출하여 계좌 연동 처리
         ssafyFinanceService.linkAccount(user.getUserKey(), request.bankCode(), request.accountNumber());

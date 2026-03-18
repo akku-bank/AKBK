@@ -2,7 +2,9 @@ package com.akku.backend.domain.bank.service;
 
 import com.akku.backend.domain.auth.entity.User;
 import com.akku.backend.domain.auth.repository.UserRepository;
+import com.akku.backend.domain.auth.exception.AuthErrorCode;
 import com.akku.backend.domain.auth.service.SsafyFinanceService;
+import com.akku.backend.global.error.ApiException;
 import com.akku.backend.domain.bank.dto.TransactionHistoryResponse;
 import com.akku.backend.domain.bank.entity.Account;
 import com.akku.backend.domain.bank.repository.AccountRepository;
@@ -69,8 +71,8 @@ class TransactionServiceTest {
         UUID parentId = UUID.randomUUID();
         UUID childId = UUID.randomUUID();
         UUID familyId = UUID.randomUUID();
-        User parent = User.builder().id(parentId).familyId(familyId).build();
-        User child = User.builder().id(childId).userKey("child-key").familyId(familyId).build();
+        User parent = User.builder().id(parentId).familyId(familyId).role("PARENT").build();
+        User child = User.builder().id(childId).userKey("child-key").familyId(familyId).role("CHILD").build();
         Account account = Account.builder().userId(childId).accountNumber("12345").build();
 
         given(userRepository.findById(parentId)).willReturn(Optional.of(parent));
@@ -82,8 +84,6 @@ class TransactionServiceTest {
         );
         given(ssafyFinanceService.getTransactionHistory(anyString(), anyString(), anyString(), anyString()))
                 .willReturn(List.of(detail));
-        
-        // 가족 관계 설정 부분 제거 (User 엔티티로 통합됨)
 
         // 1. 자녀 본인 조회 (숨김 내역도 가맹점명 보임)
         TransactionHistoryResponse childHistory = transactionService.getTransactionHistory(childId, 2026, 3);
@@ -94,6 +94,26 @@ class TransactionServiceTest {
         TransactionHistoryResponse parentHistory = transactionService.getChildTransactionHistory(parentId, childId, 2026, 3);
         assertTrue(parentHistory.transactions().get(0).isHidden());
         assertEquals("비공개 내역", parentHistory.transactions().get(0).merchantName());
-        assertEquals(-3000L, parentHistory.transactions().get(0).amount()); // 금액은 보임
+        assertEquals(-3000L, parentHistory.transactions().get(0).amount());
+    }
+
+    @Test
+    @DisplayName("자녀 거래 내역 조회 - 실패 (부적절한 권한)")
+    void getChildTransactionHistory_Fail_InvalidRole() {
+        UUID parentId = UUID.randomUUID();
+        UUID childId = UUID.randomUUID();
+        UUID familyId = UUID.randomUUID();
+        
+        // 자녀가 부모의 내역을 조회하려는 상황
+        User child = User.builder().id(childId).familyId(familyId).role("CHILD").build();
+        User parent = User.builder().id(parentId).familyId(familyId).role("PARENT").build();
+
+        given(userRepository.findById(childId)).willReturn(Optional.of(child));
+        given(userRepository.findById(parentId)).willReturn(Optional.of(parent));
+
+        ApiException exception = assertThrows(ApiException.class, () ->
+                transactionService.getChildTransactionHistory(childId, parentId, 2026, 3));
+        
+        assertEquals(AuthErrorCode.ACCESS_DENIED, exception.getErrorCode());
     }
 }

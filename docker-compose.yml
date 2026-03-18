@@ -13,7 +13,7 @@
       - ./ai/db/init:/docker-entrypoint-initdb.d
     restart: always
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME} -d ${DB_NAME}"]
+      test: [ "CMD-SHELL", "pg_isready -U ${DB_USERNAME} -d ${DB_NAME}" ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -37,8 +37,7 @@
     volumes:
       - ./ai/airflow/requirements.txt:/opt/airflow/requirements.txt
     command: >
-      bash -c "airflow db init &&
-      airflow users create --username ${AIRFLOW_USERNAME} --password ${AIRFLOW_PASSWORD} --firstname admin --lastname admin --role Admin --email admin@example.com"
+      bash -c "airflow db init && airflow users create --username ${AIRFLOW_USERNAME} --password ${AIRFLOW_PASSWORD} --firstname admin --lastname admin --role Admin --email admin@example.com"
   airflow:
     image: apache/airflow:2.7.1-python3.11
     container_name: airflow_scheduler
@@ -76,8 +75,9 @@
         condition: service_healthy
     env_file:
       - .env
-    volumes:    # 코드 변경 시 컨테이너 내부의 /app 디렉토리에 자동 반영
-      - .:/app  # 배포 시 삭제 !!!!!
+    volumes:
+      # 코드 변경 시 컨테이너 내부의 /app 디렉토리에 자동 반영
+      - .:/app # 배포 시 삭제 !!!!!
     ports:
       - "8000:8000"
     restart: always
@@ -121,7 +121,7 @@
     volumes:
       - kafka_data:/var/lib/kafka/data
     healthcheck:
-      test: ["CMD-SHELL", "nc -z localhost 9092 || exit 1"]
+      test: [ "CMD-SHELL", "nc -z localhost 9092 || exit 1" ]
       interval: 10s
       timeout: 10s
       retries: 10
