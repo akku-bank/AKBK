@@ -5,6 +5,8 @@ import ChildAvatar from '../../../components/child/avatar/ChildAvatar';
 import { AvatarContext } from '../../../components/child/avatar/AvatarContext';
 import CustomText from '../../../components/common/CustomText';
 import Pet from '../../../components/child/avatar/Pet';
+import api from '../../../api/axios';
+import useAuthStore from '../../../store/useAuthStore';
 
 const { width, height } = Dimensions.get('window');
 
@@ -12,6 +14,26 @@ const ChildHomeScreen = ({ navigation }) => {
     const [isQrModalVisible, setQrModalVisible] = useState(false);
     const [isLevelUpModalVisible, setLevelUpModalVisible] = useState(false);
     const { equipState } = useContext(AvatarContext);
+    const { user } = useAuthStore(); // get name from store since it's not in response
+    const [homeData, setHomeData] = useState(null);
+
+    useEffect(() => {
+        const fetchHomeData = async () => {
+            try {
+                const res = await api.get('/home');
+                const homeDataResult = res.data?.data;
+                if (!homeDataResult) return;
+
+                setHomeData(homeDataResult);
+                if (homeDataResult.hasLevelChanged) {
+                    setLevelUpModalVisible(true);
+                }
+            } catch (e) {
+                console.error('Child Home Fetch Error', e);
+            }
+        };
+        fetchHomeData();
+    }, []);
 
     const avatarSize = height > 750 ? 270 : 200;
 
@@ -23,7 +45,9 @@ const ChildHomeScreen = ({ navigation }) => {
                 <View style={styles.headerRow}>
                     <View style={styles.balanceWrapper}>
                         <CustomText style={styles.balanceLabel}>잔액</CustomText>
-                        <CustomText style={styles.balanceAmount}>140,000</CustomText>
+                        <CustomText style={styles.balanceAmount}>
+                            {homeData ? homeData.cashBalance.toLocaleString() : '0'}
+                        </CustomText>
                         <CustomText style={styles.balanceCurrency}>원</CustomText>
                     </View>
                     <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
@@ -58,25 +82,27 @@ const ChildHomeScreen = ({ navigation }) => {
 
                 {/* 아바타 영역 */}
                 <View style={styles.avatarSection}>
-                    <CustomText style={styles.levelText}>LV.15</CustomText>
-                    <CustomText style={styles.nameText}>김싸피</CustomText>
+                    <CustomText style={styles.levelText}>LV.{homeData ? homeData.level : 1}</CustomText>
+                    <CustomText style={styles.nameText}>{user ? user.name : '김싸피'}</CustomText>
 
                     <View style={styles.avatarActionRow}>
-                        <TouchableOpacity style={styles.avatarActionBtn} onPress={() => navigation.navigate('ItemShopScreen')}>
-                            <CustomText style={styles.avatarActionText}>🎒 내 도감</CustomText>
+                        <TouchableOpacity style={styles.avatarActionBtn} onPress={() => navigation.navigate('AvatarDictionaryScreen')}>
+                            <CustomText style={styles.avatarActionText}>내 도감</CustomText>
                         </TouchableOpacity>
                         <TouchableOpacity style={styles.avatarActionBtn} onPress={() => navigation.navigate('Wardrobe')}>
-                            <CustomText style={styles.avatarActionText}>🎨 꾸미기</CustomText>
+                            <CustomText style={styles.avatarActionText}>꾸미기</CustomText>
                         </TouchableOpacity>
                     </View>
 
                     <View style={styles.avatarWrapper}>
                         <ChildAvatar equipState={equipState} size={avatarSize} />
 
-                        {/* 펫 배치 */}
-                        <View style={{ position: 'absolute', right: scale(-120), bottom: verticalScale(-115) }}>
-                            <Pet petType="shiba" size={scale(350)} />
-                        </View>
+                        {/* 펫 배치 (백엔드 펫 데이터가 있을 때만 렌더링되도록 사전 준비) */}
+                        {homeData?.pet && (
+                            <View style={{ position: 'absolute', right: scale(-120), bottom: verticalScale(-115) }}>
+                                <Pet petType={homeData.pet.type || 'shiba'} size={scale(350)} />
+                            </View>
+                        )}
                     </View>
                 </View>
 
@@ -97,8 +123,8 @@ const ChildHomeScreen = ({ navigation }) => {
                 <View style={styles.levelUpModalBackground}>
                     <View style={styles.levelUpModalCard}>
                         <CustomText style={styles.levelUpEmoji}>🎉</CustomText>
-                        <CustomText style={styles.levelUpTitle}>레벨 업 축하해요!</CustomText>
-                        <CustomText style={styles.levelUpDesc}>새로운 레벨이 되었어요.{'\n'}상점에서 새로운 아이템이 해금되었습니다!</CustomText>
+                        <CustomText style={styles.levelUpTitle}>축하해요!</CustomText>
+                        <CustomText style={styles.levelUpDesc}>레벨이 올랐어요.{'\n'}새로운 아이템이 해금되었습니다!</CustomText>
                         <TouchableOpacity style={styles.levelUpCloseBtn} onPress={() => setLevelUpModalVisible(false)}>
                             <CustomText style={styles.levelUpCloseText}>확인</CustomText>
                         </TouchableOpacity>

@@ -1,4 +1,4 @@
-﻿import React, { useState, useRef } from 'react';
+﻿import React, { useState, useRef, useEffect } from 'react';
 import { View, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Alert, KeyboardAvoidingView, Platform, Image } from 'react-native';
 import { scale, verticalScale } from 'react-native-size-matters';
 import CustomText from '../../../components/common/CustomText';
@@ -26,7 +26,14 @@ const MOCK_QUESTIONS = [
 ];
 
 const QuizScreen = ({ navigation }) => {
-    const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+    const [quiz, setQuiz] = useState({
+        id: null,
+        question: "불러오는 중...",
+        options: ["...", "...", "...", "..."],
+        answerIndex: 0,
+        explanation: "",
+        hint: ""
+    });
     const [selectedOption, setSelectedOption] = useState(null);
     const [isAnswerRevealed, setIsAnswerRevealed] = useState(false);
 
@@ -41,21 +48,35 @@ const QuizScreen = ({ navigation }) => {
 
     const scrollViewRef = useRef(null);
 
-    const q = MOCK_QUESTIONS[currentQuestionIndex];
+    const q = quiz;
 
-    /* ==========================================
-       [진짜 오늘의 퀴즈 데이터 조회 API]
-       ========================================== 
     useEffect(() => {
         const fetchQuiz = async () => {
             try {
-                // const res = await api.get('/quizzes/today');
-                // setQuestions(res.data.data.questions);
-            } catch(e) { console.error('Quiz Fetch Error', e); }
+                // 난이도는 'NORMAL'로 임의 고정 또는 이전 화면에서 선택된 파라미터 활용
+                const res = await api.get('/challenges/quizzes?difficulty=NORMAL');
+                const qData = res.data?.data;
+
+                if (!qData || !qData.problemJson) {
+                    console.log('퀴즈 데이터가 없거나 인증 에러가 발생했습니다.');
+                    return; // 상태 업데이트 생략 (불러오는 중... 유지 및 fallback 데이터 사용)
+                }
+
+                const problem = JSON.parse(qData.problemJson);
+
+                setQuiz({
+                    id: qData.quizId,
+                    question: problem.question,
+                    options: problem.options,
+                    answerIndex: problem.answer_index, // 클라이언트가 알 필요는 없지만 UI용 유지
+                    explanation: qData.explanation,
+                    hint: problem.hint || "힌트를 생성해드릴게요."
+                });
+                setAiCredits(qData.remainingCredits);
+            } catch (e) { console.error('Quiz Fetch Error', e); }
         };
         fetchQuiz();
     }, []);
-    ========================================== */
 
     const handleGoBack = () => {
         if (aiCredits < 3 && !isAnswerRevealed) {
@@ -90,7 +111,7 @@ const QuizScreen = ({ navigation }) => {
                 { text: '취소', style: 'cancel' },
                 {
                     text: '사용하기',
-                    onPress: () => {
+                    onPress: async () => {
                         setAiCredits(prev => prev - 1);
                         setChatHistory(prev => [
                             ...prev,
@@ -103,14 +124,12 @@ const QuizScreen = ({ navigation }) => {
                             scrollViewRef.current?.scrollToEnd({ animated: true });
                         }, 100);
 
-                        /* ==========================================
-                           [진짜 AI 채팅 (힌트) API 연동]
-                           ========================================== 
                         try {
-                            // const res = await api.post('/ai/chat', { message: userMsg, context: q.question });
-                            // setChatHistory(prev => [...prev, { sender: 'ai', text: res.data.data.reply }]);
-                        } catch(e) { console.error('AI Chat Error', e); }
-                        ========================================== */
+                            // 진짜 AI 채팅 (카프카 이벤트 트리거)
+                            if (quiz.id) {
+                                await api.post('/challenges/quizzes/chat', { quizId: quiz.id, message: userMsg });
+                            }
+                        } catch (e) { console.error('AI Chat Trigger Error', e); }
 
                         // 가짜 AI 응답 딜레이
                         setTimeout(() => {
@@ -136,36 +155,37 @@ const QuizScreen = ({ navigation }) => {
         }
 
         setIsAnswerRevealed(true);
-        const isCorrect = selectedOption === q.answerIndex;
+        const submitTask = async () => {
+            try {
+                if (!quiz.id) {
+                    Alert.alert('정답 확인 완료 (임시)', isCorrect ? '정답입니다!' : '틀렸습니다.');
+                    return;
+                }
+                const res = await api.post('/challenges/quizzes/answer', { quizId: quiz.id, selectedAnswer: selectedOption });
+                const ansData = res.data?.data;
+                if (!ansData) {
+                    Alert.alert('안내', '정답 확인 중 데이터가 반환되지 않았습니다.');
+                    return;
+                }
+                const { isCorrect: isServerCorrect, jellingReward } = ansData;
 
-        /* ==========================================
-           [진짜 퀴즈 정답 제출 및 보상 지급 API]
-           ========================================== 
-        try {
-            // await api.post('/quizzes/submit', { questionId: q.id, answerIndex: selectedOption });
-        } catch(e) { console.error('Quiz Submit Error', e); }
-        ========================================== */
-
-        if (isCorrect) {
-            Alert.alert('정답입니다! 🎉', '보상으로 100 젤링을 받았습니다!');
-        } else {
-            Alert.alert('아쉬워요.', '다음 문제를 노려보세요!');
-        }
+                if (isServerCorrect) {
+                    Alert.alert('정답입니다! 🎉', `보상으로 ${jellingReward} 젤링을 받았습니다!`);
+                } else {
+                    Alert.alert('아쉬워요.', '다음 기회를 노려보세요!');
+                }
+            } catch (e) {
+                console.error('Quiz Submit Error', e.response?.data || e.message);
+                // 에러 발생 시 임시 로직
+                if (isCorrect) Alert.alert('정답입니다! 🎉', '보상으로 10 젤링을 받았습니다! (임시)');
+                else Alert.alert('아쉬워요.', '다음 문제를 노려보세요! (임시)');
+            }
+        };
+        submitTask();
     };
 
     const handleNext = () => {
-        if (currentQuestionIndex < MOCK_QUESTIONS.length - 1) {
-            setCurrentQuestionIndex(prev => prev + 1);
-            setSelectedOption(null);
-            setIsAnswerRevealed(false);
-            setIsHintUsed(false); // 힌트 초기화
-            setChatHistory([]);
-            setChatInput('');
-            setIsAiTyping(false);
-            scrollViewRef.current?.scrollTo({ y: 0, animated: true });
-        } else {
-            Alert.alert('완료', '모든 퀴즈를 풀었습니다.', [{ text: '확인', onPress: () => navigation.goBack() }]);
-        }
+        Alert.alert('완료', '오늘의 퀴즈를 모두 풀었습니다.', [{ text: '확인', onPress: () => navigation.goBack() }]);
     };
 
     return (
@@ -186,7 +206,7 @@ const QuizScreen = ({ navigation }) => {
                 >
                     <View style={styles.topInfoRow}>
                         <View style={styles.progressBox}>
-                            <CustomText style={styles.progressText}>문제 {currentQuestionIndex + 1} / {MOCK_QUESTIONS.length}</CustomText>
+                            <CustomText style={styles.progressText}>오늘의 퀴즈</CustomText>
                         </View>
                         <View style={styles.creditBox}>
                             <CustomText style={styles.creditText}>🤖 힌트 크레딧: {aiCredits}개</CustomText>
@@ -295,7 +315,7 @@ const QuizScreen = ({ navigation }) => {
                     </TouchableOpacity>
                 ) : (
                     <TouchableOpacity style={styles.mainButton} onPress={handleNext}>
-                        <CustomText style={styles.mainButtonText}>{currentQuestionIndex < MOCK_QUESTIONS.length - 1 ? '다음 문제' : '종료하기'}</CustomText>
+                        <CustomText style={styles.mainButtonText}>종료하기</CustomText>
                     </TouchableOpacity>
                 )}
             </View>

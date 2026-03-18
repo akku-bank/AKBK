@@ -1,49 +1,61 @@
-﻿import React, { useState } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Image } from 'react-native';
 import { scale, verticalScale } from 'react-native-size-matters';
 import CustomText from '../../../components/common/CustomText';
 import api from '../../../api/axios';
 
-// 더미 데이터 (유저 소비 레벨)
-const MOCK_USER_LEVEL = 3;
-
-const INVENTORY_ITEMS = {
-    '모자': [
-        { id: 'h1', name: '빨간 캡모자', requiredLevel: 1, image: require('../../../assets/avatar/acc/hat.png'), isOwned: true },
-        { id: 'h2', name: '노란 캡모자', requiredLevel: 4, image: require('../../../assets/avatar/acc/hat.png'), isOwned: false },
-        { id: 'h3', name: '파란 캡모자', requiredLevel: 6, image: require('../../../assets/avatar/acc/hat.png'), isOwned: false },
-    ],
-    '상의': [
-        { id: 't1', name: '기본 티셔츠', requiredLevel: 1, image: require('../../../assets/avatar/upper/upper_1.png'), isOwned: true },
-        { id: 't2', name: '줄무늬 티셔츠', requiredLevel: 3, image: require('../../../assets/avatar/upper/upper_1.png'), isOwned: true },
-        { id: 't3', name: '빨간 티셔츠', requiredLevel: 6, image: require('../../../assets/avatar/upper/upper_1.png'), isOwned: false },
-    ],
-    '하의': [
-        { id: 'b1', name: '청바지', requiredLevel: 2, image: require('../../../assets/avatar/lower/lower_1.png'), isOwned: true },
-        { id: 'b2', name: '반바지', requiredLevel: 5, image: require('../../../assets/avatar/lower/lower_1.png'), isOwned: false },
-    ]
+// 초기 빈 도감 상태
+const INITIAL_INVENTORY = {
+    '모자': [],
+    '상의': [],
+    '하의': []
 };
 
 const CATEGORIES = ['모자', '상의', '하의'];
 
-const ItemShopScreen = ({ navigation }) => {
+const AvatarDictionaryScreen = ({ navigation }) => {
     const [selectedCategory, setSelectedCategory] = useState(CATEGORIES[0]);
 
-    /* ==========================================
-       [진짜 아이템 도감/인벤토리 조회 API]
-       ========================================== 
+    const [userLevel, setUserLevel] = useState(1);
+    const [inventoryItems, setInventoryItems] = useState(INITIAL_INVENTORY);
+
     useEffect(() => {
         const fetchInventory = async () => {
             try {
-                // 사용자가 보유한 아이템과 전체 도감 목록, 유저 레벨 조회
-                // const res = await api.get('/inventory');
-                // setInventoryItems(res.data.data.items);
-                // setUserLevel(res.data.data.level);
-            } catch(e) { console.error('Inventory Fetch Error:', e); }
+                // 상단 레벨 표시를 위해 Home 데이터 조회
+                const homeRes = await api.get('/home');
+                const level = homeRes.data?.data?.level || 1;
+                setUserLevel(level);
+
+                // 사용자가 보유한 아이템과 전체 도감 목록 조회
+                const res = await api.get('/avatars/items');
+                const items = res.data?.data?.items || [];
+
+                const grouped = { '모자': [], '상의': [], '하의': [] };
+
+                items.forEach(item => {
+                    let catStr = '';
+                    if (item.category === 'HAT') catStr = '모자';
+                    else if (item.category === 'TOP') catStr = '상의';
+                    else if (item.category === 'BOTTOM') catStr = '하의';
+
+                    if (catStr && grouped[catStr]) {
+                        grouped[catStr].push({
+                            id: item.itemId,
+                            name: item.name,
+                            requiredLevel: item.requiredLevel,
+                            image: item.resourceUrl ? { uri: item.resourceUrl } : require('../../../assets/avatar/acc/hat.png'),
+                            isOwned: item.isOwned,
+                            isLevelLocked: item.isLevelLocked
+                        });
+                    }
+                });
+
+                setInventoryItems(grouped);
+            } catch (e) { console.error('Inventory Fetch Error:', e); }
         };
         fetchInventory();
     }, []);
-    ========================================== */
 
     return (
         <SafeAreaView style={styles.safeArea}>
@@ -53,7 +65,7 @@ const ItemShopScreen = ({ navigation }) => {
                 </TouchableOpacity>
                 <CustomText style={styles.headerTitle}>아이템 도감</CustomText>
                 <View style={styles.levelBox}>
-                    <CustomText style={styles.levelText}>Lv.{MOCK_USER_LEVEL}</CustomText>
+                    <CustomText style={styles.levelText}>Lv.{userLevel}</CustomText>
                 </View>
             </View>
 
@@ -71,9 +83,9 @@ const ItemShopScreen = ({ navigation }) => {
 
             <ScrollView contentContainerStyle={styles.gridContainer} showsVerticalScrollIndicator={false}>
                 <View style={styles.grid}>
-                    {INVENTORY_ITEMS[selectedCategory].map(item => {
+                    {(inventoryItems[selectedCategory] || []).map(item => {
                         const isGachaOnly = item.requiredLevel > 5;
-                        const isLocked = !item.isOwned && item.requiredLevel > MOCK_USER_LEVEL;
+                        const isLocked = item.isLevelLocked;
 
                         return (
                             <View key={item.id} style={[styles.itemCard, isLocked && styles.lockedCard]}>
@@ -154,4 +166,4 @@ const styles = StyleSheet.create({
     lockedButtonText: { fontSize: scale(14), fontWeight: 'bold', color: '#9CA3AF' }
 });
 
-export default ItemShopScreen;
+export default AvatarDictionaryScreen;

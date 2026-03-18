@@ -8,7 +8,7 @@ import * as SplashScreen from 'expo-splash-screen';
 
 import ChildBottomTabNavigator from './src/navigation/ChildBottomTabNavigator';
 import AvatarCustomScreen from './src/screens/child/home/AvatarCustomScreen';
-import ItemShopScreen from './src/screens/child/home/ItemShopScreen';
+import AvatarDictionaryScreen from './src/screens/child/home/AvatarDictionaryScreen';
 import TransactionCalendarScreen from './src/screens/child/account/TransactionCalendarScreen';
 import TransactionDetailScreen from './src/screens/child/account/TransactionDetailScreen';
 import TransferScreen from './src/screens/child/account/TransferScreen';
@@ -87,7 +87,6 @@ export default function App() {
         <AvatarProvider>
           <NavigationContainer>
             <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="OnboardingTutorial">
-              {/* Auth Flow */}
               <Stack.Screen name="OnboardingTutorial" component={OnboardingTutorialScreen} />
               <Stack.Screen name="FamilyInvitation" component={FamilyInvitationScreen} />
               <Stack.Screen name="SocialLogin" component={SocialLoginScreen} />
@@ -105,7 +104,7 @@ export default function App() {
               <Stack.Screen name="FamilyQrGenerator" component={FamilyQrGeneratorScreen} />
 
               <Stack.Screen name="Wardrobe" component={AvatarCustomScreen} />
-              <Stack.Screen name="ItemShopScreen" component={ItemShopScreen} />
+              <Stack.Screen name="AvatarDictionaryScreen" component={AvatarDictionaryScreen} />
               <Stack.Screen name="GachaScreen" component={GachaScreen} />
               <Stack.Screen name="FriendList" component={FriendListScreen} />
               <Stack.Screen name="FriendTown" component={FriendTownScreen} />

@@ -9,7 +9,7 @@ const TransferScreen = ({ navigation }) => {
     const [amount, setAmount] = useState('');
     const [recipient, setRecipient] = useState('');
 
-    const handleTransfer = () => {
+    const handleTransfer = async () => {
         if (!amount || isNaN(amount) || parseInt(amount) <= 0) {
             Alert.alert('알림', '송금할 금액을 정확히 입력해주세요.');
             return;
@@ -19,21 +19,24 @@ const TransferScreen = ({ navigation }) => {
             return;
         }
 
-        /* ==========================================
-           [진짜 송금 API]
-           ========================================== 
         try {
-            // await api.post('/transactions/transfer', { amount: parseInt(amount), targetAccountName: recipient });
-            // Alert.alert('송금 완료', '송금이 성공적으로 완료되었습니다.', [{ text: '확인', onPress: () => navigation.goBack() }]);
-            // return; // 성공시 여기서 리턴
-        } catch(e) { console.error('Transfer Error:', e); }
-        ========================================== */
-
-        Alert.alert(
-            '송금 완료',
-            `${recipient}님에게 ${parseInt(amount).toLocaleString()}원을 보냈어요!`,
-            [{ text: '확인', onPress: () => navigation.goBack() }]
-        );
+            // TODO: `withdrawalAccountId`, `targetAccountId`, `pin` 파라미터가 필요하므로 UI 개선 후 실제 값으로 변경해야 합니다.
+            await api.post('/bank/transfer', {
+                withdrawalAccountId: 'dummy-my-account',
+                targetAccountId: 'dummy-target-account',
+                amount: parseInt(amount),
+                pin: '123456'
+            });
+            Alert.alert('송금 완료', '송금이 성공적으로 완료되었습니다.', [{ text: '확인', onPress: () => navigation.goBack() }]);
+            return; // 성공시 여기서 리턴
+        } catch (e) {
+            console.error('Transfer Error:', e.response?.data || e.message);
+            Alert.alert(
+                '송금 시뮬레이션',
+                `${recipient}님에게 ${parseInt(amount).toLocaleString()}원을 보냈어요!\n(API 파라미터 누락으로 실제 송금은 미처리)`,
+                [{ text: '확인', onPress: () => navigation.goBack() }]
+            );
+        }
     };
 
     return (

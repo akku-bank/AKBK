@@ -9,20 +9,17 @@ const FamilyQrGeneratorScreen = ({ navigation }) => {
 
     const [qrData, setQrData] = useState(null);
 
-    /* ==========================================
-       [진짜 가족 초대 QR 조회 API]
-       ========================================== 
     useEffect(() => {
         const fetchQr = async () => {
             try {
-                const res = await api.get('/families/qr');
-                setQrData(res.data.data.qrCode);
-                setTimeLeft(res.data.data.expiresIn || 300);
-            } catch(e) { console.error('QR Fetch Error:', e); }
+                const qrRes = res.data?.data;
+                if (!qrRes) return;
+                setQrData(qrRes.qrCode);
+                setTimeLeft(qrRes.expiresIn || 300);
+            } catch (e) { console.error('QR Fetch Error:', e); }
         };
         fetchQr();
     }, []);
-    ========================================== */
 
     useEffect(() => {
         const timer = setInterval(() => {
@@ -59,17 +56,13 @@ const FamilyQrGeneratorScreen = ({ navigation }) => {
                     <CustomText style={styles.timerText}>인증 유효시간 {formatTime(timeLeft)}</CustomText>
                 </View>
 
-                <TouchableOpacity style={styles.refreshBtn} onPress={() => {
-                    /* ==========================================
-                       [진짜 QR 재발급 API]
-                       ========================================== 
+                <TouchableOpacity style={styles.refreshBtn} onPress={async () => {
                     try {
-                        const res = await api.post('/families/qr/reissue');
-                        setQrData(res.data.data.qrCode);
-                        setTimeLeft(res.data.data.expiresIn || 300);
-                    } catch(e) { console.error('QR Reissue Error', e); }
-                    ========================================== */
-                    setTimeLeft(300);
+                        const qrRes = res.data?.data;
+                        if (!qrRes) return;
+                        setQrData(qrRes.qrCode);
+                        setTimeLeft(qrRes.expiresIn || 300);
+                    } catch (e) { console.error('QR Reissue Error', e); }
                 }}>
                     <CustomText style={styles.refreshBtnText}>🔄 QR 코드 갱신</CustomText>
                 </TouchableOpacity>

@@ -1,16 +1,51 @@
 ﻿import React from 'react';
-import { View, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView, Switch, Image } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView, Switch, Alert, Image } from 'react-native';
 import { scale, verticalScale } from 'react-native-size-matters';
 import CustomText from '../../../components/common/CustomText';
+import useAuthStore from '../../../store/useAuthStore';
+import api from '../../../api/axios';
 
 
 const ChildMyPageScreen = ({ navigation }) => {
+    const { logout } = useAuthStore();
+
     const handleLogout = () => {
-        // 실제 로그아웃 로직 (컨텍스트 클리어 등) 후 네비게이션
-        navigation.reset({
-            index: 0,
-            routes: [{ name: 'SocialLogin' }],
-        });
+        Alert.alert('로그아웃', '정말 로그아웃 하시겠습니까?', [
+            { text: '취소', style: 'cancel' },
+            {
+                text: '로그아웃',
+                style: 'destructive',
+                onPress: async () => {
+                    try {
+                        await api.post('/auth/logout');
+                    } catch (e) {
+                        console.error('Logout error', e);
+                    }
+                    logout();
+                    navigation.reset({ index: 0, routes: [{ name: 'SocialLogin' }] });
+                }
+            }
+        ]);
+    };
+
+    const handleWithdraw = () => {
+        Alert.alert('회원 탈퇴', '정말 탈퇴하시겠습니까? 데이터가 모두 삭제됩니다.', [
+            { text: '취소', style: 'cancel' },
+            {
+                text: '탈퇴하기',
+                style: 'destructive',
+                onPress: async () => {
+                    try {
+                        await api.delete('/users/me');
+                        logout();
+                        navigation.reset({ index: 0, routes: [{ name: 'SocialLogin' }] });
+                    } catch (e) {
+                        console.error('Withdraw error', e);
+                        Alert.alert('오류', '탈퇴 처리 중 문제가 발생했습니다.');
+                    }
+                }
+            }
+        ]);
     };
 
     return (
@@ -92,7 +127,7 @@ const ChildMyPageScreen = ({ navigation }) => {
                         <CustomText style={styles.logoutText}>로그아웃</CustomText>
                     </TouchableOpacity>
                     <View style={styles.divider} />
-                    <TouchableOpacity>
+                    <TouchableOpacity onPress={handleWithdraw}>
                         <CustomText style={styles.withdrawalText}>회원 탈퇴</CustomText>
                     </TouchableOpacity>
                 </View>

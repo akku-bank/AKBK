@@ -23,19 +23,21 @@ const ParentTransferScreen = ({ navigation, route }) => {
                 {
                     text: '보내기',
                     onPress: async () => {
-                        /* ==========================================
-                           [진짜 자녀 용돈 송금 API]
-                           ========================================== 
                         try {
-                            // await api.post('/transactions/transfer', { amount: parseInt(amount), targetAccountName: child.name });
-                            // Alert.alert('송금 완료!', `${child.name}의 계좌로 입금되었습니다.`, [{ text: '확인', onPress: () => navigation.goBack() }]);
-                            // return;
-                        } catch(e) { console.error('Transfer Error:', e); }
-                        ========================================== */
-
-                        // --- 실제 연동 시 아래 임시 로직 삭제 ---
-                        Alert.alert('송금 완료!', `${child.name}의 계좌로 입금되었습니다.`, [{ text: '확인', onPress: () => navigation.goBack() }]);
-                        // ------------------------------------
+                            // TODO: `withdrawalAccountId`, `targetAccountId`, `pin` 파라미터가 필요하므로 UI 개선 후 실제 값으로 변경해야 합니다.
+                            await api.post('/bank/transfer', {
+                                withdrawalAccountId: 'dummy-my-account',
+                                targetAccountId: 'dummy-target-account',
+                                amount: parseInt(amount),
+                                pin: '123456'
+                            });
+                            Alert.alert('송금 완료!', `${child.name}의 계좌로 입금되었습니다.`, [{ text: '확인', onPress: () => navigation.goBack() }]);
+                            return;
+                        } catch (e) {
+                            console.error('Transfer Error:', e.response?.data || e.message);
+                            // 백엔드 연동 전 편의상 임시 성공 처리
+                            Alert.alert('송금 시뮬레이션', `${child.name}님에게 ${parseInt(amount).toLocaleString()}원을 보냈습니다.\n(API 파라미터 누락으로 실제 송금은 미처리)`, [{ text: '확인', onPress: () => navigation.goBack() }]);
+                        }
                     }
                 }
             ]

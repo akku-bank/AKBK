@@ -1,49 +1,48 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { scale, verticalScale } from 'react-native-size-matters';
 import CustomText from '../../../components/common/CustomText';
-
-// 임시 로컬 상태 (API 연동시 zustand나 서버 상태로 교체)
-const MOCK_PROFILES = [
-    { id: 101, name: '김싸피', status: '연동 대기중' },
-    { id: 102, name: '이싸피', status: '연동 완료' },
-];
+import api from '../../../api/axios';
 
 const FamilyManagementScreen = ({ navigation }) => {
-    const [profiles, setProfiles] = useState(MOCK_PROFILES);
+    const [profiles, setProfiles] = useState([]);
 
-    /* ==========================================
-       [진짜 가족 명단 조회 API]
-       ========================================== 
+    const fetchProfiles = async () => {
+        try {
+            const response = await api.get('/families/members');
+            const members = response.data?.data?.members || [];
+            const mappedProfiles = members
+                .filter(member => member.role === 'CHILD')
+                .map(member => ({
+                    id: member.userId || member.profileId,
+                    name: member.name,
+                    status: member.userId ? '연동 완료' : '연동 대기중',
+                    profileId: member.profileId
+                }));
+            setProfiles(mappedProfiles);
+        } catch (error) {
+            console.error("Failed to fetch family members:", error);
+        }
+    };
+
     useEffect(() => {
-        const fetchProfiles = async () => {
-            try {
-                const response = await api.get('/families/members');
-                setProfiles(response.data.data || []);
-            } catch (error) {
-                console.error("Failed to fetch family members:", error);
-            }
-        };
         fetchProfiles();
     }, []);
-    ========================================== */
 
-    const handleCreateProfile = () => {
-        /* ==========================================
-           [진짜 자녀 프로필 생성 API]
-           ========================================== 
+    const handleCreateProfile = async () => {
         try {
-            // 실제 구현 시에는 프롬프트 창이나 추가 모달을 띄워 이름과 생일을 받아야 함
-            // const response = await api.post('/families/members', { name: "아이 이름", birthDate: "2015-01-01" });
-            // setProfiles([...profiles, response.data.data]);
-        } catch (error) { ... }
-        ========================================== */
-
-        // --- 실제 연동 시 아래 블록 전체 삭제 ---
-        const newProfile = { id: Date.now(), name: `아이 ${profiles.length + 1}`, status: '연동 대기중' };
-        setProfiles([...profiles, newProfile]);
-        Alert.alert('프로필 생성 완료', `${newProfile.name}의 계정이 추가되었습니다.`);
-        // ------------------------------------
+            // 더미 데이터 생성 시 이름에 번호 추가
+            const newName = `새 자녀 ${profiles.length + 1}`;
+            await api.post('/families/members', {
+                name: newName,
+                role: "CHILD",
+                birthDate: "2015-01-01"
+            });
+            Alert.alert('프로필 생성 완료', `${newName}의 계정이 추가되었습니다.`);
+            fetchProfiles(); // 목록 새로고침
+        } catch (error) {
+            console.error('Profile create error', error);
+        }
     };
 
     return (
@@ -75,7 +74,7 @@ const FamilyManagementScreen = ({ navigation }) => {
                         {profile.status === '연동 대기중' && (
                             <TouchableOpacity
                                 style={styles.qrButton}
-                                onPress={() => navigation.navigate('FamilyQrGenerator', { childId: profile.id })}
+                                onPress={() => navigation.navigate('FamilyQrGenerator')}
                             >
                                 <CustomText style={styles.qrButtonText}>QR 생성</CustomText>
                             </TouchableOpacity>

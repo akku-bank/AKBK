@@ -42,17 +42,13 @@ const ChildFamilyJoinScreen = ({ navigation, route }) => {
 
     const handleJoin = async () => {
         if (!selectedMemberId) return;
-
         const selectedMember = familyMembers.find(m => m.id === selectedMemberId);
 
         try {
             setIsLoading(true);
 
-            /* ==========================================
-               [진짜 가족 합류 API 연동 코드]
-               ========================================== 
-            await api.post('/families/join', { familyCode, memberId: selectedMemberId }, { headers: { Authorization: `Bearer ${tempToken}` }});
-            ========================================== */
+            // 실제 가족 합류 API 호출 (QR 스캔값 전송)
+            await api.post('/families/join', { scannedQrCode: familyCode }, { headers: { Authorization: `Bearer ${tempToken}` } });
 
             navigation.replace('PinNumberSetup', {
                 tempToken,
@@ -60,8 +56,9 @@ const ChildFamilyJoinScreen = ({ navigation, route }) => {
                 name: selectedMember.name
             });
         } catch (error) {
-            console.error('Family Join Error:', error);
+            console.error('Family Join Error:', error.response?.data || error.message);
             setIsLoading(false);
+            // 에러 나도 진행할지 여부 결정 (나중에 필요시 핸들링)
         }
     };
 

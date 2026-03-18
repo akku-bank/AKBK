@@ -1,31 +1,30 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Image } from 'react-native';
 import { scale, verticalScale } from 'react-native-size-matters';
 import CustomText from '../../../components/common/CustomText';
 import api from '../../../api/axios';
-
-// 더미 자녀 데이터
-const MOCK_CHILDREN = [
-    { id: '1', name: '김싸피', balance: 12500, avatar: require('../../../assets/croco/croco_face.png') },
-    { id: '2', name: '이싸피', balance: 5000, avatar: require('../../../assets/croco/croco_face.png') }
-];
-
 const ParentHomeScreen = ({ navigation }) => {
-    /* ==========================================
-       [진짜 부모 홈(자녀 목록) 조회 API]
-       ========================================== 
     const [childrenData, setChildrenData] = useState([]);
+
     useEffect(() => {
         const fetchChildren = async () => {
             try {
-                // 부모 계정에 연결된 자녀 목록 및 각 자녀의 잔액 조회
-                // const res = await api.get('/families/members');
-                // setChildrenData(res.data.data);
-            } catch(e) { console.error('Parent Home Fetch Error', e); }
+                const res = await api.get('/home/parent');
+                const childrenArray = res.data?.data?.children || [];
+                // 백엔드 명세에 맞추어 프론트 데이터 형태로 매핑
+                const mappedChildren = childrenArray.map(child => ({
+                    id: child.childId,
+                    name: child.name,
+                    balance: child.balance,
+                    avatar: require('../../../assets/croco/croco_face.png') // 임시 아바타
+                }));
+                setChildrenData(mappedChildren);
+            } catch (e) {
+                console.error('Parent Home Fetch Error', e);
+            }
         };
         fetchChildren();
     }, []);
-    ========================================== */
 
     return (
         <SafeAreaView style={styles.safeArea}>
@@ -41,7 +40,9 @@ const ParentHomeScreen = ({ navigation }) => {
                     <CustomText style={styles.sectionTitle}>우리 아이들</CustomText>
                 </View>
 
-                {MOCK_CHILDREN.map(child => (
+                {childrenData.length === 0 ? (
+                    <CustomText style={{ textAlign: 'center', marginTop: 20, color: '#9CA3AF' }}>아직 등록된 자녀가 없습니다.</CustomText>
+                ) : childrenData.map(child => (
                     <View key={child.id} style={styles.childCard}>
                         <View style={styles.childInfoRow}>
                             <View style={styles.childAvatarCircle}>
