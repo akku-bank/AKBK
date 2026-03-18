@@ -1,11 +1,119 @@
-﻿import React from 'react';
-import { View, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView } from 'react-native';
+﻿import React, { useState } from 'react';
+import { View, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Platform } from 'react-native';
+import Svg, { Circle, G, Path } from 'react-native-svg';
 import { scale, verticalScale } from 'react-native-size-matters';
 import CustomText from '../../../components/common/CustomText';
 
+const WEEKLY_FLOW_DATA = [
+    { day: '월', income: 12000, expense: 18000 },
+    { day: '화', income: 8000, expense: 14000 },
+    { day: '수', income: 21000, expense: 9000 },
+    { day: '목', income: 6000, expense: 17000 },
+    { day: '금', income: 28000, expense: 22000 },
+    { day: '토', income: 17000, expense: 26000 },
+    { day: '일', income: 9000, expense: 7000 },
+];
+
+const CATEGORY_DATA = [
+    {
+        id: 'snack',
+        label: '간식',
+        color: '#FF8A65',
+        total: 18200,
+        transactions: [
+            { day: '월', title: '편의점 젤리', amount: 2500 },
+            { day: '수', title: '분식집 떡볶이', amount: 4800 },
+            { day: '금', title: '카페 음료', amount: 5900 },
+            { day: '토', title: '아이스크림', amount: 5000 },
+        ],
+    },
+    {
+        id: 'play',
+        label: '오락',
+        color: '#64B5F6',
+        total: 12400,
+        transactions: [
+            { day: '화', title: '문구점 뽑기', amount: 2400 },
+            { day: '목', title: '게임 아이템', amount: 5000 },
+            { day: '토', title: '코인노래방', amount: 5000 },
+        ],
+    },
+    {
+        id: 'transport',
+        label: '이동',
+        color: '#81C784',
+        total: 7600,
+        transactions: [
+            { day: '수', title: '버스 충전', amount: 3800 },
+            { day: '일', title: '지하철 이용', amount: 3800 },
+        ],
+    },
+    {
+        id: 'study',
+        label: '학습',
+        color: '#FFD54F',
+        total: 5400,
+        transactions: [
+            { day: '월', title: '연습장 구매', amount: 1800 },
+            { day: '금', title: '독서실 간식', amount: 3600 },
+        ],
+    },
+];
+
+const formatCurrency = (amount) => `${amount.toLocaleString()}원`;
+const formatChartAmount = (amount) => amount.toLocaleString();
+
+const polarToCartesian = (cx, cy, radius, angle) => {
+    const radian = ((angle - 90) * Math.PI) / 180;
+
+    return {
+        x: cx + radius * Math.cos(radian),
+        y: cy + radius * Math.sin(radian),
+    };
+};
+
+const createArcPath = (cx, cy, outerRadius, innerRadius, startAngle, endAngle) => {
+    const startOuter = polarToCartesian(cx, cy, outerRadius, endAngle);
+    const endOuter = polarToCartesian(cx, cy, outerRadius, startAngle);
+    const startInner = polarToCartesian(cx, cy, innerRadius, endAngle);
+    const endInner = polarToCartesian(cx, cy, innerRadius, startAngle);
+    const largeArcFlag = endAngle - startAngle > 180 ? 1 : 0;
+
+    return [
+        `M ${startOuter.x} ${startOuter.y}`,
+        `A ${outerRadius} ${outerRadius} 0 ${largeArcFlag} 0 ${endOuter.x} ${endOuter.y}`,
+        `L ${endInner.x} ${endInner.y}`,
+        `A ${innerRadius} ${innerRadius} 0 ${largeArcFlag} 1 ${startInner.x} ${startInner.y}`,
+        'Z',
+    ].join(' ');
+};
+
+const bodyFontFamily = Platform.select({
+    ios: 'Apple SD Gothic Neo',
+    android: 'sans-serif',
+    default: undefined,
+});
+
 const ParentReportScreen = ({ navigation, route }) => {
-    // 자녀 이름 등은 route.params 로 넘겨받는다고 가정
     const childName = route.params?.childName || '김싸피';
+    const [selectedCategoryId, setSelectedCategoryId] = useState(CATEGORY_DATA[0].id);
+
+    const totalExpense = CATEGORY_DATA.reduce((sum, category) => sum + category.total, 0);
+    const totalIncome = WEEKLY_FLOW_DATA.reduce((sum, item) => sum + item.income, 0);
+    const selectedCategory = CATEGORY_DATA.find((category) => category.id === selectedCategoryId) || CATEGORY_DATA[0];
+    const maxFlowAmount = Math.max(...WEEKLY_FLOW_DATA.flatMap((item) => [item.income, item.expense]));
+
+    let currentAngle = 0;
+    const pieSlices = CATEGORY_DATA.map((category) => {
+        const angle = (category.total / totalExpense) * 360;
+        const slice = {
+            ...category,
+            startAngle: currentAngle,
+            endAngle: currentAngle + angle,
+        };
+        currentAngle += angle;
+        return slice;
+    });
 
     return (
         <SafeAreaView style={styles.safeArea}>
@@ -13,33 +121,140 @@ const ParentReportScreen = ({ navigation, route }) => {
                 <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
                     <CustomText style={styles.backButtonText}>←</CustomText>
                 </TouchableOpacity>
-                <CustomText style={styles.headerTitle}>{childName}의 주간 리포트</CustomText>
-                <View style={{ width: scale(32) }} />
+                <CustomText style={styles.headerTitle}>{`${childName}의 주간 리포트`}</CustomText>
+                <View style={styles.headerSpacer} />
             </View>
 
-            <ScrollView contentContainerStyle={styles.container}>
+            <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
                 <View style={styles.summaryCard}>
                     <CustomText style={styles.summaryTitle}>이번 주 총 지출</CustomText>
-                    <CustomText style={styles.amountText}>15,000원</CustomText>
-                    <CustomText style={styles.comparisonText}>저번 주보다 <CustomText style={styles.highlightRed}>3,000원</CustomText> 더 지출했어요 📈</CustomText>
+                    <CustomText style={styles.amountText}>{formatCurrency(totalExpense)}</CustomText>
+                    <CustomText style={styles.comparisonText}>
+                        저번 주보다 <CustomText style={styles.highlightRed}>3,000원</CustomText> 더 지출했어요
+                    </CustomText>
+                </View>
+
+                <View style={styles.chartCard}>
+                    <View style={styles.cardHeaderRow}>
+                        <CustomText style={styles.sectionTitle}>요일별 수입/지출 흐름</CustomText>
+                        <CustomText style={styles.cardCaption}>더미 데이터</CustomText>
+                    </View>
+                    <View style={styles.barChart}>
+                        <View style={styles.plotArea}>
+                            <View style={styles.chartMidLine} />
+                            <View style={styles.barRow}>
+                                {WEEKLY_FLOW_DATA.map((item) => {
+                                    const incomeHeight = Math.max((item.income / maxFlowAmount) * verticalScale(70), scale(8));
+                                    const expenseHeight = Math.max((item.expense / maxFlowAmount) * verticalScale(70), scale(8));
+
+                                    return (
+                                        <View key={item.day} style={styles.barColumn}>
+                                            <View style={styles.barTrack}>
+                                                <View style={styles.positiveZone}>
+                                                    <CustomText style={styles.barValuePositive}>{`+${formatChartAmount(item.income)}`}</CustomText>
+                                                    <View style={[styles.positiveBar, { height: incomeHeight }]} />
+                                                </View>
+                                                <View style={styles.negativeZone}>
+                                                    <View style={[styles.negativeBar, { height: expenseHeight }]} />
+                                                    <CustomText style={styles.barValueNegative}>{`-${formatChartAmount(item.expense)}`}</CustomText>
+                                                </View>
+                                            </View>
+                                            <CustomText style={styles.dayLabel}>{item.day}</CustomText>
+                                        </View>
+                                    );
+                                })}
+                            </View>
+                        </View>
+                    </View>
+                    <View style={styles.chartSummaryRow}>
+                        <View style={styles.summaryChip}>
+                            <View style={[styles.legendDot, styles.positiveDot]} />
+                            <CustomText style={styles.summaryChipText}>{`총 수입 ${formatCurrency(totalIncome)}`}</CustomText>
+                        </View>
+                        <View style={styles.summaryChip}>
+                            <View style={[styles.legendDot, styles.negativeDot]} />
+                            <CustomText style={styles.summaryChipText}>{`총 지출 ${formatCurrency(totalExpense)}`}</CustomText>
+                        </View>
+                    </View>
                 </View>
 
                 <View style={styles.aiReviewCard}>
-                    <CustomText style={styles.aiReviewTitle}>🤖 AI 부모님 조언 가이드</CustomText>
-                    <CustomText style={styles.aiReviewText}>
-                        "이번 주는 편의점 간식 지출 비율이 높습니다. 자녀와 함께 일주일 간식 예산을 정해보는 대화를 나눠보시는 것을 추천합니다!"
+                    <CustomText style={styles.aiReviewTitle}>AI 부모님 조언 가이드</CustomText>
+                    <CustomText style={[styles.aiReviewText, styles.bodyCopyText]}>
+                        금요일과 토요일에 소비가 집중됐고, 간식과 오락이 전체 지출의 대부분을 차지합니다. 자녀와 함께
+                        주말 예산 상한선을 정해두면 지출 통제가 쉬워질 수 있어요.
                     </CustomText>
                 </View>
 
                 <View style={styles.categoryCard}>
-                    <CustomText style={styles.sectionTitle}>카테고리별 지출 요약</CustomText>
-                    <View style={styles.categoryRow}>
-                        <CustomText style={styles.categoryName}>🍔 간식류</CustomText>
-                        <CustomText style={styles.categoryAmount}>10,000원</CustomText>
+                    <View style={styles.cardHeaderRow}>
+                        <CustomText style={styles.sectionTitle}>카테고리별 지출</CustomText>
+                        <CustomText style={styles.cardCaption}>파이를 누르면 일주일 내역 표시</CustomText>
                     </View>
-                    <View style={styles.categoryRow}>
-                        <CustomText style={styles.categoryName}>🎮 오락</CustomText>
-                        <CustomText style={styles.categoryAmount}>5,000원</CustomText>
+
+                    <View style={styles.pieSection}>
+                        <Svg width={scale(180)} height={scale(180)} viewBox="0 0 180 180">
+                            <Circle cx="90" cy="90" r="64" fill="#F8FAFC" />
+                            {pieSlices.map((slice) => {
+                                const isSelected = slice.id === selectedCategoryId;
+                                const outerRadius = isSelected ? 78 : 72;
+                                const innerRadius = 42;
+
+                                return (
+                                    <G key={slice.id}>
+                                        <Path
+                                            d={createArcPath(90, 90, outerRadius, innerRadius, slice.startAngle, slice.endAngle)}
+                                            fill={slice.color}
+                                            opacity={isSelected ? 1 : 0.9}
+                                            onPress={() => setSelectedCategoryId(slice.id)}
+                                        />
+                                    </G>
+                                );
+                            })}
+                        </Svg>
+
+                        <View style={styles.legendColumn}>
+                            {CATEGORY_DATA.map((category) => {
+                                const isSelected = category.id === selectedCategoryId;
+
+                                return (
+                                    <TouchableOpacity
+                                        key={category.id}
+                                        style={[styles.legendItem, isSelected && styles.legendItemSelected]}
+                                        onPress={() => setSelectedCategoryId(category.id)}
+                                        activeOpacity={0.8}
+                                    >
+                                        <View style={[styles.legendDot, { backgroundColor: category.color }]} />
+                                        <View style={styles.legendTextWrap}>
+                                            <CustomText style={styles.legendLabel}>{category.label}</CustomText>
+                                            <CustomText style={styles.legendAmount}>{formatCurrency(category.total)}</CustomText>
+                                        </View>
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </View>
+                    </View>
+
+                    <View style={styles.detailCard}>
+                        <View style={styles.detailHeader}>
+                            <CustomText style={styles.detailTitle}>{`${selectedCategory.label} 일주일 내역`}</CustomText>
+                            <CustomText style={styles.detailBadge}>{`${selectedCategory.transactions.length}건`}</CustomText>
+                        </View>
+                        {selectedCategory.transactions.map((transaction, index) => (
+                            <View
+                                key={`${selectedCategory.id}-${transaction.day}-${index}`}
+                                style={[
+                                    styles.detailRow,
+                                    index === selectedCategory.transactions.length - 1 && styles.detailRowLast,
+                                ]}
+                            >
+                                <View>
+                                    <CustomText style={styles.detailDay}>{transaction.day}</CustomText>
+                                    <CustomText style={styles.detailText}>{transaction.title}</CustomText>
+                                </View>
+                                <CustomText style={styles.detailAmount}>{`-${formatCurrency(transaction.amount)}`}</CustomText>
+                            </View>
+                        ))}
                     </View>
                 </View>
             </ScrollView>
@@ -50,30 +265,279 @@ const ParentReportScreen = ({ navigation, route }) => {
 const styles = StyleSheet.create({
     safeArea: { flex: 1, backgroundColor: '#F3F4F6' },
     header: {
-        flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-        paddingHorizontal: scale(16), paddingVertical: verticalScale(16), backgroundColor: '#FFFFFF'
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: scale(16),
+        paddingVertical: verticalScale(16),
+        backgroundColor: '#FFFFFF',
     },
     backButton: { width: scale(32), height: scale(32), justifyContent: 'center' },
-    backButtonText: { fontSize: scale(22), fontWeight: 'bold', color: '#111' },
-    headerTitle: { fontSize: scale(18), fontWeight: 'bold', color: '#111' },
-
-    container: { flexGrow: 1, paddingHorizontal: scale(16), paddingTop: verticalScale(16), paddingBottom: verticalScale(40) },
-
-    summaryCard: { backgroundColor: '#FFFFFF', padding: scale(20), borderRadius: scale(16), alignItems: 'center', marginBottom: verticalScale(16), shadowColor: '#000', shadowOffset: { width: 0, height: verticalScale(2) }, shadowOpacity: 0.05, shadowRadius: scale(4), elevation: 2 },
+    backButtonText: { fontSize: scale(22), fontWeight: 'bold', color: '#111827' },
+    headerTitle: { fontSize: scale(18), fontWeight: 'bold', color: '#111827' },
+    headerSpacer: { width: scale(32) },
+    container: {
+        flexGrow: 1,
+        paddingHorizontal: scale(16),
+        paddingTop: verticalScale(16),
+        paddingBottom: verticalScale(40),
+    },
+    summaryCard: {
+        backgroundColor: '#FFFFFF',
+        padding: scale(20),
+        borderRadius: scale(16),
+        alignItems: 'center',
+        marginBottom: verticalScale(16),
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: verticalScale(2) },
+        shadowOpacity: 0.05,
+        shadowRadius: scale(4),
+        elevation: 2,
+    },
     summaryTitle: { fontSize: scale(14), color: '#6B7280', marginBottom: verticalScale(8) },
-    amountText: { fontSize: scale(28), fontWeight: '900', color: '#111', marginBottom: verticalScale(8) },
+    amountText: { fontSize: scale(28), fontWeight: '900', color: '#111827', marginBottom: verticalScale(8) },
     comparisonText: { fontSize: scale(14), color: '#4B5563' },
     highlightRed: { color: '#EF4444', fontWeight: 'bold' },
-
-    aiReviewCard: { backgroundColor: '#F8FAFC', padding: scale(20), borderRadius: scale(16), marginBottom: verticalScale(16), borderWidth: 1, borderColor: '#E2E8F0' },
+    chartCard: {
+        backgroundColor: '#FFFFFF',
+        padding: scale(18),
+        borderRadius: scale(16),
+        marginBottom: verticalScale(16),
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: verticalScale(2) },
+        shadowOpacity: 0.05,
+        shadowRadius: scale(4),
+        elevation: 2,
+    },
+    cardHeaderRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: verticalScale(14),
+    },
+    sectionTitle: { fontSize: scale(16), fontWeight: 'bold', color: '#111827' },
+    cardCaption: { fontSize: scale(12), color: '#94A3B8' },
+    barChart: {
+        height: verticalScale(280),
+        borderRadius: scale(16),
+        backgroundColor: '#F8FAFC',
+        paddingHorizontal: scale(10),
+        paddingTop: verticalScale(16),
+        paddingBottom: verticalScale(18),
+        overflow: 'hidden',
+    },
+    plotArea: {
+        flex: 1,
+        position: 'relative',
+    },
+    barRow: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        justifyContent: 'space-between',
+    },
+    chartMidLine: {
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        top: verticalScale(100),
+        borderTopWidth: 1.5,
+        borderTopColor: '#94A3B8',
+    },
+    barColumn: {
+        width: scale(36),
+        alignItems: 'center',
+    },
+    barValuePositive: {
+        fontSize: scale(8),
+        color: '#0F766E',
+        fontWeight: 'bold',
+        marginBottom: verticalScale(6),
+        textAlign: 'center',
+    },
+    barTrack: {
+        width: scale(36),
+        height: verticalScale(200),
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    positiveZone: {
+        width: '100%',
+        height: '50%',
+        alignItems: 'center',
+        justifyContent: 'flex-end',
+        paddingBottom: verticalScale(10),
+    },
+    negativeZone: {
+        width: '100%',
+        height: '50%',
+        alignItems: 'center',
+        justifyContent: 'flex-start',
+        paddingTop: verticalScale(10),
+    },
+    positiveBar: {
+        width: scale(28),
+        backgroundColor: '#34D399',
+        borderTopLeftRadius: scale(8),
+        borderTopRightRadius: scale(8),
+    },
+    negativeBar: {
+        width: scale(28),
+        backgroundColor: '#F87171',
+        borderBottomLeftRadius: scale(8),
+        borderBottomRightRadius: scale(8),
+    },
+    barValueNegative: {
+        fontSize: scale(8),
+        color: '#DC2626',
+        fontWeight: 'bold',
+        marginTop: verticalScale(6),
+        textAlign: 'center',
+    },
+    dayLabel: {
+        marginTop: verticalScale(6),
+        fontSize: scale(13),
+        fontWeight: 'bold',
+        color: '#334155',
+    },
+    chartSummaryRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginTop: verticalScale(14),
+        gap: scale(8),
+    },
+    summaryChip: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#F8FAFC',
+        borderRadius: scale(12),
+        paddingHorizontal: scale(12),
+        paddingVertical: verticalScale(10),
+    },
+    summaryChipText: {
+        fontSize: scale(12),
+        color: '#334155',
+        fontWeight: '600',
+    },
+    legendDot: {
+        width: scale(10),
+        height: scale(10),
+        borderRadius: scale(5),
+        marginRight: scale(8),
+    },
+    positiveDot: { backgroundColor: '#34D399' },
+    negativeDot: { backgroundColor: '#F87171' },
+    aiReviewCard: {
+        backgroundColor: '#F8FAFC',
+        padding: scale(20),
+        borderRadius: scale(16),
+        marginBottom: verticalScale(16),
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+    },
     aiReviewTitle: { fontSize: scale(16), fontWeight: 'bold', color: '#0F172A', marginBottom: verticalScale(8) },
     aiReviewText: { fontSize: scale(14), color: '#334155', lineHeight: 22 },
-
-    categoryCard: { backgroundColor: '#FFFFFF', padding: scale(20), borderRadius: scale(16), shadowColor: '#000', shadowOffset: { width: 0, height: verticalScale(2) }, shadowOpacity: 0.05, shadowRadius: scale(4), elevation: 2 },
-    sectionTitle: { fontSize: scale(16), fontWeight: 'bold', color: '#111', marginBottom: verticalScale(16) },
-    categoryRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: verticalScale(12), borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
-    categoryName: { fontSize: scale(15), color: '#4B5563' },
-    categoryAmount: { fontSize: scale(15), fontWeight: 'bold', color: '#111' }
+    bodyCopyText: { fontFamily: bodyFontFamily, letterSpacing: 0 },
+    categoryCard: {
+        backgroundColor: '#FFFFFF',
+        padding: scale(20),
+        borderRadius: scale(16),
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: verticalScale(2) },
+        shadowOpacity: 0.05,
+        shadowRadius: scale(4),
+        elevation: 2,
+    },
+    pieSection: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: verticalScale(16),
+    },
+    legendColumn: {
+        flex: 1,
+        marginLeft: scale(8),
+    },
+    legendItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: scale(10),
+        paddingVertical: verticalScale(8),
+        borderRadius: scale(12),
+        marginBottom: verticalScale(8),
+        borderWidth: 1,
+        borderColor: 'transparent',
+    },
+    legendItemSelected: {
+        backgroundColor: '#F8FAFC',
+        borderColor: '#D7DEE8',
+    },
+    legendTextWrap: {
+        flex: 1,
+    },
+    legendLabel: {
+        fontSize: scale(13),
+        fontWeight: 'bold',
+        color: '#1F2937',
+    },
+    legendAmount: {
+        fontSize: scale(12),
+        color: '#64748B',
+        marginTop: verticalScale(2),
+    },
+    detailCard: {
+        backgroundColor: '#F8FAFC',
+        borderRadius: scale(14),
+        paddingHorizontal: scale(14),
+        paddingVertical: verticalScale(14),
+    },
+    detailHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: verticalScale(8),
+    },
+    detailTitle: {
+        fontSize: scale(14),
+        fontWeight: 'bold',
+        color: '#111827',
+    },
+    detailBadge: {
+        fontSize: scale(12),
+        color: '#2563EB',
+        fontWeight: 'bold',
+        backgroundColor: '#DBEAFE',
+        paddingHorizontal: scale(8),
+        paddingVertical: verticalScale(4),
+        borderRadius: scale(999),
+    },
+    detailRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingVertical: verticalScale(10),
+        borderBottomWidth: 1,
+        borderBottomColor: '#E2E8F0',
+    },
+    detailRowLast: {
+        borderBottomWidth: 0,
+        paddingBottom: 0,
+    },
+    detailDay: {
+        fontSize: scale(12),
+        color: '#94A3B8',
+        marginBottom: verticalScale(2),
+    },
+    detailText: {
+        fontSize: scale(14),
+        color: '#334155',
+    },
+    detailAmount: {
+        fontSize: scale(14),
+        fontWeight: 'bold',
+        color: '#DC2626',
+    },
 });
 
 export default ParentReportScreen;
