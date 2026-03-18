@@ -83,5 +83,73 @@
     restart: always
     command: uvicorn ai.main:app --host 0.0.0.0 --port 8000 --reload
 
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.6.0
+    container_name: akkubangkku_zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    volumes:
+      - zookeeper_data:/var/lib/zookeeper/data
+
+  # Kafka 메시지 브로커
+  kafka:
+    image: confluentinc/cp-kafka:7.6.0
+    container_name: akkubangkku_kafka
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: akkubangkku_zookeeper:2181
+
+      # 내부 도커 통신용: akkubangkku_kafka:29092
+      # 로컬 호스트 접속용: localhost:9092
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092,PLAINTEXT_HOST://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://akkubangkku_kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+
+    depends_on:
+      - zookeeper
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 9092 || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: akkubangkku_kafka_ui
+    ports:
+      - "8080:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: Akkubangkku-Cluster
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: akkubangkku_kafka:29092
+      KAFKA_CLUSTERS_0_ZOOKEEPER: akkubangkku_zookeeper:2181
+    depends_on:
+      - kafka
+
+  # Kafka 토픽 자동 생성 init 컨테이너
+  kafka-init:
+    build:
+      context: ./data/kafka-init
+    container_name: akkubangkku_kafka_init
+    depends_on:
+      kafka:
+        condition: service_healthy
+    restart: "no"
+
 volumes:
   postgres_data:
+  zookeeper_data:
+  kafka_data:
+  

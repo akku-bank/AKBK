@@ -15,7 +15,10 @@ class ChatContextState(BaseModel):
     difficulty: Literal["easy", "medium", "hard"]
     age_group: Literal["preschool", "elementary", "middle", "high"]
 
+    is_finance_related: bool | None = None
+    is_cheating: bool | None = None
     intent: Literal["DEFINE", "HINT", "EXPLAIN", "OTHER"] | None = None
+    
     route: Literal["DICT", "RAG", "LLM", "DENY"] | None = None
     hint_level: int | None = None
 
