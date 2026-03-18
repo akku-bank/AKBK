@@ -1,177 +1,240 @@
 # AI Module
 
-이 폴더는 프로젝트의 AI 관련 소스 코드와 모델 파일을 관리하는 공간입니다.
+이 디렉터리는 FastAPI 기반 AI 서버입니다. 현재 구조는 스프링 백엔드가 Kafka에 실을 채팅 요청 메시지를 HTTP로 재현해서 테스트하는 형태를 기준으로 정리되어 있습니다.
 
-## AI 서버 폴더 구조 및 역할
-현재 AI 서버는 FastAPI 기반 AI Gateway 구조로 구성되어 있으며,
+현재 채팅 흐름의 핵심은 다음과 같습니다.
 
-요청 수신 → 정책 검사 → 질문 분류 → RAG/LLM 실행 → 응답 반환 흐름을 기준으로 폴더가 분리되어 있습니다.
+1. `POST /v1/chat/message`로 요청 수신
+2. `ChatService`에서 요청 스키마를 내부 상태로 변환
+3. `PolicyService`로 크레딧 선검사
+4. `IntentService`로 의도 분류
+5. `RoutingService`로 `DICT / RAG / LLM / DENY` 결정
+6. 각 서비스 실행
+7. `GuardService`로 출력 검사 및 필요 시 재작성 루프
+8. Kafka 응답 payload 형태의 응답 반환
 
-### 전체 구조
-```
+## 디렉터리 구조
+
+```text
 ai/
-├ api/v1/                    # FastAPI API 레이어 (외부 요청 진입점)
+├ api/v1/                    # FastAPI 라우터
 │  ├ __init__.py
-│  └ chat.py                     # 채팅 관련 API 엔드포인트
-├ clients/                   # 외부 시스템/모델 호출 클라이언트
-│  ├ langgraph_client.py         # LangGraph workflow 실행 클라이언트
-│  ├ llm_client.py               # 공통 LLM 호출 (분류 / 임베딩 / 생성)
-│  └ vector_db_client.py         # pgvector 기반 벡터 검색 클라이언트
+│  └ chat.py                 # POST /v1/chat/message
+├ clients/                   # 외부 시스템 / 모델 호출 클라이언트
+│  ├ langgraph_client.py     # workflow 실행 래퍼
+│  ├ llm_client.py           # LLM 호출 / 임베딩 호출
+│  └ vector_db_client.py     # pgvector 검색 호출
 ├ core/
-│  └ config.py               # 환경변수 및 공통 설정 관리
-├ db/                            # DB 초기화 / seed / 스키마 관련 파일
-├ repositories/                  # DB 접근 레이어 (데이터 저장/조회)
-│  ├ chat_log_repository.py      # 채팅 로그 저장/조회
-│  └ quiz_repository.py          # 퀴즈 데이터 저장/조회
-├ schemas/                   # 요청/응답/내부 상태 데이터 모델
-│  ├ intent.py                   # 질문 분류 결과 모델
-│  ├ policy.py                   # 정책 판단 결과 모델
-│  ├ request.py                  # API 요청 스키마
-│  ├ response.py                 # API 응답 스키마
-│  └ state.py                    # 내부 오케스트레이션 상태 모델
-├ services/                  # 비즈니스 로직 및 AI 처리 흐름
-│  ├ chat_service.py             # 전체 채팅 처리 오케스트레이션
-│  ├ intent_service.py           # LLM 기반 질문 분류 처리
-│  ├ policy_service.py           # 정책 검사 (ex. 크레딧 제한)
-│  └ rag_service.py              # RAG 처리 (임베딩 → 검색 → 답변 생성)
-├ workflows/                 # LangGraph workflow 정의 영역
-│  └ __init__.py
-└ main.py                    # FastAPI 서버 엔트리포인트
+│  └ config.py               # 환경변수 / 설정
+├ db/                        # 정적 데이터 / seed
+├ repositories/              # DB 접근 레이어
+├ schemas/                   # 요청 / 응답 / 내부 상태 스키마
+│  ├ guard.py
+│  ├ intent.py
+│  ├ policy.py
+│  ├ request.py
+│  ├ response.py
+│  └ state.py
+├ services/                  # 비즈니스 로직
+│  ├ chat_service.py         # 채팅 전체 오케스트레이션
+│  ├ dictionary_service.py   # 금융 사전 응답
+│  ├ guard_service.py        # 출력 안전성 검사
+│  ├ intent_service.py       # 의도 분류
+│  ├ policy_service.py       # 정책 선검사
+│  ├ rag_service.py          # RAG 내부 오케스트레이션
+│  └ routing_service.py      # route 결정
+├ workflows/                 # LangGraph workflow 확장 포인트
+└ main.py                    # FastAPI 앱 진입점
 ```
 
-### 폴더별 역할
-- `api/v1/`
-    - 외부 HTTP 요청을 받는 **API 레이어**
-    - FastAPI router를 통해 엔드포인트를 정의하며, 실제 비즈니스 로직은 service 계층에 위임합니다.
-    - `chat.py`
-        - 채팅 관련 API 엔드포인트 정의
-        - ex. `POST /v1/chat/message`
+## 파일 책임
 
-- `clients/`
-    - 외부 시스템, 모델, 저장소와 직접 통신하는 **클라이언트 레이어**
-    - Service 계층이 어떤 기능을 수행할지 결정하면, 실제 호출은 clients 계층에서 담당합니다.
-    - `langgraph_client.py`
-        - LangGraph workflow 실행 클라이언트
-        - 현재는 mock 응답 반환 용도로 사용하고 있습니다.
-    - `llm_client.py`
-        - 공통 LLM 호출 클라이언트
-        - 질문 분류용 LLM 호출
-        - RAG용 임베딩 생성
-        - RAG용 텍스트 생성
-    - `vector_db_client.py`
-        - pgvector 기반 벡터 검색 클라이언트
-        - 질의 임베딩을 받아 유사 문서를 검색하고 정규화된 결과 반환합니다.
+### `api/v1/`
+- HTTP 요청을 받고 서비스로 위임합니다.
+- 현재 채팅 엔드포인트는 `POST /v1/chat/message`입니다.
 
-- `core/`
-    - 공통 설정과 환경변수를 관리하는 **설정 레이어**
-    - `config.py`
-        - OpenAI/GMS 관련 설정
-        - Vector DB 접속 정보
-        - 공통 설정값 로드
-        - 환경변수 기반 settings 객체 제공
+### `clients/`
+- 외부 호출만 담당합니다.
+- `llm_client.py`
+  - 텍스트 생성
+  - 의도 분류 호출
+  - 임베딩 생성
+- `vector_db_client.py`
+  - 벡터 검색 호출
+- `langgraph_client.py`
+  - 현재는 workflow 실행 래퍼입니다.
+  - 실제 LangGraph graph를 붙이면 이 파일이 실행 진입점이 됩니다.
 
-- `db/` 
-    - DB 초기화, seed 데이터, 스키마 관련 파일을 두는 영역
-    - 현재는 하위 초기화 파일들을 관리하는 용도로 사용됩니다.
+### `schemas/`
+- 외부 계약과 내부 상태를 분리합니다.
+- `request.py`
+  - Kafka 요청 payload를 HTTP로 재현하는 입력 스키마
+- `response.py`
+  - Kafka 응답 payload 형태의 출력 스키마
+- `state.py`
+  - 채팅 오케스트레이션 내부 상태 객체
+- `policy.py`, `intent.py`, `guard.py`
+  - 정책 / 의도 / Guard 관련 타입
 
-- `repositories/`
-    - DB 읽기/쓰기를 담당하는 **저장소 레이어**
-    - Service 계층이 직접 SQL이나 DB 세부 구현을 알지 않도록 분리합니다.
-    - `chat_log_repository.py`
-        - 채팅 로그 저장/조회
-    - `quiz_repository.py`
-        - 퀴즈 데이터 저장/조회
+### `services/`
+- 비즈니스 로직을 담당합니다.
+- `chat_service.py`
+  - 요청을 내부 상태로 변환
+  - `birth_date -> age_group` 변환
+  - 정책 검사
+  - 의도 분류
+  - route 선택
+  - `DICT / RAG / LLM / DENY` 실행 제어
+  - Guard 검사 및 재작성 루프
+  - 차감 크레딧 계산
+- `dictionary_service.py`
+  - 금융 용어 정의 응답 생성
+- `intent_service.py`
+  - 메시지의 금융 관련성 / cheating 여부 / intent 분류
+- `policy_service.py`
+  - 잔여 크레딧 기준 선검사
+- `routing_service.py`
+  - `DEFINE / HINT / EXPLAIN / OTHER`를 route로 변환
+- `rag_service.py`
+  - RAG 내부 흐름 담당
+  - query 생성
+  - 임베딩 생성 요청
+  - 벡터 검색 요청
+  - context 선택
+  - prompt 생성
+  - 답변 생성 요청
+- `guard_service.py`
+  - 정답 직접 노출, 보기 번호 언급, 과도한 유도 표현을 검사
 
-- `schemas/`
-    - 요청/응답/내부 상태/정책 결과 등 **데이터 구조를 정의하는 레이어**
-    - `request.py`
-        - API 요청 스키마 정의
-    - `response.py`
-        - API 응답 스키마 정의
-    - `state.py`
-        - 내부 오케스트레이션 상태 모델
-        - 정책 판단 결과, 질문 분류 결과, route, hint level 등을 저장
-    - `policy.py`
-        - 정책 판단 결과 모델
-        - PolicyDecision, PolicyReason, PolicyResult 정의
-    - `intent.py`
-        - 질문 분류 결과 모델
-        - IntentType, ClassificationResult 정의
+## 현재 요청 / 응답 스키마
 
-- `services/`
-    - AI Gateway의 핵심 비즈니스 로직과 흐름 제어를 담당하는 **서비스 레이어**
-    - `chat_service.py`
-        - 전체 채팅 처리 흐름 오케스트레이션
-        - credit pre-check
-        - 질문 분류 결과 반영
-        - 정책 차단 여부 판단
-        - LangGraph/RAG/LLM 실행 연결
-    - `policy_service.py`
-        - Hard Gate 정책 검사
-        - 현재는 크레딧 소진 여부 검사 담당
-    - `intent_service.py`
-        - 질문 분류 orchestration
-        - `llm_client.py` 를 사용해
-            - 금융 관련 여부
-            - 정답 요구 여부
-            - intent(DEFINE / HINT / EXPLAIN / OTHER) 를 분류하고 내부 모델로 변환
-    - `rag_service.py`
-        - RAG orchestration
-        - 질의 정제
-        - 임베딩 생성 요청
-        - 벡터 검색
-        - 상위 컨텍스트 선택
-        - 프롬프트 생성
-        - 최종 답변 생성
-        - 결과 포맷팅
+현재는 스프링 백엔드가 Kafka에 넣을 메시지를 HTTP로 재현해서 테스트합니다.
 
-- `workflows/`
-    - LangGraph workflow 정의를 두는 영역
-    - 현재는 초기화 단계이며, 이후 채팅 응답 그래프 및 퀴즈 생성 그래프를 이 계층에 배치할 예정입니다.
+### 요청
 
-- `main.py`
-    - FastAPI 애플리케이션의 **엔트리포인트**
-    - 앱 생성 및 router 등록을 담당합니다.
-
-## 현재 처리 흐름
-현재 채팅 요청의 기본 처리 흐름은 아래와 같습니다.
+```json
+{
+  "event_type": "CHAT_REQUEST",
+  "event_id": "uuid",
+  "user_id": "uuid",
+  "quiz_id": "uuid",
+  "message": "금리 뜻이 뭐야?",
+  "remaining_credits": 100,
+  "difficulty": "medium",
+  "birth_date": "2015-03-10"
+}
 ```
+
+설명:
+- `event_type`
+  - 요청 이벤트 타입
+- `event_id`
+  - 요청-응답 매칭용 식별자
+- `remaining_credits`
+  - 현재 남은 크레딧
+- `difficulty`
+  - `easy | medium | hard`
+- `birth_date`
+  - 내부에서 `age_group`으로 변환
+
+### 응답
+
+```json
+{
+  "event_type": "CHAT_RESPONSE",
+  "event_id": "uuid",
+  "user_id": "uuid",
+  "quiz_id": "uuid",
+  "message": "금리 뜻이 뭐야?",
+  "ai_reply": "금리는 ...",
+  "deducted_credits": 5
+}
+```
+
+설명:
+- `ai_reply`
+  - AI 최종 응답
+- `deducted_credits`
+  - 이번 요청 처리로 차감해야 하는 크레딧
+  - 실제 잔여 크레딧 반영은 스프링 백엔드가 수행
+
+## 현재 차감 정책
+
+- `DICT`: 5
+- `LLM`: 10
+- `RAG`: 20
+- `DENY`: 0
+
+## 현재 채팅 처리 흐름
+
+```text
 POST /v1/chat/message
         ↓
-chat.py (API)
+chat.py
         ↓
 ChatService
         ↓
-PolicyService (credit pre-check)
+ChatContextState 생성
         ↓
-IntentService (LLM 기반 질문 분류)
+PolicyService
         ↓
-정책 차단 여부 판단
+LangGraphClient.run_workflow(...)
         ↓
-LangGraphClient / RAG / 이후 route 실행
+ChatService._run_workflow(...)
         ↓
-응답 반환
+IntentService
+        ↓
+RoutingService
+        ↓
+DICT / RAG / LLM / DENY 실행
+        ↓
+GuardService
+        ↓
+ChatResponse 반환
 ```
 
-### 설계 원칙
-현재 구조는 아래 원칙을 기준으로 분리했다.
-1. API는 얇게 유지
-    - 엔드포인트는 service를 호출만 하고, 비즈니스 로직은 넣지 않는다.
-2. 도메인 흐름은 service에서 관리
-    - 정책 판단, 질문 분류, RAG 실행 흐름은 service 계층에서 담당한다.
-3. 외부 호출은 client로 분리
-    - LLM, LangGraph, Vector DB 호출은 client 계층에서 담당한다.
-4. DB 접근은 repository로 분리
-    - 저장/조회 로직이 service에 섞이지 않도록 한다.
-5. 상태와 결과는 schema로 명시
-    - 내부 상태와 정책/분류 결과를 명확한 모델로 관리한다.
+## Route 기준
 
-### 향후 확장 예정
-현재 구조는 이후 다음 기능을 확장하기 쉽도록 설계되었다.
-- Route Selection (DICT / RAG / LLM / DENY)
-- Credit 차감 로직
-- Output Guard / Rewrite loop
-- Dictionary service
-- LangGraph workflow 본격 연결
-- RAG 고도화
-- DB 로그 저장 확장
+- `DEFINE` → `DICT`
+- `HINT` → `RAG`
+- `EXPLAIN` → 기본 `LLM`
+- `OTHER` → `LLM`
+- 정책 차단 또는 semantic deny → `DENY`
+
+## Guard 동작
+
+`DICT`, `DENY`는 그대로 반환합니다.
+
+`RAG`, `LLM`은 Guard 검사를 거칩니다.
+
+검사 항목:
+- 정답 직접 노출
+- 보기 번호 직접 언급
+- 과도하게 직접적인 유도 표현
+
+Guard 실패 시:
+1. 재작성 프롬프트로 최대 2회 재생성
+2. 계속 실패하면 안전한 fallback 메시지 반환
+
+## 로깅
+
+현재 주요 처리 단계는 로그로 확인할 수 있습니다.
+
+- `chat.request_received`
+- `chat.policy_checked`
+- `langgraph.start`
+- `langgraph.intent_classified`
+- `langgraph.route_selected`
+- `langgraph.dictionary_lookup`
+- `langgraph.route_executed`
+- `langgraph.guard_checked`
+- `langgraph.guard_rewrite_attempt`
+- `langgraph.guard_rewrite_checked`
+- `langgraph.guard_fallback`
+- `chat.response_ready`
+
+## 주의사항
+
+- 현재 `langgraph_client.py`는 실제 LangGraph graph 실행기가 아니라 workflow 실행 래퍼입니다.
+- 실제 Kafka consumer / producer는 아직 붙지 않았고, 현재는 HTTP로 Kafka 메시지를 재현하는 단계입니다.
+- `credits_spent_total` 기반 세부 정책은 아직 고정값 수준이며, 실제 누적 사용량 연동은 후속 작업 대상입니다.

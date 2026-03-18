@@ -24,6 +24,11 @@ kakao:
   client-secret: ${KAKAO_CLIENT_SECRET}
   user-info-uri: https://kapi.kakao.com/v2/user/me
 
+# Firebase 설정
+firebase:
+  config:
+    path: ${FIREBASE_CONFIG_PATH}
+
 # JWT 설정
 jwt:
   secret: ${JWT_SECRET:akku-jwt-secret-key-must-be-at-least-32-characters-long}
