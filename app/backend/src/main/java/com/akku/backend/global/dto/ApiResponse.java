@@ -19,6 +19,10 @@ public record ApiResponse<T>(
         return new ApiResponse<>(true, message, null, null, data);
     }
 
+    public static <T> ApiResponse<T> success(String message) {
+        return new ApiResponse<>(true, message, null, null, null);
+    }
+
     public static <T> ApiResponse<T> fail(String message, ErrorCode errorCode, String traceId) {
         return new ApiResponse<>(
                 false,
@@ -29,10 +33,4 @@ public record ApiResponse<T>(
         );
     }
 
-    /*
-        데이터 없이 메세지만 반환할 때 사용하는 메서드 추가
-     */
-    public static <T> ApiResponse<T> success(String message) {
-        return new ApiResponse<>(true, message, null, null, null);
-    }
 }
