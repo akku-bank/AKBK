@@ -11,7 +11,8 @@ public enum BankErrorCode implements ErrorCode {
     ACCOUNT_NOT_FOUND("BANK_001", HttpStatus.NOT_FOUND, "계좌 정보를 찾을 수 없습니다"),
     INSUFFICIENT_BALANCE("BANK_002", HttpStatus.BAD_REQUEST, "잔액이 부족합니다"),
     TRANSFER_LIMIT_EXCEEDED("BANK_003", HttpStatus.BAD_REQUEST, "이체 한도를 초과했습니다"),
-    INVALID_TRANSACTION_REQUEST("BANK_004", HttpStatus.BAD_REQUEST, "잘못된 결제/이체 요청입니다");
+    INVALID_TRANSACTION_REQUEST("BANK_004", HttpStatus.BAD_REQUEST, "잘못된 결제/이체 요청입니다"),
+    ALREADY_EXISTS_ACCOUNT("BANK_005", HttpStatus.CONFLICT, "이미 등록된 계좌입니다");
 
     private final String code;
     private final HttpStatus status;
