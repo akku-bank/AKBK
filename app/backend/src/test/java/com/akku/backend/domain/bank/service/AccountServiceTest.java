@@ -52,7 +52,7 @@ class AccountServiceTest {
             UUID familyId = UUID.randomUUID();
             AccountCreateRequest request = new AccountCreateRequest(childId, "CASH");
             User parent = User.builder().id(parentId).role("PARENT").familyId(familyId).build();
-            User child = User.builder().id(childId).userKey("child-key").familyId(familyId).build();
+            User child = User.builder().id(childId).userKey("child-key").role("CHILD").familyId(familyId).build();
             given(userRepository.findById(parentId)).willReturn(Optional.of(parent));
             given(userRepository.findById(childId)).willReturn(Optional.of(child));
             
