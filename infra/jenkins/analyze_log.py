@@ -1,6 +1,7 @@
 import sys
 import re
 import json
+import os
 
 def analyze():
     # 인자 순서: log_path, job_name, build_num, build_url

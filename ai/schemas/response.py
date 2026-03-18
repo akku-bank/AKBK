@@ -1,9 +1,14 @@
-from pydantic import BaseModel, Field
+from typing import Literal
+from uuid import UUID
+
+from pydantic import BaseModel
+
 
 class ChatResponse(BaseModel):
-    remaining_credits: int = Field(alias="remainingCredits")
-    ai_reply: str = Field(alias="aiReply")
-
-    model_config = {
-        "populate_by_name": True
-    }
+    event_type: Literal["CHAT_RESPONSE"]
+    event_id: UUID
+    user_id: UUID
+    quiz_id: UUID
+    message: str
+    ai_reply: str
+    deducted_credits: int
