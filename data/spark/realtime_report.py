@@ -11,7 +11,7 @@ spark = SparkSession.builder \
     .appName("Akkubangkku-Full-Pipeline") \
     .getOrCreate()
 
-# [수정] Kafka 스키마 정의: 샘플 데이터에 맞춰 created_at(d 포함)으로 변경
+# Kafka 스키마 정의
 schema = StructType([
     StructField("event_type", StringType()),
     StructField("data", StructType([
@@ -21,7 +21,7 @@ schema = StructType([
         StructField("transaction_type", StringType()),
         StructField("sub_category_id", IntegerType()),
         StructField("sub_category_name", StringType()),
-        StructField("created_at", StringType()) # create_at -> created_at
+        StructField("created_at", StringType())
     ]))
 ])
 
@@ -44,10 +44,10 @@ def warm_up_redis(r, u_id, s_day, t_type):
     
     if not r.exists(weekly_key):
         try:
+            print(f"🔍 [Warm-up] Data not in Redis. Fetching from DB for User: {u_id}")
             conn = get_db_conn()
             cur = conn.cursor()
             
-            # weekly_report 복구
             cur.execute("""
                 SELECT mon, tue, wed, thu, fri, sat, sun, total_amount 
                 FROM weekly_report WHERE user_id = %s AND start_day = %s AND type = %s
@@ -56,8 +56,8 @@ def warm_up_redis(r, u_id, s_day, t_type):
             if row:
                 fields = ["mon", "tue", "wed", "thu", "fri", "sat", "sun", "total_amount"]
                 r.hset(weekly_key, mapping=dict(zip(fields, map(str, row))))
+                print(f"✅ [Warm-up] weekly_report restored for {u_id}")
             
-            # weekly_category_ratio 복구 (금액만)
             cur.execute("""
                 SELECT sub_category_id, spending_amount FROM weekly_category_ratio 
                 WHERE user_id = %s AND start_day = %s
@@ -65,33 +65,39 @@ def warm_up_redis(r, u_id, s_day, t_type):
             rows = cur.fetchall()
             for cat_id, amt in rows:
                 r.hset(category_key, str(cat_id), str(amt))
+            
+            if rows: print(f"✅ [Warm-up] category_ratio restored for {u_id}")
                 
             cur.close()
             conn.close()
-            # 신규/복구 키에 대해 7일 TTL 설정
             r.expire(weekly_key, 604800)
             r.expire(category_key, 604800)
         except Exception as e:
-            print(f"⚠️ Warm-up Error for user {u_id}: {e}")
+            print(f"⚠️ [Warm-up Error] {e}")
 
-# 4. Postgres Upsert 함수 (30분 주기)
+# 4. Postgres Upsert 함수 (주기적 백업)
 def backup_to_postgres(r, u_id, s_day, t_type):
     sync_key = f"sync:last:{u_id}:{s_day}:{t_type}"
     last_sync = r.get(sync_key)
     
-    # 30분이 지났거나 처음인 경우만 실행 (테스트 시 seconds=10 등으로 수정 가능)
-    if not last_sync or (datetime.now() - datetime.fromisoformat(last_sync)) > timedelta(minutes=30):
+    # 10초 주기로 체크포인트 확인
+    if not last_sync or (datetime.now() - datetime.fromisoformat(last_sync)) > timedelta(seconds=10):
+        print(f"🚀 [DB Backup] Triggered for User: {u_id}")
+        
         weekly_key = f"report:weekly:{u_id}:{s_day}:{t_type}"
         category_key = f"report:category:{u_id}:{s_day}:{t_type}"
         
         weekly_data = r.hgetall(weekly_key)
         cat_data = r.hgetall(category_key)
         
-        if not weekly_data: return
+        if not weekly_data:
+            print(f"⚠️ [DB Backup] Skip: No data in Redis for {weekly_key}")
+            return
 
         try:
             conn = get_db_conn()
             cur = conn.cursor()
+            
             # 1. Weekly Report Upsert
             cur.execute("""
                 INSERT INTO weekly_report (user_id, start_day, type, mon, tue, wed, thu, fri, sat, sun, total_amount, end_day)
@@ -105,7 +111,7 @@ def backup_to_postgres(r, u_id, s_day, t_type):
                   weekly_data.get('sun',0), weekly_data.get('total_amount',0),
                   (datetime.strptime(s_day, '%Y-%m-%d') + timedelta(days=6)).date()))
 
-            # 2. Category Ratio Upsert (비율 계산 포함)
+            # 2. Category Ratio Upsert
             total = int(weekly_data.get('total_amount', 1))
             for cat_id, amt in cat_data.items():
                 ratio = float(int(amt) / total) if total > 0 else 0
@@ -118,49 +124,50 @@ def backup_to_postgres(r, u_id, s_day, t_type):
             
             conn.commit()
             r.set(sync_key, datetime.now().isoformat())
-            print(f"✅ DB Backup Success: User {u_id}")
+            print(f"✅ [DB Backup] SUCCESS for User: {u_id}")
             cur.close()
             conn.close()
         except Exception as e:
-            print(f"❌ DB Sync Error: {e}")
+            print(f"❌ [DB Backup Error] {e}")
 
 # 5. Main Batch Processor
 def process_batch(batch_df, batch_id):
-    # 환경변수에서 Redis 정보 로드
+    print(f"\n🔔 [Batch {batch_id}] Processing Started")
+    
     redis_host = os.getenv('REDIS_HOST', 'akkubangkku_redis')
     r = redis.Redis(host=redis_host, port=6379, db=0, decode_responses=True)
     
     rows = batch_df.collect()
+    print(f"📊 [Batch {batch_id}] Number of input rows: {len(rows)}")
+    
     if not rows: return
     
     for row in rows:
-        # [방어 로직] 데이터가 None인 경우 건너뜀 (AttributeError 방지)
         if row['day_of_week'] is None or row['user_id'] is None:
-            print(f"⚠️ Skipping invalid row: {row}")
+            print(f"⚠️ [Batch {batch_id}] Invalid Data Detected: {row}")
             continue
 
         u_id = row['user_id']
         s_day = str(row['start_day'])
-        # 타입 결정 로직
         t_type = "SPEND" if row['transaction_type'] in ['TRANSFER', 'SPEND'] else "INCOME"
         cat_id = row['sub_category_id']
         amt = row['amount']
         dow = row['day_of_week'].lower()
 
-        # Step 1: Warm-up (DB -> Redis)
+        print(f"📝 [Processing] User: {u_id} | Amount: {amt} | Day: {dow}")
+
         warm_up_redis(r, u_id, s_day, t_type)
         
-        # Step 2: Update Redis (Real-time)
         pipe = r.pipeline()
         pipe.hincrby(f"report:weekly:{u_id}:{s_day}:{t_type}", dow, amt)
         pipe.hincrby(f"report:weekly:{u_id}:{s_day}:{t_type}", "total_amount", amt)
         pipe.hincrby(f"report:category:{u_id}:{s_day}:{t_type}", str(cat_id), amt)
         pipe.execute()
+        print(f"💾 [Redis] Increment Done for {u_id}")
         
-        # Step 3: Periodic DB Backup (30min)
         backup_to_postgres(r, u_id, s_day, t_type)
 
-# 6. Kafka Stream 설정 및 가공
+# 6. Kafka Stream 설정
 df = spark.readStream \
     .format("kafka") \
     .option("kafka.bootstrap.servers", "akkubangkku_kafka:29092") \
@@ -168,7 +175,6 @@ df = spark.readStream \
     .option("failOnDataLoss", "false") \
     .load()
 
-# [수정] created_at 필드명 반영 및 날짜 포맷 (T 제외) 적용
 transformed_df = df.select(from_json(col("value").cast("string"), schema).alias("parsed")) \
     .select("parsed.data.*") \
     .withColumn("ts", to_timestamp(col("created_at"), "yyyy-MM-dd HH:mm:ss")) \
