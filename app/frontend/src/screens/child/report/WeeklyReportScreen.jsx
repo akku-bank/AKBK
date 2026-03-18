@@ -1,6 +1,6 @@
 ﻿import React, { useState } from 'react';
 import { View, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Platform } from 'react-native';
-import Svg, { Circle, G, Path } from 'react-native-svg';
+import Svg, { Circle, G, Path, Text as SvgText } from 'react-native-svg';
 import { scale, verticalScale } from 'react-native-size-matters';
 import CustomText from '../../../components/common/CustomText';
 
@@ -60,6 +60,8 @@ const CATEGORY_DATA = [
     },
 ];
 
+const WEEK_RANGES = ['3.1-3.9', '3.10-3.16', '3.17-3.23', '3.24-3.31'];
+
 const formatCurrency = (amount) => `${amount.toLocaleString()}원`;
 const formatChartAmount = (amount) => amount.toLocaleString();
 
@@ -88,6 +90,12 @@ const createArcPath = (cx, cy, outerRadius, innerRadius, startAngle, endAngle) =
     ].join(' ');
 };
 
+const getSliceLabelPosition = (cx, cy, startAngle, endAngle, outerRadius, innerRadius) => {
+    const middleAngle = (startAngle + endAngle) / 2;
+    const labelRadius = (outerRadius + innerRadius) / 2;
+    return polarToCartesian(cx, cy, labelRadius, middleAngle);
+};
+
 const bodyFontFamily = Platform.select({
     ios: 'Apple SD Gothic Neo',
     android: 'sans-serif',
@@ -95,6 +103,7 @@ const bodyFontFamily = Platform.select({
 });
 
 const WeeklyReportScreen = ({ navigation }) => {
+    const [weekIndex, setWeekIndex] = useState(1);
     const [selectedCategoryId, setSelectedCategoryId] = useState(CATEGORY_DATA[0].id);
 
     const totalExpense = CATEGORY_DATA.reduce((sum, category) => sum + category.total, 0);
@@ -125,6 +134,33 @@ const WeeklyReportScreen = ({ navigation }) => {
             </View>
 
             <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+                <View style={styles.weekNavigator}>
+                    <TouchableOpacity
+                        style={styles.weekArrowButton}
+                        onPress={() => setWeekIndex((prev) => Math.max(prev - 1, 0))}
+                        disabled={weekIndex === 0}
+                    >
+                        <CustomText style={[styles.weekArrowText, weekIndex === 0 && styles.weekArrowDisabled]}>‹</CustomText>
+                    </TouchableOpacity>
+                    <View style={styles.weekLabelBox}>
+                        <CustomText style={styles.weekLabel}>{WEEK_RANGES[weekIndex]}</CustomText>
+                    </View>
+                    <TouchableOpacity
+                        style={styles.weekArrowButton}
+                        onPress={() => setWeekIndex((prev) => Math.min(prev + 1, WEEK_RANGES.length - 1))}
+                        disabled={weekIndex === WEEK_RANGES.length - 1}
+                    >
+                        <CustomText
+                            style={[
+                                styles.weekArrowText,
+                                weekIndex === WEEK_RANGES.length - 1 && styles.weekArrowDisabled,
+                            ]}
+                        >
+                            ›
+                        </CustomText>
+                    </TouchableOpacity>
+                </View>
+
                 <View style={styles.summaryCard}>
                     <CustomText style={styles.summaryTitle}>이번 주 총 지출</CustomText>
                     <CustomText style={styles.amountText}>{formatCurrency(totalExpense)}</CustomText>
@@ -192,45 +228,49 @@ const WeeklyReportScreen = ({ navigation }) => {
                     </View>
 
                     <View style={styles.pieSection}>
-                        <Svg width={scale(180)} height={scale(180)} viewBox="0 0 180 180">
-                            <Circle cx="90" cy="90" r="64" fill="#F8FAFC" />
-                            {pieSlices.map((slice) => {
-                                const isSelected = slice.id === selectedCategoryId;
-                                const outerRadius = isSelected ? 78 : 72;
-                                const innerRadius = 42;
+                        <View style={styles.pieChartWrap}>
+                            <Svg width={scale(260)} height={scale(260)} viewBox="0 0 260 260">
+                                <Circle cx="130" cy="130" r="86" fill="#F8FAFC" />
+                                {pieSlices.map((slice) => {
+                                    const isSelected = slice.id === selectedCategoryId;
+                                    const outerRadius = isSelected ? 104 : 96;
+                                    const innerRadius = 56;
+                                    const labelPosition = getSliceLabelPosition(
+                                        130,
+                                        130,
+                                        slice.startAngle,
+                                        slice.endAngle,
+                                        outerRadius,
+                                        innerRadius,
+                                    );
 
-                                return (
-                                    <G key={slice.id}>
-                                        <Path
-                                            d={createArcPath(90, 90, outerRadius, innerRadius, slice.startAngle, slice.endAngle)}
-                                            fill={slice.color}
-                                            opacity={isSelected ? 1 : 0.9}
-                                            onPress={() => setSelectedCategoryId(slice.id)}
-                                        />
-                                    </G>
-                                );
-                            })}
-                        </Svg>
+                                    return (
+                                        <G key={slice.id}>
+                                            <Path
+                                                d={createArcPath(130, 130, outerRadius, innerRadius, slice.startAngle, slice.endAngle)}
+                                                fill={slice.color}
+                                                opacity={isSelected ? 1 : 0.9}
+                                                onPress={() => setSelectedCategoryId(slice.id)}
+                                            />
+                                            <SvgText
+                                                x={labelPosition.x}
+                                                y={labelPosition.y}
+                                                fontSize={scale(12)}
+                                                fontWeight="700"
+                                                fill="#FFFFFF"
+                                                textAnchor="middle"
+                                                alignmentBaseline="middle"
+                                            >
+                                                {slice.label}
+                                            </SvgText>
+                                        </G>
+                                    );
+                                })}
+                            </Svg>
 
-                        <View style={styles.legendColumn}>
-                            {CATEGORY_DATA.map((category) => {
-                                const isSelected = category.id === selectedCategoryId;
-
-                                return (
-                                    <TouchableOpacity
-                                        key={category.id}
-                                        style={[styles.legendItem, isSelected && styles.legendItemSelected]}
-                                        onPress={() => setSelectedCategoryId(category.id)}
-                                        activeOpacity={0.8}
-                                    >
-                                        <View style={[styles.legendDot, { backgroundColor: category.color }]} />
-                                        <View style={styles.legendTextWrap}>
-                                            <CustomText style={styles.legendLabel}>{category.label}</CustomText>
-                                            <CustomText style={styles.legendAmount}>{formatCurrency(category.total)}</CustomText>
-                                        </View>
-                                    </TouchableOpacity>
-                                );
-                            })}
+                            <View style={styles.pieCenterLabel} pointerEvents="none">
+                                <CustomText style={styles.pieCenterAmount}>{formatCurrency(selectedCategory.total)}</CustomText>
+                            </View>
                         </View>
                     </View>
 
@@ -277,6 +317,41 @@ const styles = StyleSheet.create({
         paddingHorizontal: scale(16),
         paddingTop: verticalScale(16),
         paddingBottom: verticalScale(40),
+    },
+    weekNavigator: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: verticalScale(14),
+    },
+    weekArrowButton: {
+        width: scale(36),
+        height: scale(36),
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    weekArrowText: {
+        fontSize: scale(24),
+        fontWeight: '700',
+        color: '#111827',
+    },
+    weekArrowDisabled: {
+        color: '#CBD5E1',
+    },
+    weekLabelBox: {
+        minWidth: scale(132),
+        marginHorizontal: scale(8),
+        paddingHorizontal: scale(14),
+        paddingVertical: verticalScale(8),
+        borderRadius: scale(999),
+        backgroundColor: '#FFFFFF',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    weekLabel: {
+        fontSize: scale(14),
+        fontWeight: '700',
+        color: '#111827',
     },
     summaryCard: {
         backgroundColor: '#FFFFFF',
@@ -444,41 +519,27 @@ const styles = StyleSheet.create({
         elevation: 2,
     },
     pieSection: {
-        flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
+        justifyContent: 'center',
         marginBottom: verticalScale(16),
     },
-    legendColumn: {
-        flex: 1,
-        marginLeft: scale(8),
-    },
-    legendItem: {
-        flexDirection: 'row',
+    pieChartWrap: {
+        width: scale(260),
+        height: scale(260),
         alignItems: 'center',
-        paddingHorizontal: scale(10),
-        paddingVertical: verticalScale(8),
-        borderRadius: scale(12),
-        marginBottom: verticalScale(8),
-        borderWidth: 1,
-        borderColor: 'transparent',
+        justifyContent: 'center',
     },
-    legendItemSelected: {
-        backgroundColor: '#F8FAFC',
-        borderColor: '#D7DEE8',
+    pieCenterLabel: {
+        position: 'absolute',
+        width: scale(110),
+        alignItems: 'center',
+        justifyContent: 'center',
     },
-    legendTextWrap: {
-        flex: 1,
-    },
-    legendLabel: {
-        fontSize: scale(13),
-        fontWeight: 'bold',
-        color: '#1F2937',
-    },
-    legendAmount: {
-        fontSize: scale(12),
+    pieCenterAmount: {
+        fontSize: scale(19),
+        fontWeight: '900',
         color: '#64748B',
-        marginTop: verticalScale(2),
+        textAlign: 'center',
     },
     detailCard: {
         backgroundColor: '#F8FAFC',
