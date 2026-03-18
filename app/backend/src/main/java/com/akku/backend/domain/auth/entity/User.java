@@ -20,9 +20,6 @@ public class User {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(unique = true)
-    private String email;
-
     @Column(length = 20)
     private String provider;        // KAKAO, GOOGLE 등
 
