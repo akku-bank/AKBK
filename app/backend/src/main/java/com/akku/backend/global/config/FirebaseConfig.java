@@ -10,6 +10,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ClassPathResource;
 
 import java.io.IOException;
+import java.io.InputStream;
 
 @Slf4j
 @Configuration
@@ -20,9 +21,9 @@ public class FirebaseConfig {
 
     @PostConstruct
     public void init() {
-        try {
+        try (InputStream is = new ClassPathResource(firebaseConfigPath).getInputStream()) {
             FirebaseOptions options = FirebaseOptions.builder()
-                    .setCredentials(GoogleCredentials.fromStream(new ClassPathResource(firebaseConfigPath).getInputStream()))
+                    .setCredentials(GoogleCredentials.fromStream(is))
                     .build();
 
             if (FirebaseApp.getApps().isEmpty()) {
@@ -30,7 +31,8 @@ public class FirebaseConfig {
                 log.info("Firebase application has been initialized");
             }
         } catch (IOException e) {
-            log.error("Firebase initialization error: {}", e.getMessage());
+            log.error("Firebase initialization failed critical error: {}", e.getMessage());
+            throw new IllegalStateException("Firebase Admin SDK를 초기화할 수 없습니다. 설정을 확인하세요.", e);
         }
     }
 }
