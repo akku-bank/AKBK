@@ -80,7 +80,7 @@ def backup_to_postgres(r, u_id, s_day, t_type):
     sync_key = f"sync:last:{u_id}:{s_day}:{t_type}"
     last_sync = r.get(sync_key)
     
-    # 10초 주기로 체크포인트 확인
+    # 10초 주기로 체크포인트 확인 (테스트를 위해 현재는 10초, 서비스에서는 30분으로 조정하면 됨)
     if not last_sync or (datetime.now() - datetime.fromisoformat(last_sync)) > timedelta(seconds=10):
         print(f"🚀 [DB Backup] Triggered for User: {u_id}")
         
