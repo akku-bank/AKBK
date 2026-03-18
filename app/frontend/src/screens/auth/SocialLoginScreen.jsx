@@ -14,13 +14,21 @@ const SocialLoginScreen = ({ navigation }) => {
 
         try {
             const token = await kakaoLogin();
-            console.log('Kakao Token:', token);
+            console.log('카카오 로그인 성공! 네이티브 토큰 발급 완료');
+            console.log('카카오 토큰:', token.accessToken);
 
-            // 토큰 발급 완료 테스트 성공, 이제 백엔드로 전송합니다.
+            // 토큰 발급 완료 테스트 성공 -> 백엔드로 전송
             const response = await api.post('auth/social/kakao', { socialToken: token.accessToken });
-            const { jwt, isRegistered, role, name } = response.data;
+            const payload = response.data?.data || response.data || {};
 
-            await setAuthInfo(jwt, role, name);
+            // Jackson 직렬화 이슈 대비 (isRegistered -> registered) 및 각종 토큰 변수명 대비
+            const isRegistered = payload.isRegistered ?? payload.registered ?? !!payload.token;
+            const jwt = payload.token || payload.tempToken || payload.jwt || payload.accessToken;
+
+            console.log('JWT 발급 성공!');
+            console.log('토큰 키:', jwt);
+
+            await setAuthInfo(jwt, null, null);
             if (isRegistered) {
                 navigation.replace('PinNumberLogin');
             } else {

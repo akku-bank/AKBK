@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, SafeAreaView, TouchableOpacity, Alert, ScrollView } from 'react-native';
 import { scale, verticalScale } from 'react-native-size-matters';
 import CustomText from '../../../components/common/CustomText';
@@ -7,12 +7,43 @@ import useAuthStore from '../../../store/useAuthStore';
 import api from '../../../api/axios';
 
 const ParentEditProfileScreen = ({ navigation }) => {
-    const { logout } = useAuthStore();
-    const [nickname, setNickname] = useState('김아빠');
-    const [phone, setPhone] = useState('010-1234-5678');
+    const { logout, user, setUser } = useAuthStore();
+    const [nickname, setNickname] = useState(user?.name || '');
+    const [phone, setPhone] = useState('010-0000-0000');
 
-    const handleSave = () => {
-        Alert.alert('저장 완료', '부모님 정보가 수정되었습니다.', [{ text: '확인', onPress: () => navigation.goBack() }]);
+    useEffect(() => {
+        if (user?.name) {
+            setNickname(user.name);
+        }
+    }, [user?.name]);
+
+    useEffect(() => {
+        // API 캐싱 방지를 위해 timestamp 추가
+        api.get(`/users/me?t=${new Date().getTime()}`)
+            .then(res => {
+                if (res.data?.data) {
+                    setPhone(res.data.data.username || '비공개 번호');
+                }
+            })
+            .catch(err => console.error('Profile fetch error', err));
+    }, []);
+
+    const handleSave = async () => {
+        if (!nickname.trim()) {
+            Alert.alert('알림', '닉네임을 입력해주세요.');
+            return;
+        }
+
+        try {
+            await api.patch('/users/me', { name: nickname });
+            if (user) {
+                setUser({ ...user, name: nickname });
+            }
+            Alert.alert('저장 완료', '부모님 정보가 수정되었습니다.', [{ text: '확인', onPress: () => navigation.goBack() }]);
+        } catch (error) {
+            console.error('Profile Save Error', error);
+            Alert.alert('오류', '프로필 수정에 실패했습니다.');
+        }
     };
 
     const handleLogout = () => {

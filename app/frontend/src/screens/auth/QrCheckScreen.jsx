@@ -11,11 +11,16 @@ const QrCheckScreen = ({ navigation, route }) => {
     };
 
     const handleNoQr = () => {
-        Alert.alert(
-            '앗! 안타깝게도',
-            '자녀 가입은 부모님이 먼저 가입하신 후\n초대 QR 코드를 스캔해야만 가능해요.\n\n부모님께 아꾸뱅꾸를 만들어달라고 조르러 가볼까요?',
-            [{ text: '확인', style: 'default' }]
-        );
+        if (role === 'CHILD') {
+            Alert.alert(
+                '앗! 안타깝게도',
+                '자녀 가입은 부모님이 먼저 가입하신 후\n초대 QR 코드를 스캔해야만 가능해요.\n\n부모님께 아꾸뱅꾸를 만들어달라고 조르러 가볼까요?',
+                [{ text: '확인', style: 'default' }]
+            );
+        } else {
+            // 부모는 QR이 없으면 새 가족 그룹 생성 단계로 이동
+            navigation.navigate('SignUp', { tempToken, role });
+        }
     };
 
     return (
@@ -23,7 +28,11 @@ const QrCheckScreen = ({ navigation, route }) => {
             <View style={styles.container}>
                 <View style={styles.titleSection}>
                     <Text style={styles.title}>가족 연결하기</Text>
-                    <Text style={styles.subtitle}>부모님이 공유해주신{'\n'}초대 QR 코드가 있나요?</Text>
+                    <Text style={styles.subtitle}>
+                        {role === 'CHILD'
+                            ? '부모님이 공유해주신\n초대 QR 코드가 있나요?'
+                            : '배우자가 공유한\n초대 QR 코드가 있나요?'}
+                    </Text>
                 </View>
 
                 <View style={styles.cardSection}>
@@ -53,7 +62,11 @@ const QrCheckScreen = ({ navigation, route }) => {
                         </View>
                         <View style={styles.cardTextContainer}>
                             <Text style={styles.cardTitle}>아니요, 아직 없어요</Text>
-                            <Text style={styles.cardDesc}>부모님이 먼저 가입하셔야 해요.</Text>
+                            <Text style={styles.cardDesc}>
+                                {role === 'CHILD'
+                                    ? '부모님이 먼저 가입하셔야 해요.'
+                                    : '새로운 가족 그룹을 만들게요.'}
+                            </Text>
                         </View>
                     </TouchableOpacity>
                 </View>

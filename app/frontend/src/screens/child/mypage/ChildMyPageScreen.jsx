@@ -5,9 +5,8 @@ import CustomText from '../../../components/common/CustomText';
 import useAuthStore from '../../../store/useAuthStore';
 import api from '../../../api/axios';
 
-
 const ChildMyPageScreen = ({ navigation }) => {
-    const { logout } = useAuthStore();
+    const { user, logout } = useAuthStore();
 
     const handleLogout = () => {
         Alert.alert('로그아웃', '정말 로그아웃 하시겠습니까?', [
@@ -62,8 +61,8 @@ const ChildMyPageScreen = ({ navigation }) => {
                         <Image source={require('../../../assets/croco/croco_face.png')} style={styles.profileAvatarImage} resizeMode="contain" />
                     </View>
                     <View style={styles.profileInfo}>
-                        <CustomText style={styles.profileName}>김싸피</CustomText>
-                        <CustomText style={styles.profileCode}>초대 코드: 1234-1234</CustomText>
+                        <CustomText style={styles.profileName}>{user?.name || '...'}</CustomText>
+                        <CustomText style={styles.profileCode}>가족 아이디 연동 중</CustomText>
                     </View>
                     <TouchableOpacity style={styles.editButton} onPress={() => navigation.navigate('ChildEditProfile')}>
                         <CustomText style={styles.editButtonText}>수정</CustomText>

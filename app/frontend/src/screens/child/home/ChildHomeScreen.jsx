@@ -3,6 +3,7 @@ import { View, StyleSheet, TouchableOpacity, SafeAreaView, Dimensions, Image, Mo
 import { scale, verticalScale } from 'react-native-size-matters';
 import ChildAvatar from '../../../components/child/avatar/ChildAvatar';
 import { AvatarContext } from '../../../components/child/avatar/AvatarContext';
+import { AVATAR_ITEMS } from '../../../components/child/avatar/AvatarAssets';
 import CustomText from '../../../components/common/CustomText';
 import Pet from '../../../components/child/avatar/Pet';
 import api from '../../../api/axios';
@@ -13,7 +14,7 @@ const { width, height } = Dimensions.get('window');
 const ChildHomeScreen = ({ navigation }) => {
     const [isQrModalVisible, setQrModalVisible] = useState(false);
     const [isLevelUpModalVisible, setLevelUpModalVisible] = useState(false);
-    const { equipState } = useContext(AvatarContext);
+    const { equipState, setEquipState } = useContext(AvatarContext);
     const { user } = useAuthStore(); // get name from store since it's not in response
     const [homeData, setHomeData] = useState(null);
 
@@ -28,6 +29,40 @@ const ChildHomeScreen = ({ navigation }) => {
                 if (homeDataResult.hasLevelChanged) {
                     setLevelUpModalVisible(true);
                 }
+
+                // 백엔드 아바타 장착 상태 동기화
+                if (homeDataResult.avatar && homeDataResult.avatar.equippedItems) {
+                    try {
+                        const dictRes = await api.get('/avatars/items');
+                        const backendItems = dictRes.data?.data?.items || [];
+                        const equippedDTOs = homeDataResult.avatar.equippedItems;
+
+                        let newEquip = null;
+
+                        equippedDTOs.forEach(eq => {
+                            const dictItem = backendItems.find(i => i.itemId === eq.itemId);
+                            if (!dictItem) return;
+
+                            let frontendCat = null;
+                            if (eq.category === 'HAT') frontendCat = 'hat';
+                            else if (eq.category === 'TOP') frontendCat = 'upper';
+                            else if (eq.category === 'BOTTOM') frontendCat = 'lower';
+
+                            if (frontendCat) {
+                                const assetItem = AVATAR_ITEMS[frontendCat]?.find(a => a.name === dictItem.name);
+                                if (assetItem) {
+                                    if (!newEquip) newEquip = { ...equipState };
+                                    newEquip[frontendCat] = assetItem.id;
+                                }
+                            }
+                        });
+
+                        if (newEquip) {
+                            setEquipState(newEquip);
+                        }
+                    } catch (dictErr) { console.error('Dictionary Fetch Error on Home', dictErr); }
+                }
+
             } catch (e) {
                 console.error('Child Home Fetch Error', e);
             }

@@ -4,6 +4,8 @@ import { scale, verticalScale } from 'react-native-size-matters';
 import CustomText from '../../../components/common/CustomText';
 import CustomTextInput from '../../../components/common/CustomTextInput';
 import api from '../../../api/axios';
+import useAuthStore from '../../../store/useAuthStore';
+import EventSource from 'react-native-sse';
 
 // 더미 형태의 질문들
 const MOCK_QUESTIONS = [
@@ -125,23 +127,62 @@ const QuizScreen = ({ navigation }) => {
                         }, 100);
 
                         try {
-                            // 진짜 AI 채팅 (카프카 이벤트 트리거)
                             if (quiz.id) {
+                                // 1. AI 응답 생성 트리거 API 호출
                                 await api.post('/challenges/quizzes/chat', { quizId: quiz.id, message: userMsg });
-                            }
-                        } catch (e) { console.error('AI Chat Trigger Error', e); }
 
-                        // 가짜 AI 응답 딜레이
-                        setTimeout(() => {
-                            setChatHistory(prev => [
-                                ...prev,
-                                { sender: 'ai', text: q.hint }
-                            ]);
+                                // 2. SSE 연결 설정 및 응답 대기
+                                const token = useAuthStore.getState().token;
+                                const url = `${api.defaults.baseURL}/challenges/quizzes/chat/stream?quizId=${quiz.id}`;
+
+                                const source = new EventSource(url, {
+                                    headers: { Authorization: `Bearer ${token}` }
+                                });
+
+                                source.addEventListener('connected', (event) => {
+                                    console.log('SSE 연결 완료:', event.data);
+                                });
+
+                                source.addEventListener('chat-response', (event) => {
+                                    try {
+                                        const parsed = JSON.parse(event.data);
+                                        const aiReply = parsed.reply || '답변을 가져오지 못했습니다.';
+
+                                        setChatHistory(prev => [
+                                            ...prev,
+                                            { sender: 'ai', text: aiReply }
+                                        ]);
+                                    } catch (err) {
+                                        console.error('SSE Message Parsing Error', err);
+                                        setChatHistory(prev => [...prev, { sender: 'ai', text: '오류가 발생했습니다.' }]);
+                                    }
+                                    setIsAiTyping(false);
+
+                                    setTimeout(() => {
+                                        scrollViewRef.current?.scrollToEnd({ animated: true });
+                                    }, 100);
+
+                                    source.close();
+                                });
+
+                                source.addEventListener('error', (err) => {
+                                    console.error('SSE EventSource Error', err);
+                                    setIsAiTyping(false);
+                                    source.close();
+                                });
+
+                            } else {
+                                // Fallback (No quiz id)
+                                setTimeout(() => {
+                                    setChatHistory(prev => [...prev, { sender: 'ai', text: q.hint }]);
+                                    setIsAiTyping(false);
+                                }, 1200);
+                            }
+                        } catch (e) {
+                            console.error('AI Chat Error', e);
+                            setChatHistory(prev => [...prev, { sender: 'ai', text: '서버 연결에 실패했습니다.' }]);
                             setIsAiTyping(false);
-                            setTimeout(() => {
-                                scrollViewRef.current?.scrollToEnd({ animated: true });
-                            }, 100);
-                        }, 1200);
+                        }
                     }
                 }
             ]

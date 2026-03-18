@@ -6,7 +6,7 @@ import useAuthStore from '../../../store/useAuthStore';
 import api from '../../../api/axios';
 
 const ParentMyPageScreen = ({ navigation }) => {
-    const { logout } = useAuthStore();
+    const { user, logout } = useAuthStore();
 
     const handleLogout = () => {
         Alert.alert('로그아웃', '정말 로그아웃 하시겠습니까?', [
@@ -61,7 +61,7 @@ const ParentMyPageScreen = ({ navigation }) => {
                         <Image source={require('../../../assets/croco/croco_parents.png')} style={styles.profileAvatarImage} resizeMode="contain" />
                     </View>
                     <View style={styles.profileInfo}>
-                        <CustomText style={styles.profileName}>김아빠</CustomText>
+                        <CustomText style={styles.profileName}>{user?.name || '부모님'}</CustomText>
                     </View>
                     <TouchableOpacity style={styles.editButton} onPress={() => navigation.navigate('ParentEditProfile')}>
                         <CustomText style={styles.editButtonText}>수정</CustomText>

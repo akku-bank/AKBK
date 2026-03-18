@@ -67,7 +67,11 @@ const ChildFamilyJoinScreen = ({ navigation, route }) => {
             <View style={styles.container}>
                 <View style={styles.headerSection}>
                     <Text style={styles.title}>거의 다 왔어요!</Text>
-                    <Text style={styles.subtitle}>부모님이 등록해두신 내 이름을{'\n'}선택해주세요.</Text>
+                    <Text style={styles.subtitle}>
+                        {role === 'CHILD'
+                            ? '부모님이 등록해두신 내 이름을\n선택해주세요.'
+                            : '배우자가 등록해두신 내 이름을\n선택해주세요.'}
+                    </Text>
                 </View>
 
                 <View style={styles.listSection}>

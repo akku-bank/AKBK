@@ -1,35 +1,41 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Image } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { scale, verticalScale } from 'react-native-size-matters';
 import CustomText from '../../../components/common/CustomText';
+import useAuthStore from '../../../store/useAuthStore';
 import api from '../../../api/axios';
+
 const ParentHomeScreen = ({ navigation }) => {
+    const { user } = useAuthStore();
     const [childrenData, setChildrenData] = useState([]);
 
-    useEffect(() => {
-        const fetchChildren = async () => {
-            try {
-                const res = await api.get('/home/parent');
-                const childrenArray = res.data?.data?.children || [];
-                // 백엔드 명세에 맞추어 프론트 데이터 형태로 매핑
-                const mappedChildren = childrenArray.map(child => ({
-                    id: child.childId,
-                    name: child.name,
-                    balance: child.balance,
-                    avatar: require('../../../assets/croco/croco_face.png') // 임시 아바타
-                }));
-                setChildrenData(mappedChildren);
-            } catch (e) {
-                console.error('Parent Home Fetch Error', e);
-            }
-        };
-        fetchChildren();
-    }, []);
+    useFocusEffect(
+        useCallback(() => {
+            const fetchChildren = async () => {
+                try {
+                    const res = await api.get('/home/parent');
+                    const childrenArray = res.data?.data?.children || [];
+                    // 백엔드 명세에 맞추어 프론트 데이터 형태로 매핑
+                    const mappedChildren = childrenArray.map(child => ({
+                        id: child.childId,
+                        name: child.name,
+                        balance: child.balance,
+                        avatar: require('../../../assets/croco/croco_face.png') // 임시 아바타
+                    }));
+                    setChildrenData(mappedChildren);
+                } catch (e) {
+                    console.error('Parent Home Fetch Error', e);
+                }
+            };
+            fetchChildren();
+        }, [])
+    );
 
     return (
         <SafeAreaView style={styles.safeArea}>
             <View style={styles.header}>
-                <CustomText style={styles.headerTitle}>김아빠</CustomText>
+                <CustomText style={styles.headerTitle}>{user?.name || '부모님'}</CustomText>
                 <TouchableOpacity onPress={() => navigation.navigate('ParentEditProfile')}>
                     <CustomText style={styles.settingsIcon}>⚙️</CustomText>
                 </TouchableOpacity>
@@ -75,7 +81,9 @@ const ParentHomeScreen = ({ navigation }) => {
                     <TouchableOpacity style={styles.reportCard} onPress={() => navigation.navigate('ParentReportScreen')}>
                         <CustomText style={styles.reportEmoji}>📊</CustomText>
                         <View style={{ flex: 1 }}>
-                            <CustomText style={styles.reportTitle}>김싸피의 주간 리포트 도착!</CustomText>
+                            <CustomText style={styles.reportTitle}>
+                                {childrenData.length > 0 ? `${childrenData[0].name}의` : '자녀의'} 주간 리포트 도착!
+                            </CustomText>
                             <CustomText style={styles.reportDesc}>간식 지출이 평소보다 늘었어요.</CustomText>
                         </View>
                         <CustomText style={styles.arrowIcon}>→</CustomText>
