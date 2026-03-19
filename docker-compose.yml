@@ -156,6 +156,8 @@
     depends_on:
       postgres:
         condition: service_healthy # DB가 완전히 뜬 후에 백엔드 실행
+      kafka:
+        condition: service_healthy # Kafka가 완전히 뜬 후에 백엔드 실행
     ports:
       - "8080:8080" # 외부에서 localhost:8080으로 API 호출 가능
     env_file:
