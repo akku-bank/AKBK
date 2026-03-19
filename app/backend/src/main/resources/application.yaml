@@ -17,6 +17,22 @@ spring:
   flyway:
     enabled: true
     baseline-on-migrate: true
+  kafka:
+    # 환경 변수가 있으면 그걸 쓰고, 없으면 로컬용 28080 사용
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:28080}
+    consumer:
+      group-id: quiz-chat-group
+      auto-offset-reset: latest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "com.akku.backend.domain.quiz.event"
+        spring.json.value.default.type: "com.akku.backend.domain.quiz.event.ChatResponseEvent"
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.add.type.headers: false
 
 # 카카오 소셜 로그인
 kakao:
