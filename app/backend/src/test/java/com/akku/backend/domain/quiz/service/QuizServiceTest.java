@@ -206,41 +206,35 @@ class QuizServiceTest {
     class UpsertChatLogTests {
 
         @Test
-        @DisplayName("신규 생성 - 기존 로그가 없으면 새 ChatLog를 저장한다")
+        @DisplayName("신규 생성 - 기존 로그가 없을 때 upsertChatJson이 올바른 인자로 호출된다")
         void upsertChatLog_Create_WhenNoExistingLog() {
             // given
             UUID userId = UUID.randomUUID();
             UUID quizId = UUID.randomUUID();
             String chatJson = "{\"messages\":[{\"role\":\"user\",\"content\":\"힌트\"},{\"role\":\"assistant\",\"content\":\"설명\"}]}";
-            given(chatLogRepository.findByUserIdAndQuizId(userId, quizId)).willReturn(Optional.empty());
 
             // when
             quizService.upsertChatLog(userId, quizId, chatJson);
 
-            // then — 새 엔티티로 save 호출, chatJson 일치 확인
-            ArgumentCaptor<ChatLog> captor = ArgumentCaptor.forClass(ChatLog.class);
-            verify(chatLogRepository).save(captor.capture());
-            assertEquals(chatJson, captor.getValue().getChatJson());
+            // then — 단일 커스텀 쿼리 메서드 호출만 발생해야 한다 (find + save 패턴 아님)
+            verify(chatLogRepository, times(1)).upsertChatJson(userId, quizId, chatJson);
+            verifyNoMoreInteractions(chatLogRepository);
         }
 
         @Test
-        @DisplayName("업데이트 - 기존 로그가 있으면 chatJson을 갱신한 뒤 save한다")
+        @DisplayName("업데이트 - 기존 로그가 있을 때도 upsertChatJson이 올바른 인자로 호출된다")
         void upsertChatLog_Update_WhenExistingLog() {
             // given
             UUID userId = UUID.randomUUID();
             UUID quizId = UUID.randomUUID();
-            String oldChatJson = "{\"messages\":[{\"role\":\"user\",\"content\":\"이전 질문\"}]}";
             String newChatJson = "{\"messages\":[{\"role\":\"user\",\"content\":\"이전 질문\"},{\"role\":\"assistant\",\"content\":\"새 답변\"}]}";
-
-            ChatLog existingLog = ChatLog.builder().userId(userId).quizId(quizId).chatJson(oldChatJson).build();
-            given(chatLogRepository.findByUserIdAndQuizId(userId, quizId)).willReturn(Optional.of(existingLog));
 
             // when
             quizService.upsertChatLog(userId, quizId, newChatJson);
 
-            // then — 동일 인스턴스를 갱신 후 save, chatJson이 교체됐는지 확인
-            verify(chatLogRepository).save(existingLog);
-            assertEquals(newChatJson, existingLog.getChatJson());
+            // then — INSERT/UPDATE 분기는 DB 레벨(upsertChatJson)이 담당하므로 동일하게 1회만 호출
+            verify(chatLogRepository, times(1)).upsertChatJson(userId, quizId, newChatJson);
+            verifyNoMoreInteractions(chatLogRepository);
         }
     }
 }
