@@ -6,9 +6,10 @@ from kafka.errors import NoBrokersAvailable
 KAFKA_BROKER = "akkubangkku_kafka:29092"
 
 REQUIRED_TOPICS = [
-    ("transaction", 3, 1),
-    ("payment", 3, 1),
-    ("transfer", 3, 1),
+    ("transaction", 3, 1),  # 통합 거래 이벤트
+    ("payment", 3, 1),      # 결제 이벤트
+    ("transfer", 3, 1),     # 송금 이벤트
+    ("deposit", 3, 1),      # 입금 이벤트
 ]
 
 def wait_for_kafka_and_init():
