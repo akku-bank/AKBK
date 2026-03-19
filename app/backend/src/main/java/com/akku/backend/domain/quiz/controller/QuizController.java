@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
@@ -43,7 +44,7 @@ public class QuizController {
     @GetMapping
     public ResponseEntity<ApiResponse<QuizResponse>> fetchQuiz(
             @RequestParam String difficulty,
-            @RequestAttribute("userId") UUID userId) {
+            @AuthenticationPrincipal UUID userId) {
 
         QuizResponse response = quizService.fetchQuiz(userId, difficulty);
 
@@ -67,7 +68,7 @@ public class QuizController {
             description = "AI 힌트 응답을 실시간으로 수신하는 SSE 연결을 수립한다. POST /chat 이후 호출."
     )
     @GetMapping(value = "/chat/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public SseEmitter streamChatResponse(@RequestAttribute("userId") UUID userId) {
+    public SseEmitter streamChatResponse(@AuthenticationPrincipal UUID userId) {
         return sseConnectionManager.connect(userId);
     }
 
@@ -81,7 +82,7 @@ public class QuizController {
     @PostMapping("/chat")
     public ResponseEntity<ApiResponse<Void>> chatWithAi(
             @Valid @RequestBody ChatRequest request,
-            @RequestAttribute("userId") UUID userId) {
+            @AuthenticationPrincipal UUID userId) {
 
         quizService.chatWithAi(userId, request);
 
@@ -99,7 +100,7 @@ public class QuizController {
     @PostMapping("/answer")
     public ResponseEntity<ApiResponse<AnswerResponse>> submitAnswer(
             @Valid @RequestBody AnswerRequest request,
-            @RequestAttribute("userId") UUID userId) {
+            @AuthenticationPrincipal UUID userId) {
 
         AnswerResponse response = quizService.submitAnswer(userId, request);
 
