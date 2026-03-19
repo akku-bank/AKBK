@@ -189,3 +189,4 @@ query = transformed_df.writeStream \
     .start()
 
 query.awaitTermination()
+
