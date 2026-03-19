@@ -180,9 +180,6 @@ public class FamilyService {
                         // accountId = accountRepository.findByUserId(linkedUserId)
                         //         .map(AccountEntity::getId)
                         //         .orElse(null);
-
-                        // 임시 더미 데이터 (테스트용)
-                        accountId = UUID.randomUUID();
                     }
 
                     return new FamilyMemberResponse(
