@@ -136,9 +136,14 @@ public class FamilyService {
 
         // 5. 미연동 프로필 매칭 — 이름·생일은 User 엔티티에서 직접 추출
         FamilyProfileEntity profile = familyProfileRepository
-                .findByFamilyIdAndNameAndBirthDateAndLinkedUserIdIsNull(
+                .findByFamilyIdAndNameAndBirthDate(
                         family.getId(), child.getName(), child.getBirthDate())
-                .orElseThrow(() -> new ApiException(FamilyErrorCode.PROFILE_ALREADY_LINKED));
+                .orElseThrow(() -> new ApiException(FamilyErrorCode.PROFILE_NOT_FOUND));
+
+        // 5-1. 프로필이 존재하지만 이미 다른 유저와 연동된 경우
+        if (profile.getLinkedUserId() != null) {
+            throw new ApiException(FamilyErrorCode.PROFILE_ALREADY_LINKED);
+        }
 
         // 6. 프로필에 유저 ID 연결
         profile.linkUser(childId);
