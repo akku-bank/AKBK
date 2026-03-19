@@ -1,14 +1,50 @@
 import React from 'react';
-import { View, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView, Switch, Image } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView, Switch, Alert, Image } from 'react-native';
 import { scale, verticalScale } from 'react-native-size-matters';
 import CustomText from '../../../components/common/CustomText';
+import useAuthStore from '../../../store/useAuthStore';
+import api from '../../../api/axios';
 
 const ParentMyPageScreen = ({ navigation }) => {
+    const { user, logout } = useAuthStore();
+
     const handleLogout = () => {
-        navigation.reset({
-            index: 0,
-            routes: [{ name: 'SocialLogin' }],
-        });
+        Alert.alert('로그아웃', '정말 로그아웃 하시겠습니까?', [
+            { text: '취소', style: 'cancel' },
+            {
+                text: '로그아웃',
+                style: 'destructive',
+                onPress: async () => {
+                    try {
+                        await api.post('/auth/logout');
+                    } catch (e) {
+                        console.error('Logout error', e);
+                    }
+                    logout();
+                    navigation.reset({ index: 0, routes: [{ name: 'SocialLogin' }] });
+                }
+            }
+        ]);
+    };
+
+    const handleWithdraw = () => {
+        Alert.alert('회원 탈퇴', '정말 탈퇴하시겠습니까? 연동된 가족 정보 및 데이터가 삭제될 수 있습니다.', [
+            { text: '취소', style: 'cancel' },
+            {
+                text: '탈퇴하기',
+                style: 'destructive',
+                onPress: async () => {
+                    try {
+                        await api.delete('/users/me');
+                        logout();
+                        navigation.reset({ index: 0, routes: [{ name: 'SocialLogin' }] });
+                    } catch (e) {
+                        console.error('Withdraw error', e);
+                        Alert.alert('오류', '탈퇴 처리 중 문제가 발생했습니다.');
+                    }
+                }
+            }
+        ]);
     };
 
     return (
@@ -25,7 +61,7 @@ const ParentMyPageScreen = ({ navigation }) => {
                         <Image source={require('../../../assets/croco/croco_parents.png')} style={styles.profileAvatarImage} resizeMode="contain" />
                     </View>
                     <View style={styles.profileInfo}>
-                        <CustomText style={styles.profileName}>김아빠</CustomText>
+                        <CustomText style={styles.profileName}>{user?.name || '부모님'}</CustomText>
                     </View>
                     <TouchableOpacity style={styles.editButton} onPress={() => navigation.navigate('ParentEditProfile')}>
                         <CustomText style={styles.editButtonText}>수정</CustomText>
@@ -92,7 +128,7 @@ const ParentMyPageScreen = ({ navigation }) => {
                         <CustomText style={styles.logoutText}>로그아웃</CustomText>
                     </TouchableOpacity>
                     <View style={styles.divider} />
-                    <TouchableOpacity>
+                    <TouchableOpacity onPress={handleWithdraw}>
                         <CustomText style={styles.withdrawalText}>회원 탈퇴</CustomText>
                     </TouchableOpacity>
                 </View>

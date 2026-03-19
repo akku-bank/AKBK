@@ -3,10 +3,26 @@ import { View, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView } from 're
 import { scale, verticalScale } from 'react-native-size-matters';
 import ChildAvatar from '../../../components/child/avatar/ChildAvatar';
 import CustomText from '../../../components/common/CustomText';
+import api from '../../../api/axios';
 
 const FriendTownScreen = ({ route, navigation }) => {
     // 파라미터 방어 코드
     const friendName = route?.params?.friendName || '친구';
+
+    /* ==========================================
+       [진짜 친구 타운(프로필/뱃지) 조회 API]
+       ========================================== 
+    // const [friendTownInfo, setFriendTownInfo] = useState({});
+    // useEffect(() => {
+    //     const fetchFriendTown = async () => {
+    //         try {
+    //             const res = await api.get(`/friends/${route?.params?.friendId}/town`);
+    //             setFriendTownInfo(res.data.data);
+    //         } catch(e) { console.error('Friend Town Fetch Error', e); }
+    //     };
+    //     if(route?.params?.friendId) fetchFriendTown();
+    // }, [route?.params?.friendId]);
+    ========================================== */
 
     // 임시 뱃지 데이터
     const MOCK_BADGES = [
@@ -60,10 +76,28 @@ const FriendTownScreen = ({ route, navigation }) => {
                 </View>
 
                 <View style={styles.actionRow}>
-                    <TouchableOpacity style={[styles.actionButton, styles.giftButton]} activeOpacity={0.8}>
+                    <TouchableOpacity style={[styles.actionButton, styles.giftButton]} activeOpacity={0.8} onPress={() => {
+                        /* ==========================================
+                           [진짜 선물 보내기 API]
+                           ========================================== 
+                        try {
+                            // await api.post(`/friends/${route?.params?.friendId}/gift`, { itemId: 1 });
+                            // Alert.alert('성공', '선물을 보냈어요!');
+                        } catch(e) { console.error('Gift Send Error', e); }
+                        ========================================== */
+                    }}>
                         <CustomText style={styles.actionButtonText}>선물 보내기 🎁</CustomText>
                     </TouchableOpacity>
-                    <TouchableOpacity style={[styles.actionButton, styles.pokeButton]} activeOpacity={0.8}>
+                    <TouchableOpacity style={[styles.actionButton, styles.pokeButton]} activeOpacity={0.8} onPress={() => {
+                        /* ==========================================
+                           [진짜 콕 찌르기 API]
+                           ========================================== 
+                        try {
+                            // await api.post(`/friends/${route?.params?.friendId}/poke`);
+                            // Alert.alert('성공', '친구를 콕 찔렀어요!');
+                        } catch(e) { console.error('Poke Send Error', e); }
+                        ========================================== */
+                    }}>
                         <CustomText style={[styles.actionButtonText, { color: '#A3E635' }]}>콕 찌르기 👉</CustomText>
                     </TouchableOpacity>
                 </View>

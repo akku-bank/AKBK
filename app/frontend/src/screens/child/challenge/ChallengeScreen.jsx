@@ -2,8 +2,25 @@
 import { View, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity } from 'react-native';
 import { RFValue } from 'react-native-responsive-fontsize';
 import CustomText from '../../../components/common/CustomText';
+import api from '../../../api/axios';
 
 const ChallengeScreen = ({ navigation }) => {
+    /* ==========================================
+       [진짜 챌린지 및 퀴즈 달성 상태 조회 API]
+       ========================================== 
+    const [status, setStatus] = useState({ quizDone: false, attendanceDone: false });
+    useEffect(() => {
+        const fetchStatus = async () => {
+            try {
+                // 오늘 출석 및 퀴즈 풀이 여부를 조회하여 버튼 활성화/비활성화
+                // const res = await api.get('/challenges/status');
+                // setStatus(res.data.data);
+            } catch(e) { console.error('Challenge Status Fetch Error', e); }
+        };
+        fetchStatus();
+    }, []);
+    ========================================== */
+
     return (
         <SafeAreaView style={styles.safeArea}>
             <ScrollView contentContainerStyle={styles.container}>
