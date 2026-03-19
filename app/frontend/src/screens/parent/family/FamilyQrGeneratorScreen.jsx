@@ -2,9 +2,24 @@
 import { View, StyleSheet, SafeAreaView, TouchableOpacity, Image } from 'react-native';
 import { scale, verticalScale } from 'react-native-size-matters';
 import CustomText from '../../../components/common/CustomText';
+import api from '../../../api/axios';
 
 const FamilyQrGeneratorScreen = ({ navigation }) => {
     const [timeLeft, setTimeLeft] = useState(300); // 5분
+
+    const [qrData, setQrData] = useState(null);
+
+    useEffect(() => {
+        const fetchQr = async () => {
+            try {
+                const qrRes = res.data?.data;
+                if (!qrRes) return;
+                setQrData(qrRes.qrCode);
+                setTimeLeft(qrRes.expiresIn || 300);
+            } catch (e) { console.error('QR Fetch Error:', e); }
+        };
+        fetchQr();
+    }, []);
 
     useEffect(() => {
         const timer = setInterval(() => {
@@ -41,7 +56,14 @@ const FamilyQrGeneratorScreen = ({ navigation }) => {
                     <CustomText style={styles.timerText}>인증 유효시간 {formatTime(timeLeft)}</CustomText>
                 </View>
 
-                <TouchableOpacity style={styles.refreshBtn} onPress={() => setTimeLeft(300)}>
+                <TouchableOpacity style={styles.refreshBtn} onPress={async () => {
+                    try {
+                        const qrRes = res.data?.data;
+                        if (!qrRes) return;
+                        setQrData(qrRes.qrCode);
+                        setTimeLeft(qrRes.expiresIn || 300);
+                    } catch (e) { console.error('QR Reissue Error', e); }
+                }}>
                     <CustomText style={styles.refreshBtnText}>🔄 QR 코드 갱신</CustomText>
                 </TouchableOpacity>
             </View>

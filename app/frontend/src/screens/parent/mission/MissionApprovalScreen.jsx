@@ -3,6 +3,7 @@ import { View, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView, Alert } f
 import { scale, verticalScale } from 'react-native-size-matters';
 import CustomText from '../../../components/common/CustomText';
 import CustomTextInput from '../../../components/common/CustomTextInput';
+import api from '../../../api/axios';
 
 const MissionApprovalScreen = ({ navigation }) => {
     // 더미 미션 제안 데이터
@@ -21,6 +22,17 @@ const MissionApprovalScreen = ({ navigation }) => {
             Alert.alert('알림', '승인 메시지를 작성해주세요. 아이가 검토 의견을 기다립니다!');
             return;
         }
+
+        /* ==========================================
+           [진짜 미션 승인 API]
+           ========================================== 
+        try {
+            // await api.post(`/challenges/${mission.id}/approve`, { comment: parentComment });
+            // Alert.alert('승인 완료', `${mission.childName}의 챌린지를 승인했습니다!`, [{ text: '확인', onPress: () => navigation.goBack() }]);
+            // return;
+        } catch(e) { console.error('Mission Approve Error', e); }
+        ========================================== */
+
         Alert.alert('승인 완료', `${mission.childName}의 챌린지를 승인했습니다!`, [
             { text: '확인', onPress: () => navigation.goBack() }
         ]);
@@ -31,6 +43,17 @@ const MissionApprovalScreen = ({ navigation }) => {
             Alert.alert('알림', '거절 사유를 작성해주세요. 아이가 검토 의견을 기다립니다!');
             return;
         }
+
+        /* ==========================================
+           [진짜 미션 거절 API]
+           ========================================== 
+        try {
+            // await api.post(`/challenges/${mission.id}/reject`, { reason: parentComment });
+            // Alert.alert('거절 완료', '챌린지를 거절했습니다.', [{ text: '확인', onPress: () => navigation.goBack() }]);
+            // return;
+        } catch(e) { console.error('Mission Reject Error', e); }
+        ========================================== */
+
         Alert.alert('거절 완료', '챌린지를 거절했습니다.', [
             { text: '확인', onPress: () => navigation.goBack() }
         ]);

@@ -1,7 +1,8 @@
 ﻿import React, { useState } from 'react';
-import { View, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Alert, Animated } from 'react-native';
+import { View, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Alert, Animated, KeyboardAvoidingView, Platform } from 'react-native';
 import { RFValue } from 'react-native-responsive-fontsize';
 import CustomText from '../../../components/common/CustomText';
+import CustomTextInput from '../../../components/common/CustomTextInput';
 
 const TARGET_GOAL = 500;
 const INITIAL_CURRENT = 300; // 더미 초기값
@@ -11,12 +12,18 @@ const SafeBoxScreen = ({ navigation }) => {
     const [currentJelling, setCurrentJelling] = useState(INITIAL_CURRENT);
     const [myJellings, setMyJellings] = useState(MY_JELLINGS);
     const [selectedDonation, setSelectedDonation] = useState('earth');
+    const [donateAmount, setDonateAmount] = useState('');
 
     const progressValue = Math.min(currentJelling / TARGET_GOAL, 1);
     const isGoalReached = currentJelling >= TARGET_GOAL;
 
     const handleDonate = () => {
-        if (myJellings < 100) {
+        const amount = parseInt(donateAmount);
+        if (!amount || isNaN(amount) || amount <= 0) {
+            Alert.alert('알림', '기부할 금액(젤링)을 똑바로 입력해주세요!');
+            return;
+        }
+        if (myJellings < amount) {
             Alert.alert('알림', '가진 젤링이 부족해요!');
             return;
         }
@@ -25,8 +32,10 @@ const SafeBoxScreen = ({ navigation }) => {
             return;
         }
 
-        setMyJellings(prev => prev - 100);
-        setCurrentJelling(prev => Math.min(prev + 100, TARGET_GOAL));
+        const actualDonate = Math.min(amount, TARGET_GOAL - currentJelling);
+        setMyJellings(prev => prev - actualDonate);
+        setCurrentJelling(prev => Math.min(prev + actualDonate, TARGET_GOAL));
+        setDonateAmount('');
     };
 
     const handleGacha = () => {
@@ -42,53 +51,68 @@ const SafeBoxScreen = ({ navigation }) => {
                 <CustomText style={styles.headerTitle}>젤링 주머니</CustomText>
             </View>
 
-            <ScrollView contentContainerStyle={styles.container}>
-                <View style={styles.balanceHeader}>
-                    <CustomText style={styles.balanceLabel}>내 젤링 주머니</CustomText>
-                    <CustomText style={styles.balanceValue}>{myJellings.toLocaleString()} 💎</CustomText>
-                </View>
-
-                <View style={styles.donationTargetBox}>
-                    <CustomText style={styles.sectionTitle}>현재 기부 목표</CustomText>
-
-                    <View style={styles.activeTargetCard}>
-                        <CustomText style={styles.targetEmoji}>🌍</CustomText>
-                        <View style={styles.targetInfo}>
-                            <CustomText style={styles.targetTitle}>환경 보호 연대</CustomText>
-                            <CustomText style={styles.targetDesc}>지구 살리기 캠페인</CustomText>
-                        </View>
+            <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+                <ScrollView contentContainerStyle={styles.container}>
+                    <View style={styles.balanceHeader}>
+                        <CustomText style={styles.balanceLabel}>내 젤링 주머니</CustomText>
+                        <CustomText style={styles.balanceValue}>{myJellings.toLocaleString()} 💎</CustomText>
                     </View>
 
-                    {/* 게이지 바 영역 */}
-                    <View style={styles.gaugeContainer}>
-                        <View style={styles.gaugeTexts}>
-                            <CustomText style={styles.gaugeCurrentText}>{currentJelling} 💎</CustomText>
-                            <CustomText style={styles.gaugeGoalText}>/ {TARGET_GOAL} 💎</CustomText>
+                    <View style={styles.donationTargetBox}>
+                        <CustomText style={styles.sectionTitle}>현재 기부 목표</CustomText>
+
+                        <View style={styles.activeTargetCard}>
+                            <CustomText style={styles.targetEmoji}>🌍</CustomText>
+                            <View style={styles.targetInfo}>
+                                <CustomText style={styles.targetTitle}>환경 보호 연대</CustomText>
+                                <CustomText style={styles.targetDesc}>지구 살리기 캠페인</CustomText>
+                            </View>
                         </View>
-                        <View style={styles.progressBarBg}>
-                            <Animated.View style={[styles.progressBarFill, { width: `${progressValue * 100}%` }]} />
+
+                        {/* 게이지 바 영역 */}
+                        <View style={styles.gaugeContainer}>
+                            <View style={styles.gaugeTexts}>
+                                <CustomText style={styles.gaugeCurrentText}>{currentJelling} 💎</CustomText>
+                                <CustomText style={styles.gaugeGoalText}>/ {TARGET_GOAL} 💎</CustomText>
+                            </View>
+                            <View style={styles.progressBarBg}>
+                                <Animated.View style={[styles.progressBarFill, { width: `${progressValue * 100}%` }]} />
+                            </View>
+                            {isGoalReached && (
+                                <CustomText style={styles.goalReachedText}>🎉 목표 금액 달성 완료! 🎉</CustomText>
+                            )}
                         </View>
-                        {isGoalReached && (
-                            <CustomText style={styles.goalReachedText}>🎉 목표 금액 달성 완료! 🎉</CustomText>
+
+                        {/* 액션 버튼 */}
+                        {!isGoalReached ? (
+                            <View style={styles.donateInputWrapper}>
+                                <View style={styles.donateInputContainer}>
+                                    <CustomTextInput
+                                        style={styles.donateInput}
+                                        placeholder="기부할 금액 입력"
+                                        placeholderTextColor="#9CA3AF"
+                                        keyboardType="numeric"
+                                        value={donateAmount}
+                                        onChangeText={setDonateAmount}
+                                    />
+                                    <CustomText style={{ fontSize: RFValue(16), fontWeight: 'bold', color: '#111' }}>💎</CustomText>
+                                </View>
+                                <TouchableOpacity style={styles.donateButton} onPress={handleDonate}>
+                                    <CustomText style={styles.donateButtonText}>기부</CustomText>
+                                </TouchableOpacity>
+                            </View>
+                        ) : (
+                            <TouchableOpacity style={styles.gachaButton} onPress={handleGacha}>
+                                <CustomText style={styles.gachaButtonText}>기부 완료! 행운의 뽑기 돌리기 🎁</CustomText>
+                            </TouchableOpacity>
                         )}
                     </View>
 
-                    {/* 액션 버튼 */}
-                    {!isGoalReached ? (
-                        <TouchableOpacity style={styles.donateButton} onPress={handleDonate}>
-                            <CustomText style={styles.donateButtonText}>100 젤링 기부하기</CustomText>
-                        </TouchableOpacity>
-                    ) : (
-                        <TouchableOpacity style={styles.gachaButton} onPress={handleGacha}>
-                            <CustomText style={styles.gachaButtonText}>기부 완료! 행운의 뽑기 돌리기 🎁</CustomText>
-                        </TouchableOpacity>
-                    )}
-                </View>
-
-                <TouchableOpacity style={styles.mapButton} onPress={() => navigation.navigate('BadgeMap')}>
-                    <CustomText style={styles.mapButtonText}>내 기부 뱃지 맵 보기 🗺️</CustomText>
-                </TouchableOpacity>
-            </ScrollView>
+                    <TouchableOpacity style={styles.mapButton} onPress={() => navigation.navigate('BadgeMap')}>
+                        <CustomText style={styles.mapButtonText}>내 기부 뱃지 맵 보기 🗺️</CustomText>
+                    </TouchableOpacity>
+                </ScrollView>
+            </KeyboardAvoidingView>
         </SafeAreaView>
     );
 };
@@ -119,7 +143,11 @@ const styles = StyleSheet.create({
     progressBarFill: { height: '100%', backgroundColor: '#10B981', borderRadius: RFValue(10) },
     goalReachedText: { textAlign: 'center', marginTop: RFValue(12), fontSize: RFValue(14), fontWeight: 'bold', color: '#F59E0B' },
 
-    donateButton: { backgroundColor: '#10B981', paddingVertical: RFValue(14), borderRadius: RFValue(12), alignItems: 'center' },
+    donateInputWrapper: { flexDirection: 'row', alignItems: 'center', gap: RFValue(12) },
+    donateInputContainer: { flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: RFValue(12), paddingHorizontal: RFValue(16) },
+    donateInput: { flex: 1, fontSize: RFValue(16), fontWeight: 'bold', color: '#111', paddingVertical: RFValue(14) },
+
+    donateButton: { backgroundColor: '#10B981', paddingVertical: RFValue(14), paddingHorizontal: RFValue(24), borderRadius: RFValue(12), alignItems: 'center', justifyContent: 'center' },
     donateButtonText: { color: '#FFF', fontWeight: 'bold', fontSize: RFValue(16) },
     gachaButton: { backgroundColor: '#F59E0B', paddingVertical: RFValue(14), borderRadius: RFValue(12), alignItems: 'center' },
     gachaButtonText: { color: '#FFF', fontWeight: 'bold', fontSize: RFValue(16) },

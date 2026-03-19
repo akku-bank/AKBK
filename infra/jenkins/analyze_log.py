@@ -1,6 +1,7 @@
 import sys
 import re
 import json
+import os
 
 def analyze():
     # 인자 순서: log_path, job_name, build_num, build_url
@@ -37,8 +38,10 @@ def analyze():
         "text": f"### 🚨 [{target_team}] 빌드 실패 알림\n**프로젝트:** {job_name}\n**빌드 번호:** #{build_num}\n**에러 요약:**\n```\n{summary}\n```\n\n[👉 상세 로그 확인하기]({build_url}console)"
     }
 
+    payload_path = os.path.join(os.getcwd(), "mattermost_payload.json")
+    
     # 파일로 저장 (Jenkins가 이걸 그대로 curl로 쏩니다)
-    with open('mattermost_payload.json', 'w', encoding='utf-8') as f:
+    with open(payload_path, 'w', encoding='utf-8') as f:
         json.dump(payload, f, ensure_ascii=False)
 
 if __name__ == "__main__":
