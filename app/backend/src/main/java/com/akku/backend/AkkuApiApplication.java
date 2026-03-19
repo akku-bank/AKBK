@@ -1,10 +1,13 @@
 package com.akku.backend;
 
 import io.github.cdimascio.dotenv.Dotenv;
+import io.github.cdimascio.dotenv.DotenvException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 
+@Slf4j
 @EnableJpaAuditing
 @SpringBootApplication
 public class AkkuApiApplication {
@@ -22,8 +25,12 @@ public class AkkuApiApplication {
 		java.nio.file.Path dir = java.nio.file.Paths.get(System.getProperty("user.dir"));
 		for (int i = 0; i < 4; i++) {
 			if (dir.resolve(".env").toFile().exists()) {
-				Dotenv dotenv = Dotenv.configure().directory(dir.toString()).load();
-				dotenv.entries().forEach(e -> System.setProperty(e.getKey(), e.getValue()));
+				try {
+					Dotenv dotenv = Dotenv.configure().directory(dir.toString()).load();
+					dotenv.entries().forEach(e -> System.setProperty(e.getKey(), e.getValue()));
+				} catch (DotenvException e) {
+					log.warn(".env 파일 파싱 실패 — 환경변수 없이 기동을 계속합니다. 경로={}, 원인={}", dir, e.getMessage());
+				}
 				return;
 			}
 			dir = dir.getParent();
