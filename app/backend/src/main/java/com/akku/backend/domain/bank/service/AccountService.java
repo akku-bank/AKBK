@@ -9,6 +9,8 @@ import com.akku.backend.domain.bank.entity.Account;
 import com.akku.backend.domain.bank.repository.AccountRepository;
 import com.akku.backend.domain.user.exception.UserErrorCode;
 import com.akku.backend.domain.bank.exception.BankErrorCode;
+import com.akku.backend.domain.family.entity.FamilyProfileEntity;
+import com.akku.backend.domain.family.repository.FamilyProfileRepository;
 import com.akku.backend.global.error.ApiException;
 import com.akku.backend.global.finance.dto.FinanceAccountCreateResponse;
 import com.akku.backend.global.finance.dto.FinanceAccountListResponse;
@@ -26,6 +28,7 @@ import java.util.stream.Collectors;
 public class AccountService {
 
     private final UserRepository userRepository;
+    private final FamilyProfileRepository familyProfileRepository;
     private final AccountRepository accountRepository;
     private final SsafyFinanceService ssafyFinanceService;
 
