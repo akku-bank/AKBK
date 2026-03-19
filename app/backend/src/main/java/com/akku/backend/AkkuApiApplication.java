@@ -27,7 +27,11 @@ public class AkkuApiApplication {
 			if (dir.resolve(".env").toFile().exists()) {
 				try {
 					Dotenv dotenv = Dotenv.configure().directory(dir.toString()).load();
-					dotenv.entries().forEach(e -> System.setProperty(e.getKey(), e.getValue()));
+					dotenv.entries().forEach(e -> {
+						if (System.getProperty(e.getKey()) == null) {
+							System.setProperty(e.getKey(), e.getValue());
+						}
+					});
 				} catch (DotenvException e) {
 					log.warn(".env 파일 파싱 실패 — 환경변수 없이 기동을 계속합니다. 경로={}, 원인={}", dir, e.getMessage());
 				}
