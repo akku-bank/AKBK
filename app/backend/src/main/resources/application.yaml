@@ -96,3 +96,6 @@ logging:
 external:
   fastapi:
     base-url: "http://localhost:8000" # 로컬 테스트용. 개발/운영 환경에 맞춰 분리 필요
+# 암호화 설정
+encryption:
+  key: ${ENCRYPTION_KEY:}

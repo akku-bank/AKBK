@@ -16,7 +16,6 @@ import com.akku.backend.global.finance.dto.FinanceCardProductListResponse;
 import com.akku.backend.global.finance.dto.FinanceUserCardListResponse;
 import com.akku.backend.global.finance.dto.FinanceCardPaymentResponse;
 import com.akku.backend.global.finance.dto.FinanceCardTransactionHistoryResponse;
-import com.akku.backend.global.error.ApiException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

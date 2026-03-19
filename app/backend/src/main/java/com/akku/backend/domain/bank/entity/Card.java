@@ -1,5 +1,6 @@
 package com.akku.backend.domain.bank.entity;
 
+import com.akku.backend.global.util.CvcConverter;
 import com.akku.backend.domain.auth.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
@@ -30,7 +31,8 @@ public class Card {
     @Column(name = "card_no", unique = true, nullable = false, length = 20)
     private String cardNo;
 
-    @Column(name = "cvc", nullable = false, length = 3)
+    @Column(name = "cvc", nullable = false, length = 255)
+    @Convert(converter = CvcConverter.class)
     private String cvc;
 
     @Column(name = "card_expiry_date", nullable = false, length = 8)
