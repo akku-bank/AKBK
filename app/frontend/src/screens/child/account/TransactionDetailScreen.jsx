@@ -3,6 +3,7 @@ import { View, StyleSheet, TouchableOpacity, SafeAreaView, Switch } from 'react-
 import { scale, verticalScale } from 'react-native-size-matters';
 import useTransactionStore from '../../../store/transactionStore';
 import CustomText from '../../../components/common/CustomText';
+import api from '../../../api/axios';
 
 // 임시 단건 결제 내역 데이터 (나중에는 route.params로 전달받음)
 const FALLBACK_DETAIL = {
@@ -10,9 +11,10 @@ const FALLBACK_DETAIL = {
     date: '2024.03.12 14:30',
     title: '다이소 강남점',
     amount: -5000,
-    type: 'PAYMENT',
-    category: '쇼핑',
-    memo: '엄마 생일 선물 구매',
+    type: 'TRANSFER',
+    category: '저축',
+    memo: '내 적금통장으로 이체',
+    is_self_transfer: true,
 };
 
 const TransactionDetailScreen = ({ route, navigation }) => {
@@ -26,6 +28,12 @@ const TransactionDetailScreen = ({ route, navigation }) => {
     const isOver14 = true; // 서버 연동 시 유저 나이로 판단
 
     const isDeposit = detailData.amount > 0;
+    const isSelfTransfer = detailData.is_self_transfer;
+
+    const displayTitle = (isDeposit || isSelfTransfer) ? detailData.title : (detailData.category || '결제 내역');
+    const displayAmount = isSelfTransfer
+        ? `${detailData.amount.toLocaleString()}원`
+        : `${isDeposit ? '+' : ''}${detailData.amount.toLocaleString()}원`;
 
     return (
         <SafeAreaView style={styles.safeArea}>
@@ -40,14 +48,14 @@ const TransactionDetailScreen = ({ route, navigation }) => {
 
             <View style={styles.container}>
                 {/* 메인 상세 카드 */}
-                <View style={styles.detailCard}>
+                <View style={[styles.detailCard, isSelfTransfer && styles.selfTransferCard]}>
                     <View style={styles.iconWrapper}>
-                        <CustomText style={styles.mainIcon}>{isDeposit ? '💰' : '🏪'}</CustomText>
+                        <CustomText style={styles.mainIcon}>{isDeposit ? '💰' : (isSelfTransfer ? '🔄' : '🏪')}</CustomText>
                     </View>
 
-                    <CustomText style={styles.detailTitle}>{detailData.title}</CustomText>
-                    <CustomText style={[styles.detailAmount, isDeposit ? styles.depositColor : styles.withdrawColor]}>
-                        {isDeposit ? '+' : ''}{detailData.amount.toLocaleString()}원
+                    <CustomText style={[styles.detailTitle, isSelfTransfer && styles.selfTransferText]}>{displayTitle}</CustomText>
+                    <CustomText style={[styles.detailAmount, isDeposit ? styles.depositColor : (isSelfTransfer ? styles.selfTransferColor : styles.withdrawColor)]}>
+                        {displayAmount}
                     </CustomText>
 
                     <View style={styles.divider} />
@@ -79,7 +87,16 @@ const TransactionDetailScreen = ({ route, navigation }) => {
                             trackColor={{ false: '#D1D5DB', true: '#3B82F6' }}
                             thumbColor={'#FFFFFF'}
                             ios_backgroundColor="#D1D5DB"
-                            onValueChange={() => toggleHideTransaction(detailData.id)}
+                            onValueChange={async () => {
+                                /* ==========================================
+                                   [진짜 내역 비공개 상태 변경 API]
+                                   ========================================== 
+                                try {
+                                    // await api.patch(`/transactions/${detailData.id}/hidden`, { isHidden: !isPrivate });
+                                } catch (e) { console.error('Privacy Update Error:', e); }
+                                ========================================== */
+                                toggleHideTransaction(detailData.id);
+                            }}
                             value={isPrivate}
                         />
                     </View>
@@ -140,6 +157,11 @@ const styles = StyleSheet.create({
         shadowRadius: scale(8),
         elevation: 2,
     },
+    selfTransferCard: {
+        backgroundColor: '#F9FAFB',
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
+    },
     iconWrapper: {
         width: scale(64),
         height: scale(64),
@@ -158,6 +180,9 @@ const styles = StyleSheet.create({
         color: '#111',
         marginBottom: verticalScale(8),
     },
+    selfTransferText: {
+        color: '#6B7280',
+    },
     detailAmount: {
         fontSize: scale(32),
         fontWeight: 'bold',
@@ -168,6 +193,9 @@ const styles = StyleSheet.create({
     },
     withdrawColor: {
         color: '#111',
+    },
+    selfTransferColor: {
+        color: '#9CA3AF',
     },
     divider: {
         width: '100%',

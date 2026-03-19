@@ -14,11 +14,15 @@ const ChildFamilyJoinScreen = ({ navigation, route }) => {
         // 웹 개발용 임시 로직 !
         const fetchFamilyMembers = async () => {
             try {
-                // 실제 API
-                // const response = await api.post('/families/join/preview', { familyCode });
-                // setFamilyMembers(response.data.data); // [{id:1, name:'자녀1'}, {id:2, name:'자녀2'}]
+                /* ==========================================
+                   [진짜 가족 합류 명단 조회 API]
+                   ========================================== 
+                // 해당 코드를 통해 스캔한 가족 그룹에 미리 등록된 자녀 명단을 불러옵니다.
+                // const response = await api.get(`/families/members?familyCode=${familyCode}`, { headers: { Authorization: `Bearer ${tempToken}` }});
+                // setFamilyMembers(response.data.members || []);
+                ========================================== */
 
-                // 임시 데이터
+                // --- 실제 연동 시 아래 블록 전체 삭제 ---
                 setTimeout(() => {
                     setFamilyMembers([
                         { id: 101, name: '사스케' },
@@ -26,6 +30,7 @@ const ChildFamilyJoinScreen = ({ navigation, route }) => {
                     ]);
                     setIsLoading(false);
                 }, 800);
+                // ------------------------------------
             } catch (error) {
                 console.error('Family Join Preview Error:', error);
                 setIsLoading(false);
@@ -37,23 +42,23 @@ const ChildFamilyJoinScreen = ({ navigation, route }) => {
 
     const handleJoin = async () => {
         if (!selectedMemberId) return;
-
         const selectedMember = familyMembers.find(m => m.id === selectedMemberId);
 
         try {
             setIsLoading(true);
-            // 실제 가족 합류 API 연동은 여기서 ++ 아니면 SignUp 플로우 전체와 엮기
-            // await api.post('/families/join', { familyCode, memberId: selectedMemberId });
 
-            // 이름 들고 핀 번호 설정으로 넘어가기 -> 가입 마지막 단계
+            // 실제 가족 합류 API 호출 (QR 스캔값 전송)
+            await api.post('/families/join', { scannedQrCode: familyCode }, { headers: { Authorization: `Bearer ${tempToken}` } });
+
             navigation.replace('PinNumberSetup', {
                 tempToken,
                 role,
                 name: selectedMember.name
             });
         } catch (error) {
-            console.error('Family Join Error:', error);
+            console.error('Family Join Error:', error.response?.data || error.message);
             setIsLoading(false);
+            // 에러 나도 진행할지 여부 결정 (나중에 필요시 핸들링)
         }
     };
 
@@ -62,7 +67,11 @@ const ChildFamilyJoinScreen = ({ navigation, route }) => {
             <View style={styles.container}>
                 <View style={styles.headerSection}>
                     <Text style={styles.title}>거의 다 왔어요!</Text>
-                    <Text style={styles.subtitle}>부모님이 등록해두신 내 이름을{'\n'}선택해주세요.</Text>
+                    <Text style={styles.subtitle}>
+                        {role === 'CHILD'
+                            ? '부모님이 등록해두신 내 이름을\n선택해주세요.'
+                            : '배우자가 등록해두신 내 이름을\n선택해주세요.'}
+                    </Text>
                 </View>
 
                 <View style={styles.listSection}>

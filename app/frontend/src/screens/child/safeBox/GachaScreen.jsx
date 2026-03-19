@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, StyleSheet, TouchableOpacity, SafeAreaView, Dimensions, ActivityIndicator, Animated, Easing, Platform } from 'react-native';
 import { scale, verticalScale } from 'react-native-size-matters';
 import CustomText from '../../../components/common/CustomText';
+import api from '../../../api/axios';
 
 const { width, height } = Dimensions.get('window');
 
@@ -54,14 +55,28 @@ const GachaScreen = ({ navigation, route }) => {
             ])
         ]).start(() => {
             // 애니메이션 종료 직후 결과 세팅 (약 2.5초 뒤)
+            /* ==========================================
+               [진짜 랜덤 가챠 뽑기 로직 API 연동]
+               ========================================== 
+            try {
+                // 뽑기 결과 API 호출 (ex. 기부 완료 보상 또는 일반 뽑기)
+                // const res = await api.post('/gacha/draw', { type: boxType });
+                // setReward(res.data.data.reward);
+            } catch(e) { console.error('Gacha Draw Error', e); }
+            ========================================== */
+
+            // --- 실제 연동 시 아래 임시 로직 삭제 ---
             const mockRewards = [
                 { type: 'PET', name: '꼬마 북극곰', emoji: '🐻‍❄️', desc: '지구를 아끼는 멋진 마음이에요!' },
                 { type: 'JELLING', name: '보너스 50 젤링', emoji: '🍬', desc: '기부 천사에게 주는 작은 선물!' },
                 { type: 'FRAME', name: '에코 나무 액자', emoji: '🖼️', desc: '새로운 액자로 아바타를 꾸며보세요!' },
-                { type: 'ITEM', name: '스페셜 왕관', emoji: '👑', desc: '아바타를 멋지게 꾸며보세요!' }
+                { type: 'ITEM', name: '스페셜 왕관', emoji: '👑', desc: '아바타를 멋지게 꾸며보세요!' },
+                { type: 'DUPLICATE', name: '앗! 꽝이에요', emoji: '😥', desc: '아쉽지만 이미 보유한 아이템이에요. 꽝!' }
             ];
             const randomPick = mockRewards[Math.floor(Math.random() * mockRewards.length)];
             setReward(randomPick);
+            // ------------------------------------
+
             setStep('REVEAL');
         });
     }, []);

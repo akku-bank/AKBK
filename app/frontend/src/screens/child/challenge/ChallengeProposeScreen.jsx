@@ -1,8 +1,9 @@
-﻿import React, { useState } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { scale, verticalScale } from 'react-native-size-matters';
 import CustomText from '../../../components/common/CustomText';
 import CustomTextInput from '../../../components/common/CustomTextInput';
+import api from '../../../api/axios';
 
 const CATEGORIES = ['간식', '쇼핑', '게임', '기타'];
 
@@ -11,11 +12,35 @@ const ChallengeProposeScreen = ({ navigation }) => {
     const [goalAmount, setGoalAmount] = useState('');
     const [memo, setMemo] = useState('');
 
+    useEffect(() => {
+        // [UI 테스트용 임시 주석] 주말(토, 일)에만 제안 가능 로직
+        // const today = new Date().getDay();
+        // if (today !== 0 && today !== 6) {
+        //     Alert.alert('알림', '용돈 챌린지 제안은 주말(토, 일)에만 가능해요!', [
+        //         { text: '확인', onPress: () => navigation.goBack() }
+        //     ]);
+        // }
+    }, [navigation]);
+
     const handleSubmit = () => {
         if (!goalAmount || isNaN(goalAmount)) {
             Alert.alert('알림', '목표 금액을 정확히 입력해주세요.');
             return;
         }
+
+        /* ==========================================
+           [진짜 용돈 미션 제안 API]
+           ========================================== 
+        try {
+            // await api.post('/challenges/propose', {
+            //     category: selectedCategory,
+            //     goalAmount: parseInt(goalAmount),
+            //     memo: memo
+            // });
+            // Alert.alert('제안 완료', `부모님께 "${selectedCategory}" 지출 줄이기 챌린지를 제안했어요!`, [{ text: '확인', onPress: () => navigation.goBack() }]);
+            // return;
+        } catch(e) { console.error('Challenge Propose Error', e); }
+        ========================================== */
 
         Alert.alert(
             '제안 완료',
