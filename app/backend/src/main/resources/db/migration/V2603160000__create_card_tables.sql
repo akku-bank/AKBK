@@ -26,5 +26,7 @@ CREATE TABLE cards (
     withdrawal_date VARCHAR(2), 
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (card_product_id) REFERENCES card_products(id)
 );

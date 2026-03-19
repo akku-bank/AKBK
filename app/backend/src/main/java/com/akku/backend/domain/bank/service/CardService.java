@@ -82,7 +82,7 @@ public class CardService {
                 .orElseThrow(() -> new ApiException(UserErrorCode.USER_NOT_FOUND));
 
         CardProduct product = cardProductRepository.findById(request.cardProductId())
-                .orElseThrow(() -> new ApiException(BankErrorCode.ACCOUNT_NOT_FOUND)); // 임시 에러 코드
+                .orElseThrow(() -> new ApiException(BankErrorCode.CARD_PRODUCT_NOT_FOUND));
 
         // 카드 생성
         FinanceCardCreateResponse.Rec rec = ssafyFinanceService.createCard(
@@ -144,7 +144,7 @@ public class CardService {
                                     .cardIssuerCode(c.cardIssuerCode())
                                     .cardIssuerName(c.cardIssuerName())
                                     .cardName(c.cardName())
-                                    .baseLimitPerformance(c.baselinePerformance())
+                                    .baseLimitPerformance(c.baseLimitPerformance())
                                     .maxBenefitLimit(c.maxBenefitLimit())
                                     .cardDescription(c.cardDescription())
                                     .build());

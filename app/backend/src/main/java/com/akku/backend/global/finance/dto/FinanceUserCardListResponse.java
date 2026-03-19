@@ -16,7 +16,7 @@ public record FinanceUserCardListResponse(
         @JsonProperty("cardIssuerCode") String cardIssuerCode,
         @JsonProperty("cardIssuerName") String cardIssuerName,
         @JsonProperty("cardName") String cardName,
-        @JsonProperty("baselinePerformance") Long baselinePerformance,
+        @JsonProperty("baselinePerformance") Long baseLimitPerformance,
         @JsonProperty("maxBenefitLimit") Long maxBenefitLimit,
         @JsonProperty("cardDescription") String cardDescription,
         @JsonProperty("cardExpiryDate") String cardExpiryDate,

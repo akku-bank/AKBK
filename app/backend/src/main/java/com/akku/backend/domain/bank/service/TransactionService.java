@@ -75,7 +75,8 @@ public class TransactionService {
         User child = userRepository.findById(childId)
                 .orElseThrow(() -> new ApiException(UserErrorCode.USER_NOT_FOUND));
 
-        if (parent.getFamilyId() == null || !parent.getFamilyId().equals(child.getFamilyId())) {
+        if (parent.getFamilyId() == null || !parent.getFamilyId().equals(child.getFamilyId())
+                || !"PARENT".equals(parent.getRole()) || !"CHILD".equals(child.getRole())) {
             throw new ApiException(AuthErrorCode.ACCESS_DENIED);
         }
         
