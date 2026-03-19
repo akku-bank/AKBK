@@ -99,7 +99,7 @@
     image: confluentinc/cp-kafka:7.6.0
     container_name: akkubangkku_kafka
     ports:
-      - "9092:9092"
+      - "28080:28080"
       - "29092:29092"
     environment:
       KAFKA_BROKER_ID: 1
@@ -107,8 +107,8 @@
 
       # 내부 도커 통신용: akkubangkku_kafka:29092
       # 로컬 호스트 접속용: localhost:9092
-      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092,PLAINTEXT_HOST://0.0.0.0:9092
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://akkubangkku_kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092,PLAINTEXT_HOST://0.0.0.0:28080
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://akkubangkku_kafka:29092,PLAINTEXT_HOST://localhost:28080
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
 
@@ -121,7 +121,7 @@
     volumes:
       - kafka_data:/var/lib/kafka/data
     healthcheck:
-      test: [ "CMD-SHELL", "nc -z localhost 9092 || exit 1" ]
+      test: [ "CMD-SHELL", "nc -z localhost 28080 || exit 1" ]
       interval: 10s
       timeout: 10s
       retries: 10
@@ -130,7 +130,7 @@
     image: provectuslabs/kafka-ui:latest
     container_name: akkubangkku_kafka_ui
     ports:
-      - "8080:8080"
+      - "8090:8080"
     environment:
       KAFKA_CLUSTERS_0_NAME: Akkubangkku-Cluster
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: akkubangkku_kafka:29092
@@ -147,8 +147,34 @@
       kafka:
         condition: service_healthy
     restart: "no"
+  # 백엔드 컨테이너
+  backend:
+    build:
+      context: ./app/backend  # 백엔드 코드가 있는 경로
+      dockerfile: Dockerfile
+    container_name: akku_backend
+    depends_on:
+      postgres:
+        condition: service_healthy # DB가 완전히 뜬 후에 백엔드 실행
+      kafka:
+        condition: service_healthy # Kafka가 완전히 뜬 후에 백엔드 실행
+    ports:
+      - "8080:8080" # 외부에서 localhost:8080으로 API 호출 가능
+    env_file:
+      - .env # 최상단 .env 파일의 변수들(JWT, KAKAO 등)을 주입받음
+    environment:
+      # application.yml의 기본값을 도커 내부 통신용으로 덮어쓰기
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=${DB_NAME}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - EXTERNAL_FASTAPI_BASE_URL=http://ai-server:8000 # localhost:8000 대신 ai_server 컨테이너 이름 사용
+      - KAFKA_BOOTSTRAP_SERVERS=akkubangkku_kafka:29092
+    restart: always
 
 volumes:
   postgres_data:
   zookeeper_data:
   kafka_data:
+  

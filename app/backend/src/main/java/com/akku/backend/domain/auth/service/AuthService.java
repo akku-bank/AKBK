@@ -42,7 +42,6 @@ public class AuthService {
     @Transactional
     public SocialLoginData kakaoLogin(String socialToken, String fcmToken) {
         KakaoUserInfo kakaoUserInfo = kakaoService.getUserInfo(socialToken);
-        String email = kakaoUserInfo.getEmail();
         String providerId = kakaoUserInfo.getProviderId();
         String nickname = kakaoUserInfo.getNickname();
 
@@ -54,10 +53,9 @@ public class AuthService {
                 .orElseGet(() -> {
                     isNewUserFlag[0] = true;
                     // 이메일이 없는 경우 providerId를 이메일 형식으로 변환하여 사용
-                    String effectiveId = (email != null) ? email : providerId + "@kakao.com";
+                    String effectiveId =  providerId + "@kakao.com";
                     String userKey = ssafyFinanceService.createMember(effectiveId);
                     User newUser = User.builder()
-                            .email(effectiveId)
                             .provider("KAKAO")
                             .providerId(providerId)
                             .userKey(userKey)
