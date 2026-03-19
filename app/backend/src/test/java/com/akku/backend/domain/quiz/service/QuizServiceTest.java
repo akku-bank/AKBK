@@ -13,6 +13,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -21,6 +24,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.LocalDate;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -205,35 +209,32 @@ class QuizServiceTest {
     @DisplayName("4. 채팅 로그 UPSERT (upsertChatLog)")
     class UpsertChatLogTests {
 
-        @Test
-        @DisplayName("신규 생성 - 기존 로그가 없을 때 upsertChatJson이 올바른 인자로 호출된다")
-        void upsertChatLog_Create_WhenNoExistingLog() {
+        static Stream<Arguments> chatJsonScenarios() {
+            return Stream.of(
+                    Arguments.of(
+                            "신규 생성 — 기존 로그 없음",
+                            "{\"messages\":[{\"role\":\"user\",\"content\":\"힌트\"},{\"role\":\"assistant\",\"content\":\"설명\"}]}"
+                    ),
+                    Arguments.of(
+                            "업데이트 — 기존 로그 있음",
+                            "{\"messages\":[{\"role\":\"user\",\"content\":\"이전 질문\"},{\"role\":\"assistant\",\"content\":\"새 답변\"}]}"
+                    )
+            );
+        }
+
+        @ParameterizedTest(name = "{0}")
+        @MethodSource("chatJsonScenarios")
+        @DisplayName("신규·업데이트 모두 upsertChatJson에 위임하고 다른 DB 상호작용은 없다")
+        void upsertChatLog_DelegatesTo_UpsertChatJson(String scenario, String chatJson) {
             // given
             UUID userId = UUID.randomUUID();
             UUID quizId = UUID.randomUUID();
-            String chatJson = "{\"messages\":[{\"role\":\"user\",\"content\":\"힌트\"},{\"role\":\"assistant\",\"content\":\"설명\"}]}";
 
             // when
             quizService.upsertChatLog(userId, quizId, chatJson);
 
-            // then — 단일 커스텀 쿼리 메서드 호출만 발생해야 한다 (find + save 패턴 아님)
+            // then — INSERT/UPDATE 분기는 DB 레벨(upsertChatJson)이 담당, 서비스는 1회 위임만 한다
             verify(chatLogRepository, times(1)).upsertChatJson(userId, quizId, chatJson);
-            verifyNoMoreInteractions(chatLogRepository);
-        }
-
-        @Test
-        @DisplayName("업데이트 - 기존 로그가 있을 때도 upsertChatJson이 올바른 인자로 호출된다")
-        void upsertChatLog_Update_WhenExistingLog() {
-            // given
-            UUID userId = UUID.randomUUID();
-            UUID quizId = UUID.randomUUID();
-            String newChatJson = "{\"messages\":[{\"role\":\"user\",\"content\":\"이전 질문\"},{\"role\":\"assistant\",\"content\":\"새 답변\"}]}";
-
-            // when
-            quizService.upsertChatLog(userId, quizId, newChatJson);
-
-            // then — INSERT/UPDATE 분기는 DB 레벨(upsertChatJson)이 담당하므로 동일하게 1회만 호출
-            verify(chatLogRepository, times(1)).upsertChatJson(userId, quizId, newChatJson);
             verifyNoMoreInteractions(chatLogRepository);
         }
     }
