@@ -17,12 +17,33 @@ spring:
   flyway:
     enabled: true
     baseline-on-migrate: true
+  kafka:
+    # 환경 변수가 있으면 그걸 쓰고, 없으면 로컬용 28080 사용
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:28080}
+    consumer:
+      group-id: quiz-chat-group
+      auto-offset-reset: latest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "com.akku.backend.domain.quiz.event"
+        spring.json.value.default.type: "com.akku.backend.domain.quiz.event.ChatResponseEvent"
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.add.type.headers: false
 
 # 카카오 소셜 로그인
 kakao:
   client-id: ${KAKAO_CLIENT_ID}
   client-secret: ${KAKAO_CLIENT_SECRET}
   user-info-uri: https://kapi.kakao.com/v2/user/me
+
+# Firebase 설정
+firebase:
+  config:
+    path: ${FIREBASE_CONFIG_PATH:}
 
 # JWT 설정
 jwt:
@@ -70,3 +91,8 @@ logging:
     # 프로젝트 기본 패키지(com.akku.backend)의 로그 레벨 설정
     # 로컬 개발 시에는 DEBUG로 두어 상세한 파라미터나 흐름을 확인하는 것이 좋음
     com.akku.backend: DEBUG
+
+# FAST API 연동용
+external:
+  fastapi:
+    base-url: "http://localhost:8000" # 로컬 테스트용. 개발/운영 환경에 맞춰 분리 필요
