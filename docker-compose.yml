@@ -168,6 +168,7 @@
       - DB_USERNAME=${DB_USERNAME}
       - DB_PASSWORD=${DB_PASSWORD}
       - EXTERNAL_FASTAPI_BASE_URL=http://ai-server:8000 # localhost:8000 대신 ai_server 컨테이너 이름 사용
+      - KAFKA_BOOTSTRAP_SERVERS=akkubangkku_kafka:29092
     restart: always
 
 volumes:
