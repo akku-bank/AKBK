@@ -5,7 +5,7 @@ import CustomText from '../../../components/common/CustomText';
 
 const TABS = [
     { id: 'home', label: '홈', icon: '🏠', route: 'ChildHome' },
-    { id: 'shop', label: '상점', icon: '🛒', route: 'ItemShop' },
+    { id: 'shop', label: '도감', icon: '🎒', route: 'AvatarDictionaryScreen' },
     { id: 'account', label: '내 소비', icon: '💸', route: 'ChildAccount' },
     { id: 'mypage', label: '내 정보', icon: null, route: 'ChildMyPage' }
 ];

@@ -26,7 +26,24 @@ const PinNumberSetupScreen = ({ navigation, route }) => {
 
     const handlePinSubmit = async (finalPin) => {
         try {
-            // (임시) 웹개발용으로
+            /* ==========================================
+               [진짜 간편 비밀번호 설정 API 연동 코드]
+               ========================================== 
+            await api.post('/auth/signup/pin', { pin: finalPin }, { headers: { Authorization: `Bearer ${tempToken}` } });
+            
+            await setAuthInfo(tempToken, role, name);
+            setIsSuccess(true);
+            setTimeout(() => {
+                if (role === 'PARENT') {
+                    navigation.replace('ParentMain');
+                } else {
+                    navigation.replace('ChildMain');
+                }
+            }, 1000);
+            return;
+            ========================================== */
+
+            // --- 실제 연동 시 아래 블록 전체 삭제 ---
             if (tempToken?.includes("dev-bypass")) {
                 await setAuthInfo(tempToken, role, name);
                 setIsSuccess(true);
@@ -39,9 +56,6 @@ const PinNumberSetupScreen = ({ navigation, route }) => {
                 }, 1000);
                 return;
             }
-
-            // 실제 API 연동 시
-            // await api.post('/auth/signup/pin', { pin: finalPin }, { headers: { Authorization: `Bearer ${tempToken}` } });
 
             await setAuthInfo(tempToken, role, name);
             setIsSuccess(true);

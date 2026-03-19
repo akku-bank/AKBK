@@ -1,16 +1,74 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { View, StyleSheet, TouchableOpacity, SafeAreaView, Dimensions, Image, Modal, Platform, StatusBar } from 'react-native';
 import { scale, verticalScale } from 'react-native-size-matters';
 import ChildAvatar from '../../../components/child/avatar/ChildAvatar';
 import { AvatarContext } from '../../../components/child/avatar/AvatarContext';
+import { AVATAR_ITEMS } from '../../../components/child/avatar/AvatarAssets';
 import CustomText from '../../../components/common/CustomText';
 import Pet from '../../../components/child/avatar/Pet';
+import api from '../../../api/axios';
+import useAuthStore from '../../../store/useAuthStore';
 
 const { width, height } = Dimensions.get('window');
 
 const ChildHomeScreen = ({ navigation }) => {
     const [isQrModalVisible, setQrModalVisible] = useState(false);
-    const { equipState } = useContext(AvatarContext);
+    const [isLevelUpModalVisible, setLevelUpModalVisible] = useState(false);
+    const { equipState, setEquipState } = useContext(AvatarContext);
+    const { user } = useAuthStore(); // get name from store since it's not in response
+    const [homeData, setHomeData] = useState(null);
+
+    useEffect(() => {
+        const fetchHomeData = async () => {
+            try {
+                const res = await api.get('/home');
+                const homeDataResult = res.data?.data;
+                if (!homeDataResult) return;
+
+                setHomeData(homeDataResult);
+                if (homeDataResult.hasLevelChanged) {
+                    setLevelUpModalVisible(true);
+                }
+
+                // 백엔드 아바타 장착 상태 동기화
+                if (homeDataResult.avatar && homeDataResult.avatar.equippedItems) {
+                    try {
+                        const dictRes = await api.get('/avatars/items');
+                        const backendItems = dictRes.data?.data?.items || [];
+                        const equippedDTOs = homeDataResult.avatar.equippedItems;
+
+                        let newEquip = null;
+
+                        equippedDTOs.forEach(eq => {
+                            const dictItem = backendItems.find(i => i.itemId === eq.itemId);
+                            if (!dictItem) return;
+
+                            let frontendCat = null;
+                            if (eq.category === 'HAT') frontendCat = 'hat';
+                            else if (eq.category === 'TOP') frontendCat = 'upper';
+                            else if (eq.category === 'BOTTOM') frontendCat = 'lower';
+
+                            if (frontendCat) {
+                                const assetItem = AVATAR_ITEMS[frontendCat]?.find(a => a.name === dictItem.name);
+                                if (assetItem) {
+                                    if (!newEquip) newEquip = { ...equipState };
+                                    newEquip[frontendCat] = assetItem.id;
+                                }
+                            }
+                        });
+
+                        if (newEquip) {
+                            setEquipState(newEquip);
+                        }
+                    } catch (dictErr) { console.error('Dictionary Fetch Error on Home', dictErr); }
+                }
+
+            } catch (e) {
+                console.error('Child Home Fetch Error', e);
+            }
+        };
+        fetchHomeData();
+    }, []);
 
     const avatarSize = height > 750 ? 270 : 200;
 
@@ -22,12 +80,19 @@ const ChildHomeScreen = ({ navigation }) => {
                 <View style={styles.headerRow}>
                     <View style={styles.balanceWrapper}>
                         <CustomText style={styles.balanceLabel}>잔액</CustomText>
-                        <CustomText style={styles.balanceAmount}>140,000</CustomText>
+                        <CustomText style={styles.balanceAmount}>
+                            {homeData ? homeData.cashBalance.toLocaleString() : '0'}
+                        </CustomText>
                         <CustomText style={styles.balanceCurrency}>원</CustomText>
                     </View>
-                    <TouchableOpacity style={styles.qrButton} onPress={() => setQrModalVisible(true)}>
-                        <Image source={require('../../../assets/qr.png')} style={styles.qrImage} />
-                    </TouchableOpacity>
+                    <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
+                        <TouchableOpacity style={{ backgroundColor: '#A3E635', padding: 8, borderRadius: 8 }} onPress={() => setLevelUpModalVisible(true)}>
+                            <CustomText style={{ fontSize: 12, fontWeight: 'bold' }}>LvUP 테스트</CustomText>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.qrButton} onPress={() => setQrModalVisible(true)}>
+                            <Image source={require('../../../assets/qr.png')} style={styles.qrImage} />
+                        </TouchableOpacity>
+                    </View>
                 </View>
 
                 <View style={styles.divider} />
@@ -52,25 +117,27 @@ const ChildHomeScreen = ({ navigation }) => {
 
                 {/* 아바타 영역 */}
                 <View style={styles.avatarSection}>
-                    <CustomText style={styles.levelText}>LV.15</CustomText>
-                    <CustomText style={styles.nameText}>김싸피</CustomText>
+                    <CustomText style={styles.levelText}>LV.{homeData ? homeData.level : 1}</CustomText>
+                    <CustomText style={styles.nameText}>{user ? user.name : '김싸피'}</CustomText>
 
                     <View style={styles.avatarActionRow}>
-                        <TouchableOpacity style={styles.avatarActionBtn} onPress={() => navigation.navigate('ItemShopScreen')}>
-                            <CustomText style={styles.avatarActionText}>🎒 내 도감</CustomText>
+                        <TouchableOpacity style={styles.avatarActionBtn} onPress={() => navigation.navigate('AvatarDictionaryScreen')}>
+                            <CustomText style={styles.avatarActionText}>내 도감</CustomText>
                         </TouchableOpacity>
                         <TouchableOpacity style={styles.avatarActionBtn} onPress={() => navigation.navigate('Wardrobe')}>
-                            <CustomText style={styles.avatarActionText}>🎨 꾸미기</CustomText>
+                            <CustomText style={styles.avatarActionText}>꾸미기</CustomText>
                         </TouchableOpacity>
                     </View>
 
                     <View style={styles.avatarWrapper}>
                         <ChildAvatar equipState={equipState} size={avatarSize} />
 
-                        {/* 펫 배치 */}
-                        <View style={{ position: 'absolute', right: scale(-120), bottom: verticalScale(-115) }}>
-                            <Pet petType="shiba" size={scale(350)} />
-                        </View>
+                        {/* 펫 배치 (백엔드 펫 데이터가 있을 때만 렌더링되도록 사전 준비) */}
+                        {homeData?.pet && (
+                            <View style={{ position: 'absolute', right: scale(-120), bottom: verticalScale(-115) }}>
+                                <Pet petType={homeData.pet.type || 'shiba'} size={scale(350)} />
+                            </View>
+                        )}
                     </View>
                 </View>
 
@@ -83,6 +150,20 @@ const ChildHomeScreen = ({ navigation }) => {
                         <CustomText style={styles.qrModalCloseText}>✕</CustomText>
                     </TouchableOpacity>
                     <Image source={require('../../../assets/qr.png')} style={styles.qrModalImage} />
+                </View>
+            </Modal>
+
+            {/* 레벨업 축하 모달 */}
+            <Modal visible={isLevelUpModalVisible} transparent={true} animationType="fade">
+                <View style={styles.levelUpModalBackground}>
+                    <View style={styles.levelUpModalCard}>
+                        <CustomText style={styles.levelUpEmoji}>🎉</CustomText>
+                        <CustomText style={styles.levelUpTitle}>축하해요!</CustomText>
+                        <CustomText style={styles.levelUpDesc}>레벨이 올랐어요.{'\n'}새로운 아이템이 해금되었습니다!</CustomText>
+                        <TouchableOpacity style={styles.levelUpCloseBtn} onPress={() => setLevelUpModalVisible(false)}>
+                            <CustomText style={styles.levelUpCloseText}>확인</CustomText>
+                        </TouchableOpacity>
+                    </View>
                 </View>
             </Modal>
         </SafeAreaView>
@@ -257,6 +338,55 @@ const styles = StyleSheet.create({
         width: '80%',
         height: '80%',
         resizeMode: 'contain',
+    },
+    levelUpModalBackground: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.6)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: scale(20),
+    },
+    levelUpModalCard: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: scale(24),
+        padding: scale(24),
+        alignItems: 'center',
+        width: '100%',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: verticalScale(4) },
+        shadowOpacity: 0.1,
+        shadowRadius: scale(12),
+        elevation: 5,
+    },
+    levelUpEmoji: {
+        fontSize: scale(48),
+        marginBottom: verticalScale(16),
+    },
+    levelUpTitle: {
+        fontSize: scale(22),
+        fontWeight: '900',
+        color: '#111',
+        marginBottom: verticalScale(8),
+    },
+    levelUpDesc: {
+        fontSize: scale(14),
+        color: '#4B5563',
+        textAlign: 'center',
+        lineHeight: 22,
+        marginBottom: verticalScale(24),
+    },
+    levelUpCloseBtn: {
+        backgroundColor: '#A3E635',
+        paddingVertical: verticalScale(14),
+        paddingHorizontal: scale(32),
+        borderRadius: scale(16),
+        width: '100%',
+        alignItems: 'center',
+    },
+    levelUpCloseText: {
+        fontSize: scale(16),
+        fontWeight: 'bold',
+        color: '#111',
     }
 });
 
