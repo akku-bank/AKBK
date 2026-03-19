@@ -43,7 +43,7 @@ kakao:
 # Firebase 설정
 firebase:
   config:
-    path: ${FIREBASE_CONFIG_PATH}
+    path: ${FIREBASE_CONFIG_PATH:firebase/akbk-cda0a-firebase-adminsdk-fbsvc-f8625524ff.json}
 
 # JWT 설정
 jwt:
