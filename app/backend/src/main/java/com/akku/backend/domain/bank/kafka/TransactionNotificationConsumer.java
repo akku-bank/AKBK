@@ -74,7 +74,11 @@ public class TransactionNotificationConsumer {
     }
 
     private String buildNotificationBody(TransactionCompletedEvent.Data data) {
-        String type = "SPEND".equals(data.transactionType()) ? "출금" : "입금";
+        String type = switch (data.transactionType()) {
+            case "SPEND" -> "출금";
+            case "INCOME" -> "입금";
+            default -> "거래";
+        };
         String source = switch (data.eventSource()) {
             case "PAYMENT"  -> "결제";
             case "TRANSFER" -> "이체";

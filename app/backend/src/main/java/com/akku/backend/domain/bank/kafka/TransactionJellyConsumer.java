@@ -17,6 +17,15 @@ import org.springframework.stereotype.Component;
  *   <li>{@code is_jelly_target = true} 인 경우만 젤링 계산을 수행한다.</li>
  * </ul>
  *
+ * <h3>ack 정책 요약</h3>
+ * <ul>
+ *   <li><b>역직렬화 실패</b>: 재시도 불가(poison-pill) → ack 후 return</li>
+ *   <li><b>eventSource != PAYMENT</b>: 정상 메시지, 처리 대상 아님 → ack 후 return</li>
+ *   <li><b>isJellyTarget != true</b>: 정상 메시지, 젤링 계산 불필요 → ack 후 return</li>
+ *   <li><b>젤링 계산 실패</b>: 재시도 필요 → ack 하지 않고 예외 전파 (Kafka 재소비 또는 DLQ)</li>
+ *   <li><b>성공</b>: 젤링 계산 완료 후 ack</li>
+ * </ul>
+ *
  * <h3>TODO</h3>
  * <p>젤링 계산 로직은 별도 JellyService 로 분리하여 주입한다.
  * 현재는 placeholder 로그로 대체한다.</p>
@@ -34,30 +43,44 @@ public class TransactionJellyConsumer {
             groupId = "${akku.kafka.consumer.group.transaction-jelly:transaction-jelly-group}"
     )
     public void handle(String payload, Acknowledgment ack) {
+        // ── [1] 역직렬화 실패: 재시도해도 동일하게 실패하므로 ack 후 버린다 ──────────
+        TransactionCompletedEvent event;
         try {
-            TransactionCompletedEvent event = objectMapper.readValue(payload, TransactionCompletedEvent.class);
-            TransactionCompletedEvent.Data data = event.data();
-
-            // ── 처리 조건 필터 ──────────────────────────────────────────────────
-            if (!"PAYMENT".equals(data.eventSource())) {
-                return; // TRANSFER / DEPOSIT 은 젤링 계산 대상 아님
-            }
-            if (!Boolean.TRUE.equals(data.isJellyTarget())) {
-                log.debug("젤링 대상 아님, skip - eventId: {}, isJellyTarget: {}",
-                        data.id(), data.isJellyTarget());
-                return;
-            }
-
-            // ── 젤링 계산 ──────────────────────────────────────────────────────
-            log.info("젤링 계산 대상 - eventId: {}, userId: {}, amount: {}, subCategory: {}",
-                    data.id(), data.userId(), data.amount(), data.subCategoryName());
-
-            // TODO: jellyService.calculateAndSave(data.userId(), data.amount(), data.subCategoryId());
-
+            event = objectMapper.readValue(payload, TransactionCompletedEvent.class);
         } catch (Exception e) {
-            log.error("젤링 계산 처리 실패 - payload: {}", payload, e);
-        } finally {
+            log.error("TransactionCompletedEvent 역직렬화 실패 - payload: {}", payload, e);
             ack.acknowledge();
+            return;
         }
+
+        TransactionCompletedEvent.Data data = event.data();
+
+        // ── [2] 처리 대상 필터: 정상 메시지이나 skip 대상 → ack 후 return ──────────
+        if (!"PAYMENT".equals(data.eventSource())) {
+            log.debug("젤링 계산 대상 아님 (PAYMENT 아님), skip - eventId: {}, eventSource: {}",
+                    data.id(), data.eventSource());
+            ack.acknowledge();
+            return;
+        }
+        if (!Boolean.TRUE.equals(data.isJellyTarget())) {
+            log.debug("젤링 대상 아님, skip - eventId: {}, isJellyTarget: {}",
+                    data.id(), data.isJellyTarget());
+            ack.acknowledge();
+            return;
+        }
+
+        // ── [3] 젤링 계산: 실패 시 ack 없이 예외 전파 → Kafka 재소비 또는 DLQ ──────
+        log.info("젤링 계산 대상 - eventId: {}, userId: {}, amount: {}, subCategory: {}",
+                data.id(), data.userId(), data.amount(), data.subCategoryName());
+        try {
+            // TODO: jellyService.calculateAndSave(data.userId(), data.amount(), data.subCategoryId());
+        } catch (Exception e) {
+            log.error("젤링 계산 실패 — ack 없이 예외 전파. eventId={}, userId={}, amount={}, subCategoryId={}",
+                    data.id(), data.userId(), data.amount(), data.subCategoryId(), e);
+            throw e;
+        }
+
+        // ── [4] 젤링 계산 완료 → 오프셋 커밋 ────────────────────────────────────
+        ack.acknowledge();
     }
 }

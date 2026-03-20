@@ -3,16 +3,15 @@ package com.akku.backend.domain.bank.kafka;
 import com.akku.backend.domain.bank.entity.Transaction;
 import com.akku.backend.domain.bank.event.PaymentEvent;
 import com.akku.backend.domain.bank.event.TransactionCompletedEvent;
-import com.akku.backend.domain.bank.repository.TransactionRepository;
+import com.akku.backend.domain.bank.service.TransactionService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
+import java.util.Optional;
 
 /**
  * {@code payment} 토픽을 소비하는 컨슈머.
@@ -20,16 +19,19 @@ import java.time.LocalDateTime;
  * <h3>처리 순서</h3>
  * <ol>
  *   <li>raw JSON String → {@link PaymentEvent} 역직렬화</li>
- *   <li>eventId 기반 중복 체크 (이미 처리된 이벤트 skip)</li>
- *   <li>거래내역 DB 저장 (@Transactional)</li>
- *   <li>TransactionCompletedEvent 발행 → transaction 토픽</li>
- *   <li>ack.acknowledge() — 오프셋 수동 커밋</li>
+ *   <li>역직렬화 실패 → ack 후 return (poison-pill)</li>
+ *   <li>transaction_type != "SPEND" → ack 후 return (비정상 데이터)</li>
+ *   <li>{@link TransactionService#savePayment} — DB 저장 및 중복 체크 (@Transactional)</li>
+ *   <li>중복 이벤트 → ack 후 return (skip)</li>
+ *   <li>DB 저장 실패 → 예외 전파 (ack 하지 않음, Kafka 재소비)</li>
+ *   <li>TransactionCompletedEvent 동기 발행 → transaction 토픽</li>
+ *   <li>Kafka 발행 실패 → 예외 전파 (ack 하지 않음, Kafka 재소비)</li>
+ *   <li>모든 성공 시 ack.acknowledge()</li>
  * </ol>
  *
- * <h3>오류 처리</h3>
- * <p>역직렬화 실패 또는 처리 중 예외 발생 시 로그를 남기고 ack 를 호출해
- * poison pill 로 인한 파티션 블록을 방지한다.
- * 향후 Dead Letter Topic(DLT) 연동으로 교체 가능.</p>
+ * <h3>설계 의도</h3>
+ * <p>이 클래스는 orchestration 역할만 수행한다. DB 저장은 TransactionService의
+ * {@code @Transactional} 경계 내에서 처리되므로, Kafka 발행은 반드시 DB 커밋 이후에 실행된다.</p>
  */
 @Slf4j
 @Component
@@ -37,40 +39,65 @@ import java.time.LocalDateTime;
 public class PaymentKafkaConsumer {
 
     private final ObjectMapper objectMapper;
-    private final TransactionRepository transactionRepository;
+    private final TransactionService transactionService;
     private final TransactionKafkaProducer transactionKafkaProducer;
 
     @KafkaListener(
             topics  = "${akku.kafka.topic.payment:payment}",
             groupId = "${akku.kafka.consumer.group.payment-storage:payment-storage-group}"
     )
-    @Transactional
     public void handle(String payload, Acknowledgment ack) {
-        PaymentEvent event = null;
+        // ── [1] 역직렬화 실패: 재시도해도 동일하게 실패하므로 ack 후 버린다 ──────────
+        PaymentEvent event;
         try {
             event = objectMapper.readValue(payload, PaymentEvent.class);
-
-            // ── 중복 방지 ──────────────────────────────────────────────────────
-            if (transactionRepository.existsByEventId(event.eventId())) {
-                log.warn("PAYMENT 이벤트 중복 수신, skip - eventId: {}", event.eventId());
-                return;
-            }
-
-            // ── DB 저장 ────────────────────────────────────────────────────────
-            Transaction saved = transactionRepository.save(Transaction.fromPayment(event));
-            log.info("PAYMENT 거래 저장 완료 - eventId: {}, userId: {}, amount: {}",
-                    event.eventId(), event.userId(), event.amount());
-
-            // ── transaction 토픽 발행 ──────────────────────────────────────────
-            TransactionCompletedEvent completed =
-                    TransactionCompletedEvent.fromPayment(saved, event,
-                            saved.getCreatedAt() != null ? saved.getCreatedAt() : LocalDateTime.now());
-            transactionKafkaProducer.publish(completed);
-
         } catch (Exception e) {
-            log.error("PAYMENT 이벤트 처리 실패 - payload: {}", payload, e);
-        } finally {
+            log.error("PAYMENT 역직렬화 실패 - payload: {}", payload, e);
             ack.acknowledge();
+            return;
         }
+
+        // ── [2] transaction_type 검증: PAYMENT는 반드시 SPEND ────────────────────
+        if (!"SPEND".equals(event.transactionType())) {
+            log.error("INVALID transaction_type for PAYMENT - eventId: {}, userId: {}, type: {}",
+                    event.eventId(), event.userId(), event.transactionType());
+            ack.acknowledge();
+            return;
+        }
+
+        // ── [3] DB 저장: 실패 시 ack 없이 예외 전파 → Kafka 재소비 ────────────────
+        // TransactionService.savePayment()의 @Transactional 경계 내에서 실행된다.
+        // 이 호출이 반환된 시점 = 트랜잭션 커밋 완료.
+        Optional<Transaction> savedOpt;
+        try {
+            savedOpt = transactionService.savePayment(event);
+        } catch (Exception e) {
+            log.error("PAYMENT DB 저장 실패 — ack 없이 예외 전파. eventId={}, userId={}",
+                    event.eventId(), event.userId(), e);
+            throw e;
+        }
+
+        // ── [4] 중복 이벤트: 정상 메시지이므로 ack 후 return ─────────────────────
+        if (savedOpt.isEmpty()) {
+            ack.acknowledge();
+            return;
+        }
+        Transaction saved = savedOpt.get();
+
+        // ── [5] Kafka 발행: 실패 시 ack 없이 예외 전파 → Kafka 재소비 ─────────────
+        // DB 커밋 완료 이후 실행됨이 보장된다.
+        TransactionCompletedEvent completed = TransactionCompletedEvent.fromPayment(
+                saved, event,
+                saved.getCreatedAt() != null ? saved.getCreatedAt() : event.createdAt());
+        try {
+            transactionKafkaProducer.publish(completed);
+        } catch (Exception e) {
+            log.error("PAYMENT transaction 이벤트 발행 실패 — ack 없이 예외 전파. eventId={}, userId={}",
+                    event.eventId(), event.userId(), e);
+            throw e;
+        }
+
+        // ── [6] DB 커밋 + Kafka 발행 모두 성공 → 오프셋 커밋 ────────────────────
+        ack.acknowledge();
     }
 }

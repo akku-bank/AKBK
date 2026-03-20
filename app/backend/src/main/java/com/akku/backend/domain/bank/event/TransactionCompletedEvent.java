@@ -34,7 +34,7 @@ public record TransactionCompletedEvent(
 
     public record Data(
 
-            /** transactions.id (= 원본 eventId) — Spark 고유 식별자 */
+            /** DB에 저장된 transactions.id (DB 생성 UUID). Kafka eventId와 별개. Spark 고유 식별자. */
             String id,
 
             @JsonProperty("user_id")
