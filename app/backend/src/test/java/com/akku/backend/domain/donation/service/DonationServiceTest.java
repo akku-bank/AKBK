@@ -49,11 +49,12 @@ class DonationServiceTest {
         // given
         UUID userId = UUID.randomUUID();
         Jelling jelling = Jelling.builder().userId(userId).balance(100L).build();
-        Charity charity = Charity.builder().name("Test Charity").targetAmount(500).build();
+        Charity charity = Charity.builder().name("Test Charity").build();
         ActiveCharity activeCharity = ActiveCharity.builder()
                 .id(UUID.randomUUID())
                 .charity(charity)
                 .currentAmount(200L)
+                .targetAmount(500)
                 .status("IN_PROGRESS")
                 .build();
 
@@ -77,7 +78,6 @@ class DonationServiceTest {
         Charity charity = Charity.builder()
                 .id(UUID.randomUUID())
                 .name("Test Charity")
-                .targetAmount(500)
                 .description("Test Description")
                 .build();
         given(charityRepository.findAll()).willReturn(List.of(charity));

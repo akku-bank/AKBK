@@ -54,7 +54,7 @@ public class DonationService {
                         activeCharity.getId(),
                         activeCharity.getCharity().getName(),
                         activeCharity.getCurrentAmount(),
-                        activeCharity.getCharity().getTargetAmount()
+                        activeCharity.getTargetAmount()
                 ))
                 .orElse(null);
 
@@ -69,7 +69,6 @@ public class DonationService {
                 .map(charity -> new CharityResponse(
                         charity.getId(),
                         charity.getName(),
-                        charity.getTargetAmount(),
                         charity.getDescription()
                 ))
                 .toList();

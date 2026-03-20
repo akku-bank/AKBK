@@ -3,6 +3,7 @@ package com.akku.backend.domain.donation.entity;
 import com.akku.backend.domain.auth.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
@@ -32,9 +33,17 @@ public class ActiveCharity {
     @Builder.Default
     private Long currentAmount = 0L;
 
+    @Column(name = "target_amount", nullable = false)
+    @Builder.Default
+    private Integer targetAmount = 500;
+
     @Column(length = 20)
     @Builder.Default
     private String status = "IN_PROGRESS";
+
+    @CreationTimestamp
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
 
     @UpdateTimestamp
     @Column(name = "updated_at")
@@ -42,7 +51,7 @@ public class ActiveCharity {
 
     public void donate(long amount) {
         this.currentAmount += amount;
-        if (this.currentAmount >= charity.getTargetAmount()) {
+        if (this.currentAmount >= this.targetAmount) {
             this.status = "COMPLETED";
         }
     }

@@ -28,10 +28,14 @@ ALTER TABLE active_charities ADD COLUMN IF NOT EXISTS target_amount INTEGER NOT 
 ALTER TABLE active_charities ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
 
 -- 5. transactions 테이블 컬럼명 변경 (category -> sub_category_name)
-ALTER TABLE transactions RENAME COLUMN category TO sub_category_name;
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.columns 
+               WHERE table_name = 'transactions' AND column_name = 'category') THEN
+        ALTER TABLE transactions RENAME COLUMN category TO sub_category_name;
+    END IF;
+END $$;
 
--- 6. merchant 테이블 카테고리 유니크 제약
-ALTER TABLE merchant ADD CONSTRAINT uq_sub_category_id UNIQUE (sub_category_id);
 
 -- 7. user_items 테이블 수량(quantity) 컬럼 복구 (티켓 보유용)
 ALTER TABLE user_items ADD COLUMN IF NOT EXISTS quantity INTEGER DEFAULT 1;

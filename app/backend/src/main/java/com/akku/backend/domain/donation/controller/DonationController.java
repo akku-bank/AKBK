@@ -4,6 +4,7 @@ import com.akku.backend.domain.donation.dto.*;
 import com.akku.backend.domain.donation.service.DonationService;
 import com.akku.backend.global.dto.ApiResponse;
 import lombok.RequiredArgsConstructor;
+import jakarta.validation.Valid;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -40,7 +41,7 @@ public class DonationController {
     @PostMapping("/active-charity")
     public ApiResponse<SetTargetCharityResponse> setTargetCharity(
             @AuthenticationPrincipal UUID userId,
-            @RequestBody SetTargetCharityRequest request) {
+            @Valid @RequestBody SetTargetCharityRequest request) {
         UUID activeCharityId = donationService.setTargetCharity(userId, request.charityId());
         return ApiResponse.success("기부 목표 설정이 완료되었습니다.", new SetTargetCharityResponse(activeCharityId));
     }
@@ -48,7 +49,7 @@ public class DonationController {
     @PostMapping("/donations")
     public ApiResponse<ExecuteDonationResponse> donate(
             @AuthenticationPrincipal UUID userId,
-            @RequestBody ExecuteDonationRequest request) {
+            @Valid @RequestBody ExecuteDonationRequest request) {
         return ApiResponse.success("기부가 성공적으로 완료되었습니다.", donationService.executeDonation(userId, request.amount()));
     }
 

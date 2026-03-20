@@ -31,14 +31,6 @@ public class Charity {
     @Column(nullable = false, length = 100)
     private String name;
 
-    @Column(name = "target_amount", nullable = false)
-    @Builder.Default
-    private Integer targetAmount = 500;
-
     @Column(columnDefinition = "TEXT")
     private String description;
-
-    @CreationTimestamp
-    @Column(name = "created_at", updatable = false)
-    private LocalDateTime createdAt;
 }
