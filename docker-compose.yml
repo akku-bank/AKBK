@@ -107,8 +107,8 @@
 
       # 내부 도커 통신용: akkubangkku_kafka:29092
       # 로컬 호스트 접속용: localhost:9092
-      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092,PLAINTEXT_HOST://0.0.0.0:28080
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://akkubangkku_kafka:29092,PLAINTEXT_HOST://localhost:28080
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092,PLAINTEXT_HOST://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://akkubangkku_kafka:29092,PLAINTEXT_HOST://localhost:9092
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
 
@@ -121,7 +121,7 @@
     volumes:
       - kafka_data:/var/lib/kafka/data
     healthcheck:
-      test: [ "CMD-SHELL", "nc -z localhost 28080 || exit 1" ]
+      test: [ "CMD-SHELL", "nc -z localhost 9092 || exit 1" ]
       interval: 10s
       timeout: 10s
       retries: 10
