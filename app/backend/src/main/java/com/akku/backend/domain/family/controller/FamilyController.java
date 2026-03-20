@@ -9,6 +9,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -30,6 +31,7 @@ public class FamilyController {
      */
     @Operation(summary = "가족 그룹 생성", description = "빈 가족 그룹을 생성하고 부모의 family_id를 업데이트합니다.")
     @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "가족 그룹 생성 성공")
+    @PreAuthorize("hasRole('PARENT')")
     @PostMapping
     public ResponseEntity<ApiResponse<FamilyCreateResponse>> createFamilyGroup(
             @AuthenticationPrincipal UUID parentId) {
@@ -45,6 +47,7 @@ public class FamilyController {
      * 1-1. 가족 구성원 사전 등록 (미연동 프로필 생성)
      */
     @Operation(summary = "가족 구성원 사전 등록", description = "부모가 자녀의 이름과 생일을 미리 등록하여 연동 대기 프로필을 생성합니다.")
+    @PreAuthorize("hasRole('PARENT')")
     @PostMapping("/members")
     public ResponseEntity<ApiResponse<Void>> preRegisterFamilyMember(
             @AuthenticationPrincipal UUID userId,
@@ -60,6 +63,7 @@ public class FamilyController {
      * 부모가 자녀 초대용 QR 코드를 요청
      */
     @Operation(summary = "가족 QR 발급", description = "유효한 QR 코드를 조회하거나 새로 생성하여 반환합니다.")
+    @PreAuthorize("hasRole('PARENT')")
     @GetMapping("/qr")
     public ResponseEntity<ApiResponse<FamilyQrResponse>> getFamilyQr(
             @AuthenticationPrincipal UUID userId) {
@@ -75,6 +79,7 @@ public class FamilyController {
      * 3. 가족 그룹 합류 (QR 스캔 및 자동 매칭)
      */
     @Operation(summary = "가족 그룹 합류", description = "QR 스캔과 이름/생일 대조를 통해 가족 그룹에 자동 합류합니다.")
+    @PreAuthorize("hasRole('PARENT') or hasRole('CHILD')")
     @PostMapping("/join")
     public ResponseEntity<ApiResponse<Void>> joinFamilyGroup(
             @AuthenticationPrincipal UUID childId,
@@ -89,6 +94,7 @@ public class FamilyController {
      * 4. 가족 QR 재발급
      */
     @Operation(summary = "가족 QR 재발급", description = "기존 QR을 무효화하고 새로운 가족 초대 QR을 강제 발급합니다.")
+    @PreAuthorize("hasRole('PARENT')")
     @PostMapping("/qr/reissue")
     public ResponseEntity<ApiResponse<FamilyQrResponse>> reissueFamilyQr(
             @AuthenticationPrincipal UUID userId) {
@@ -104,6 +110,7 @@ public class FamilyController {
      * 5. 가족 구성원 조회
      */
     @Operation(summary = "가족 구성원 조회", description = "가족 그룹에 속한 구성원 목록과 계좌 정보를 조회합니다.")
+    @PreAuthorize("hasRole('PARENT')")
     @GetMapping("/members")
     public ResponseEntity<ApiResponse<FamilyMemberListResponse>> getFamilyMembers(
             @AuthenticationPrincipal UUID userId) {
@@ -119,6 +126,7 @@ public class FamilyController {
      * 6. 가족 QR 수동 만료
      */
     @Operation(summary = "가족 QR 만료", description = "발급된 가족 초대 QR 코드를 즉시 무효화(만료) 처리합니다.")
+    @PreAuthorize("hasRole('PARENT')")
     @DeleteMapping("/qr")
     public ResponseEntity<ApiResponse<Void>> expireFamilyQr(
             @AuthenticationPrincipal UUID userId) {
@@ -134,6 +142,7 @@ public class FamilyController {
      * 7. 가족 구성원 정보 수정
      */
     @Operation(summary = "가족 구성원 정보 수정", description = "미연동 상태인 가족 구성원의 이름과 생년월일을 수정합니다. (연동 완료 시 수정 불가)")
+    @PreAuthorize("hasRole('PARENT')")
     @PatchMapping("/members/{memberId}")
     public ResponseEntity<ApiResponse<Void>> updateFamilyMember(
             @AuthenticationPrincipal UUID userId,
@@ -151,6 +160,7 @@ public class FamilyController {
      * 8. 가족 구성원 연결 해제
      */
     @Operation(summary = "가족 구성원 연결 해제", description = "연동된 자녀의 계정 연결을 해제하거나, 미연동 프로필을 완전히 삭제합니다.")
+    @PreAuthorize("hasRole('PARENT')")
     @DeleteMapping("/members/{memberId}")
     public ResponseEntity<ApiResponse<Void>> removeFamilyMember(
             @AuthenticationPrincipal UUID userId,
