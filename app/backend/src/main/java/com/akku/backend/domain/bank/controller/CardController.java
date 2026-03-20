@@ -1,8 +1,6 @@
 package com.akku.backend.domain.bank.controller;
 
-import com.akku.backend.domain.bank.dto.CardCreateRequest;
-import com.akku.backend.domain.bank.dto.CardProductResponse;
-import com.akku.backend.domain.bank.dto.CardResponse;
+import com.akku.backend.domain.bank.dto.*;
 import com.akku.backend.domain.bank.service.CardService;
 import com.akku.backend.global.dto.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -49,5 +47,25 @@ public class CardController {
     ) {
         List<CardResponse> response = cardService.getMyCards(userId);
         return ApiResponse.success("내 카드 목록 조회 완료", response);
+    }
+
+    @Operation(summary = "카드 결제", description = "보유한 카드로 결제를 진행합니다.")
+    @PostMapping("/payment")
+    public ApiResponse<Void> processPayment(
+            @AuthenticationPrincipal UUID userId,
+            @Valid @RequestBody CardPaymentRequest request
+    ) {
+        cardService.processPayment(userId, request);
+        return ApiResponse.success("카드 결제 완료");
+    }
+
+    @Operation(summary = "카드 거래 내역 조회", description = "특정 카드의 거래 내역을 조회합니다.")
+    @PostMapping("/history")
+    public ApiResponse<CardHistoryResponse> getCardHistory(
+            @AuthenticationPrincipal UUID userId,
+            @Valid @RequestBody CardHistoryRequest request
+    ) {
+        CardHistoryResponse response = cardService.getCardHistory(userId, request);
+        return ApiResponse.success("카드 거래 내역 조회 완료", response);
     }
 }
