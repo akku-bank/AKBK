@@ -210,14 +210,15 @@ class FamilyServiceTest {
             given(profile.getLinkedUserId()).willReturn(linkedUserId);
             given(familyProfileRepository.findAllByFamilyId(familyId)).willReturn(List.of(profile));
 
+            UUID accountId = UUID.randomUUID();
             Account mockAccount = mock(Account.class);
-            given(mockAccount.getId()).willReturn(UUID.randomUUID());
+            given(mockAccount.getId()).willReturn(accountId);
             given(accountRepository.findAllByUserId(linkedUserId)).willReturn(List.of(mockAccount));
 
             FamilyMemberListResponse response = familyService.getFamilyMembers(userId);
 
             assertFalse(response.members().isEmpty());
-            assertNotNull(response.members().get(0).accountId());
+            assertEquals(List.of(accountId), response.members().get(0).accountIds());
         }
     }
 
