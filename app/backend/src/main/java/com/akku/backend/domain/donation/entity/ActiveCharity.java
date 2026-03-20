@@ -39,4 +39,22 @@ public class ActiveCharity {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    public void donate(long amount) {
+        this.currentAmount += amount;
+        if (this.currentAmount >= charity.getTargetAmount()) {
+            this.status = "COMPLETED";
+        }
+    }
+
+    public boolean isCompleted() {
+        return "COMPLETED".equals(this.status);
+    }
+
+    public void markRewarded() {
+        if (!isCompleted()) {
+            throw new IllegalStateException("Only completed charities can be rewarded.");
+        }
+        this.status = "REWARDED";
+    }
 }

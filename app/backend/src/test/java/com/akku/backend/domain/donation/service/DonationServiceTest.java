@@ -2,12 +2,14 @@ package com.akku.backend.domain.donation.service;
 
 import com.akku.backend.domain.auth.entity.User;
 import com.akku.backend.domain.auth.repository.UserRepository;
-import com.akku.backend.domain.donation.dto.CharityResponse;
+import com.akku.backend.domain.donation.dto.*;
 import com.akku.backend.domain.donation.entity.ActiveCharity;
 import com.akku.backend.domain.donation.entity.Charity;
 import com.akku.backend.domain.donation.exception.DonationErrorCode;
 import com.akku.backend.domain.donation.repository.ActiveCharityRepository;
 import com.akku.backend.domain.donation.repository.CharityRepository;
+import com.akku.backend.domain.jelling.entity.Jelling;
+import com.akku.backend.domain.jelling.repository.JellingRepository;
 import com.akku.backend.global.error.ApiException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -35,9 +37,38 @@ class DonationServiceTest {
     private ActiveCharityRepository activeCharityRepository;
     @Mock
     private UserRepository userRepository;
+    @Mock
+    private JellingRepository jellingRepository;
 
     @InjectMocks
     private DonationService donationService;
+
+    @Test
+    @DisplayName("젤링 허브 통합 정보를 조회한다.")
+    void getJellingHubInfo() {
+        // given
+        UUID userId = UUID.randomUUID();
+        Jelling jelling = Jelling.builder().userId(userId).balance(100L).build();
+        Charity charity = Charity.builder().name("Test Charity").targetAmount(500).build();
+        ActiveCharity activeCharity = ActiveCharity.builder()
+                .id(UUID.randomUUID())
+                .charity(charity)
+                .currentAmount(200L)
+                .status("IN_PROGRESS")
+                .build();
+
+        given(jellingRepository.findById(userId)).willReturn(Optional.of(jelling));
+        given(activeCharityRepository.findByUserIdAndStatus(userId, "IN_PROGRESS")).willReturn(Optional.of(activeCharity));
+
+        // when
+        JellingHubResponse response = donationService.getJellingHubInfo(userId);
+
+        // then
+        assertThat(response.remainJelling()).isEqualTo(100L);
+        assertThat(response.activeCharity()).isNotNull();
+        assertThat(response.activeCharity().name()).isEqualTo("Test Charity");
+        assertThat(response.activeCharity().currentAmount()).isEqualTo(200L);
+    }
 
     @Test
     @DisplayName("기부처 목록을 조회한다.")
@@ -52,11 +83,11 @@ class DonationServiceTest {
         given(charityRepository.findAll()).willReturn(List.of(charity));
 
         // when
-        List<CharityResponse> result = donationService.getCharityList();
+        CharityListResponse result = donationService.getCharityList();
 
         // then
-        assertThat(result).hasSize(1);
-        assertThat(result.get(0).name()).isEqualTo("Test Charity");
+        assertThat(result.charities()).hasSize(1);
+        assertThat(result.charities().get(0).name()).isEqualTo("Test Charity");
     }
 
     @Test
@@ -71,6 +102,7 @@ class DonationServiceTest {
         given(activeCharityRepository.existsByUserIdAndStatus(userId, "IN_PROGRESS")).willReturn(false);
         given(userRepository.findById(userId)).willReturn(Optional.of(user));
         given(charityRepository.findById(charityId)).willReturn(Optional.of(charity));
+        given(activeCharityRepository.save(any(ActiveCharity.class))).willReturn(ActiveCharity.builder().id(UUID.randomUUID()).build());
 
         // when
         donationService.setTargetCharity(userId, charityId);
