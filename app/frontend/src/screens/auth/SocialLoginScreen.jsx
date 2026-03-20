@@ -12,51 +12,45 @@ const SocialLoginScreen = ({ navigation }) => {
     const handleKakaoLogin = async () => {
         setIsLoading(true);
 
-        // (임시) 카카오톡 인앱 로그인 시뮬 (원래는 kakaoLogin() 호출)
+        try {
+            const token = await kakaoLogin();
+            console.log('카카오 로그인 성공! 네이티브 토큰 발급 완료');
+            console.log('카카오 토큰:', token.accessToken);
+
+            // 토큰 발급 완료 테스트 성공 -> 백엔드로 전송
+            const response = await api.post('auth/social/kakao', { socialToken: token.accessToken });
+            const payload = response.data?.data || response.data || {};
+
+            // Jackson 직렬화 이슈 대비 (isRegistered -> registered) 및 각종 토큰 변수명 대비
+            const isRegistered = payload.isRegistered ?? payload.registered ?? !!payload.token;
+            const jwt = payload.token || payload.tempToken || payload.jwt || payload.accessToken;
+
+            console.log('JWT 발급 성공!');
+            console.log('토큰 키:', jwt);
+
+            await setAuthInfo(jwt, null, null);
+            if (isRegistered) {
+                navigation.replace('PinNumberLogin');
+            } else {
+                navigation.replace('RoleSelect', { tempToken: jwt });
+            }
+        } catch (error) {
+            console.error('Kakao Login Error:', error);
+            const errUrl = error.config ? `${error.config.baseURL}${error.config.url}` : 'Unknown URL';
+            const errBody = error.response ? JSON.stringify(error.response.data) : error.message;
+            Alert.alert(
+                '로그인 에러 상세',
+                `상태코드: ${error.response?.status}\n요청주소: ${errUrl}\n응답내용: ${errBody}`
+            );
+        } finally {
+            setIsLoading(false);
+        }
+
+        /* --- 임시 모의 로직 (삭제) ---
         setTimeout(async () => {
             setIsLoading(false);
-
-            if (Platform.OS === 'web') {
-                const isExistingUser = window.confirm(
-                    '(임시) \n\n[확인]을 누르면 "기존 유저 로그인"으로 진행합니다.\n[취소]를 누르면 "신규 가입"으로 진행합니다.'
-                );
-
-                if (isExistingUser) {
-                    const mockToken = "dev-bypass-existing-token";
-                    await setAuthInfo(mockToken, 'PARENT', '아이부모');
-                    navigation.replace('PinNumberLogin');
-                } else {
-                    const mockToken = "dev-bypass-new-token";
-                    await setAuthInfo(mockToken, null, null);
-                    navigation.replace('RoleSelect', { tempToken: mockToken });
-                }
-            } else {
-                // (임시) 카카오 토큰 -> 백엔드로 보냈다치고, 백엔드의 응답(가입 여부)을 팝업으로 선택하게
-                Alert.alert(
-                    '(임시) 백엔드 응답 시뮬레이션',
-                    '실제로는 이 단계에서 서버가 isRegistered 값을 내려줍니다. 테스트할 흐름을 선택하세요.',
-                    [
-                        {
-                            text: '기존 유저 (isRegistered: true)',
-                            onPress: async () => {
-                                const mockToken = "dev-bypass-existing-token";
-                                await setAuthInfo(mockToken, 'PARENT', '아이부모');
-                                navigation.replace('PinNumberLogin');
-                            }
-                        },
-                        {
-                            text: '신규 가입 (isRegistered: false)',
-                            onPress: async () => {
-                                const mockToken = "dev-bypass-new-token";
-                                await setAuthInfo(mockToken, null, null);
-                                navigation.replace('RoleSelect', { tempToken: mockToken });
-                            }
-                        }
-                    ],
-                    { cancelable: false }
-                );
-            }
         }, 500);
+        */
     };
 
     return (
@@ -73,7 +67,7 @@ const SocialLoginScreen = ({ navigation }) => {
                 </View>
 
                 {/* 로그인 버튼 영역 */}
-                <View style={styles.buttonSection}>
+                <View style={[styles.buttonSection, { gap: 10 }]}>
                     <TouchableOpacity
                         style={[styles.kakaoButton, { backgroundColor: '#FEE500' }]}
                         onPress={handleKakaoLogin}

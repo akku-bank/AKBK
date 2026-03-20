@@ -8,13 +8,14 @@ import com.akku.backend.domain.family.repository.FamilyRepository;
 import com.akku.backend.domain.family.exception.FamilyErrorCode;
 import com.akku.backend.domain.auth.entity.User;
 import com.akku.backend.domain.auth.repository.UserRepository;
+import com.akku.backend.domain.bank.entity.Account;
+import com.akku.backend.domain.bank.repository.AccountRepository;
 import com.akku.backend.domain.user.exception.UserErrorCode;
 import com.akku.backend.global.error.ApiException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -27,6 +28,18 @@ public class FamilyService {
     private final FamilyRepository familyRepository;
     private final FamilyProfileRepository familyProfileRepository;
     private final UserRepository userRepository;
+    private final AccountRepository accountRepository;
+
+    // ── 헬퍼: userId → User 조회 후 familyId 반환. 가족 미가입 시 FAMILY_NOT_FOUND ──
+    private UUID resolveFamilyId(UUID userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ApiException(UserErrorCode.USER_NOT_FOUND));
+        UUID familyId = user.getFamilyId();
+        if (familyId == null) {
+            throw new ApiException(FamilyErrorCode.FAMILY_NOT_FOUND);
+        }
+        return familyId;
+    }
 
     /**
      * 1. 가족 그룹 생성 (최초 빈 그룹 생성)
@@ -61,7 +74,9 @@ public class FamilyService {
      * 부모가 자녀의 이름과 생년월일을 미리 등록하여 가입 대기 상태의 프로필을 생성
      */
     @Transactional
-    public void preRegisterFamilyMember(UUID familyId, FamilyMemberPreRegisterRequest request) {
+    public void preRegisterFamilyMember(UUID userId, FamilyMemberPreRegisterRequest request) {
+        UUID familyId = resolveFamilyId(userId);
+
         FamilyProfileEntity profile = FamilyProfileEntity.builder()
                 .familyId(familyId)
                 .name(request.name())
@@ -77,12 +92,12 @@ public class FamilyService {
      * 이미 유효한 QR이 있으면 반환하고, 없거나 만료됐으면 새로 생성
      */
     @Transactional
-    public FamilyQrResponse getOrGenerateFamilyQr(UUID familyId) { // DDL에 맞춰 UUID로 수정
-        // 1. 가족 그룹 조회
+    public FamilyQrResponse getOrGenerateFamilyQr(UUID userId) {
+        UUID familyId = resolveFamilyId(userId);
+
         FamilyEntity family = familyRepository.findById(familyId)
                 .orElseThrow(() -> new ApiException(FamilyErrorCode.FAMILY_NOT_FOUND));
 
-        // 2. 유효한 QR이 있는지 확인 (문자열이 있고, 만료 시간이 현재보다 미래인 경우)
         if (family.getQrCode() != null &&
                 family.getQrExpiresAt() != null &&
                 family.getQrExpiresAt().isAfter(LocalDateTime.now())) {
@@ -90,20 +105,20 @@ public class FamilyService {
             return new FamilyQrResponse(family.getQrCode(), family.getQrExpiresAt());
         }
 
-        // 3. QR이 없거나 만료되었다면 새로 생성 (UUID 활용)
         String newQrCode = UUID.randomUUID().toString();
-        LocalDateTime newExpiresAt = LocalDateTime.now().plusMinutes(5); // 유효기간 5분 설정
+        LocalDateTime newExpiresAt = LocalDateTime.now().plusMinutes(5);
 
-        family.updateQrCode(newQrCode, newExpiresAt); // 엔티티 메서드 활용
+        family.updateQrCode(newQrCode, newExpiresAt);
 
         return new FamilyQrResponse(newQrCode, newExpiresAt);
     }
 
     /**
      * 3. 가족 그룹 합류 (QR 스캔 + 이름/생일 기반 자동 연동)
+     * 이름·생일은 JWT에서 전달받지 않고 User 엔티티에서 직접 조회
      */
     @Transactional
-    public void joinFamilyGroup(UUID childId, String scannedQrCode, String childName, LocalDate birthDate) {
+    public void joinFamilyGroup(UUID childId, String scannedQrCode) {
         // 1. 자녀 유저 조회 — 이후 로직 진행 전에 먼저 유효성 검증 (Fail-Fast)
         User child = userRepository.findById(childId)
                 .orElseThrow(() -> new ApiException(UserErrorCode.USER_NOT_FOUND));
@@ -117,29 +132,36 @@ public class FamilyService {
         FamilyEntity family = familyRepository.findByQrCode(scannedQrCode)
                 .orElseThrow(() -> new ApiException(FamilyErrorCode.INVALID_QR_CODE));
 
-        // 4. 만료 시간 검증 (서비스 단에서 자바 로직으로 처리)
+        // 4. 만료 시간 검증
         if (family.getQrExpiresAt() != null && family.getQrExpiresAt().isBefore(LocalDateTime.now())) {
             throw new ApiException(FamilyErrorCode.EXPIRED_QR_CODE);
         }
 
-        // 5. 미연동 프로필(FamilyProfile) 중 이름과 생년월일이 일치하는 데이터 매칭
+        // 5. 미연동 프로필 매칭 — 이름·생일은 User 엔티티에서 직접 추출
         FamilyProfileEntity profile = familyProfileRepository
-                .findByFamilyIdAndNameAndBirthDateAndLinkedUserIdIsNull(family.getId(), childName, birthDate)
-                .orElseThrow(() -> new ApiException(FamilyErrorCode.PROFILE_ALREADY_LINKED));
+                .findByFamilyIdAndNameAndBirthDate(
+                        family.getId(), child.getName(), child.getBirthDate())
+                .orElseThrow(() -> new ApiException(FamilyErrorCode.PROFILE_NOT_FOUND));
 
-        // 6. 프로필에 유저 ID 연결 (family_profiles.linked_user_id 업데이트)
+        // 5-1. 프로필이 존재하지만 이미 다른 유저와 연동된 경우
+        if (profile.getLinkedUserId() != null) {
+            throw new ApiException(FamilyErrorCode.PROFILE_ALREADY_LINKED);
+        }
+
+        // 6. 프로필에 유저 ID 연결
         profile.linkUser(childId);
 
-        // 7. 자녀(User)의 family_id를 연동된 가족 그룹 ID로 업데이트
+        // 7. 자녀(User)의 family_id 업데이트
         child.updateFamilyId(family.getId());
     }
 
     /**
      * 4. 가족 QR 재발급 (POST /api/families/qr/reissue)
-     * 🚨 누락되었던 강제 재발급 로직 추가
      */
     @Transactional
-    public FamilyQrResponse reissueFamilyQr(UUID familyId) {
+    public FamilyQrResponse reissueFamilyQr(UUID userId) {
+        UUID familyId = resolveFamilyId(userId);
+
         FamilyEntity family = familyRepository.findById(familyId)
                 .orElseThrow(() -> new ApiException(FamilyErrorCode.FAMILY_NOT_FOUND));
 
@@ -153,30 +175,26 @@ public class FamilyService {
     /**
      * 5. 가족 구성원 목록 조회 (GET /api/families/members)
      */
-    public FamilyMemberListResponse getFamilyMembers(UUID familyId) {
+    public FamilyMemberListResponse getFamilyMembers(UUID userId) {
+        UUID familyId = resolveFamilyId(userId);
+
         List<FamilyMemberResponse> members = familyProfileRepository.findAllByFamilyId(familyId).stream()
                 .map(profile -> {
-                    UUID userId = profile.getLinkedUserId();
-                    UUID accountId = null;
+                    UUID linkedUserId = profile.getLinkedUserId();
 
-                    // 1. 연동이 완료된 자녀라면 계좌 ID를 찾아옴
-                    if (userId != null) {
-                        // TODO: AccountRepository가 완성되면 아래 주석을 풀고 연결
-                        // accountId = accountRepository.findByUserId(userId)
-                        //         .map(AccountEntity::getId)
-                        //         .orElse(null);
+                    List<UUID> accountIds = linkedUserId != null
+                            ? accountRepository.findAllByUserId(linkedUserId)
+                                    .stream()
+                                    .map(Account::getId)
+                                    .toList()
+                            : List.of();
 
-                        // 임시 더미 데이터 (테스트용)
-                        accountId = UUID.randomUUID();
-                    }
-
-                    // 2. 응답 DTO 조립
                     return new FamilyMemberResponse(
                             profile.getId(),
-                            userId,
+                            linkedUserId,
                             profile.getName(),
                             profile.getRole(),
-                            accountId
+                            accountIds
                     );
                 })
                 .toList();
@@ -186,20 +204,19 @@ public class FamilyService {
 
     /**
      * 6. 가족 QR 수동 만료 (DELETE /api/families/qr)
-     * 발급된 QR 코드를 즉시 만료 처리하여 보안을 강화합니다.
      */
     @Transactional
-    public void expireFamilyQr(UUID familyId) {
+    public void expireFamilyQr(UUID userId) {
+        UUID familyId = resolveFamilyId(userId);
+
         FamilyEntity family = familyRepository.findById(familyId)
                 .orElseThrow(() -> new ApiException(FamilyErrorCode.FAMILY_NOT_FOUND));
 
-        // 이미 만료되었거나 QR이 없는 경우 예외 처리
         if (family.getQrCode() == null ||
                 (family.getQrExpiresAt() != null && family.getQrExpiresAt().isBefore(LocalDateTime.now()))) {
             throw new ApiException(FamilyErrorCode.QR_ALREADY_EXPIRED);
         }
 
-        // 만료 시간을 현재 시간보다 1초 과거로 설정하여 즉시 만료 처리
         family.updateQrCode(family.getQrCode(), LocalDateTime.now().minusSeconds(1));
     }
 
@@ -208,7 +225,9 @@ public class FamilyService {
      * 미연동 상태인 구성원의 이름과 생년월일을 수정합니다.
      */
     @Transactional
-    public void updateFamilyMember(UUID familyId, UUID profileId, FamilyMemberUpdateRequest request) {
+    public void updateFamilyMember(UUID userId, UUID profileId, FamilyMemberUpdateRequest request) {
+        UUID familyId = resolveFamilyId(userId);
+
         FamilyProfileEntity profile = familyProfileRepository.findById(profileId)
                 .orElseThrow(() -> new ApiException(FamilyErrorCode.PROFILE_NOT_FOUND));
 
@@ -217,7 +236,7 @@ public class FamilyService {
             throw new ApiException(FamilyErrorCode.UNAUTHORIZED_PROFILE_ACCESS);
         }
 
-        // 2. 상태 검증 (방안 A): 이미 실제 유저와 연동이 끝난 프로필은 수정 불가
+        // 2. 상태 검증: 이미 실제 유저와 연동이 끝난 프로필은 수정 불가
         if (profile.getLinkedUserId() != null) {
             throw new ApiException(FamilyErrorCode.PROFILE_ALREADY_LINKED);
         }
@@ -232,7 +251,9 @@ public class FamilyService {
      * 아직 가입하지 않은 미연동 프로필이라면 프로필 자체를 삭제(Hard Delete)합니다.
      */
     @Transactional
-    public void removeFamilyMember(UUID familyId, UUID profileId) {
+    public void removeFamilyMember(UUID userId, UUID profileId) {
+        UUID familyId = resolveFamilyId(userId);
+
         FamilyProfileEntity profile = familyProfileRepository.findById(profileId)
                 .orElseThrow(() -> new ApiException(FamilyErrorCode.PROFILE_NOT_FOUND));
 
@@ -241,13 +262,12 @@ public class FamilyService {
             throw new ApiException(FamilyErrorCode.UNAUTHORIZED_PROFILE_ACCESS);
         }
 
-        UUID userId = profile.getLinkedUserId();
-        if (userId != null) {
+        UUID linkedUserId = profile.getLinkedUserId();
+        if (linkedUserId != null) {
             // 2-A. 이미 연동된 유저인 경우 → 연동 해제 (Soft Disconnect)
             profile.unlinkUser();
 
-            // 자녀(User) 테이블의 family_id도 null로 초기화 (가족 그룹에서 완전히 제거)
-            User linkedUser = userRepository.findById(userId)
+            User linkedUser = userRepository.findById(linkedUserId)
                     .orElseThrow(() -> new ApiException(UserErrorCode.USER_NOT_FOUND));
             linkedUser.updateFamilyId(null);
         } else {
@@ -255,7 +275,4 @@ public class FamilyService {
             familyProfileRepository.delete(profile);
         }
     }
-
-
-
 }

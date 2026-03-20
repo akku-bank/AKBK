@@ -31,7 +31,7 @@ kakao:
 # Firebase 설정
 firebase:
   config:
-    path: ${FIREBASE_CONFIG_PATH}
+    path: ${FIREBASE_CONFIG_PATH:}
 
 # JWT 설정
 jwt:
@@ -108,3 +108,6 @@ akku:
         deposit-storage:         deposit-storage-group
         transaction-notification: transaction-notification-group
         transaction-jelly:       transaction-jelly-group
+# 암호화 설정
+encryption:
+  key: ${ENCRYPTION_KEY:}

@@ -6,7 +6,8 @@ import api from '../../api/axios';
 
 const PinNumberLoginScreen = ({ navigation }) => {
     const [pin, setPin] = useState('');
-    const { role, token } = useAuthStore();
+    const { user, token } = useAuthStore();
+    const role = user?.role;
 
     const handleKeyPress = (num) => {
         if (pin.length < 6) {
@@ -24,7 +25,22 @@ const PinNumberLoginScreen = ({ navigation }) => {
 
     const handlePinSubmit = async (finalPin) => {
         try {
-            // (임시) 웹개발용으로
+            /* ==========================================
+               [진짜 핀번호 검증 API 연동 코드]
+               ========================================== 
+            const response = await api.post('/auth/login', { pin: finalPin });
+            const { accessToken, role, name } = response.data; // 서버 응답 구조에 맞게 수정
+            
+            await setAuthInfo(accessToken, role, name);
+
+            if (role === 'PARENT') {
+                navigation.replace('ParentMain');
+            } else {
+                navigation.replace('ChildMain');
+            }
+            ========================================== */
+
+            // --- 실제 연동 시 아래 블록 전체 삭제 ---
             if (token?.includes("dev-bypass")) {
                 if (role === 'PARENT') {
                     navigation.replace('ParentMain');
@@ -34,14 +50,12 @@ const PinNumberLoginScreen = ({ navigation }) => {
                 return;
             }
 
-            // 실제 로그인 API
-            // await api.post('/auth/login', { pin: finalPin });
-
             if (role === 'PARENT') {
                 navigation.replace('ParentMain');
             } else {
                 navigation.replace('ChildMain');
             }
+            // ------------------------------------
         } catch (error) {
             console.error('PIN Login Error:', error);
             Alert.alert('오류', '비밀번호가 일치하지 않습니다.');

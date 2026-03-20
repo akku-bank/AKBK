@@ -1,10 +1,11 @@
 ﻿import React, { useContext, useState } from 'react';
-import { View, StyleSheet, TouchableOpacity, ScrollView, Image, Dimensions } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, ScrollView, Image, Dimensions, Alert } from 'react-native';
 import { AvatarContext } from '../../../components/child/avatar/AvatarContext';
 import { AVATAR_ITEMS } from '../../../components/child/avatar/AvatarAssets';
 import ChildAvatar from '../../../components/child/avatar/ChildAvatar';
 import FacePaintingModal from '../../../components/child/modals/FacePaintingModal';
 import CustomText from '../../../components/common/CustomText';
+import api from '../../../api/axios';
 
 const CATEGORIES = [
     { id: 'gender', label: '성별' },
@@ -23,6 +24,43 @@ const AvatarCustomScreen = ({ navigation }) => {
     const { equipState, updateEquip, setEquipState, facePaintPaths, setFacePaintPaths } = useContext(AvatarContext);
     const [selectedCategory, setSelectedCategory] = useState('hair');
     const [isFacePaintingModalVisible, setFacePaintingModalVisible] = useState(false);
+    const [ownedItemIds, setOwnedItemIds] = useState({});
+    const [frontendToUuidMap, setFrontendToUuidMap] = useState({});
+
+    // 백엔드 아이템 도감 페칭 및 보유 항목 필터링
+    React.useEffect(() => {
+        const fetchItems = async () => {
+            try {
+                const res = await api.get('/avatars/items');
+                const items = res.data?.data?.items || [];
+
+                const owned = {};
+                const mapF2U = {};
+
+                items.forEach(backendItem => {
+                    // 카테고리 매핑 (백엔드 -> 프론트엔드)
+                    let frontendCat = null;
+                    if (backendItem.category === 'HAT') frontendCat = 'hat';
+                    else if (backendItem.category === 'TOP') frontendCat = 'upper';
+                    else if (backendItem.category === 'BOTTOM') frontendCat = 'lower';
+
+                    if (frontendCat) {
+                        // 프론트의 AVATAR_ITEMS에서 name으로 일치하는 항목 찾기
+                        const matchingFrontendItem = AVATAR_ITEMS[frontendCat]?.find(i => i.name === backendItem.name);
+                        if (matchingFrontendItem) {
+                            if (backendItem.isOwned) {
+                                owned[matchingFrontendItem.id] = true;
+                            }
+                            mapF2U[matchingFrontendItem.id] = backendItem.itemId;
+                        }
+                    }
+                });
+                setOwnedItemIds(owned);
+                setFrontendToUuidMap(mapF2U);
+            } catch (e) { console.error('Avatar Items Fetch Error', e); }
+        };
+        fetchItems();
+    }, []);
 
     const handleGenderChange = (gender) => {
         setEquipState(prev => ({
@@ -69,15 +107,29 @@ const AvatarCustomScreen = ({ navigation }) => {
                 return true;
             });
         }
+        // 보유 중인 아이템만 필터링 (기본 얼굴/헤어/none은 통과)
+        items = items.filter(item => {
+            const isEquipCat = ['upper', 'lower', 'hat'].includes(selectedCategory);
+            const isBaseOrNone = item.id.includes('base') || item.id === 'none';
+            return !isEquipCat || isBaseOrNone || ownedItemIds[item.id];
+        });
+
         return (
             <ScrollView contentContainerStyle={styles.gridContainer}>
                 {items.map((item) => {
                     const isSelected = equipState[selectedCategory] === item.id;
+                    const isOwned = true; // 필터링을 거쳤으므로 전부 owned
+
                     return (
                         <TouchableOpacity
                             key={item.id}
-                            style={[styles.itemCard, isSelected && styles.selectedItemCard]}
-                            onPress={() => updateEquip(selectedCategory, item.id)}
+                            style={[
+                                styles.itemCard,
+                                isSelected && styles.selectedItemCard
+                            ]}
+                            onPress={() => {
+                                updateEquip(selectedCategory, item.id);
+                            }}
                         >
                             <View style={styles.itemImageContainer}>
                                 {item.img ? (
@@ -98,8 +150,21 @@ const AvatarCustomScreen = ({ navigation }) => {
         <View style={styles.fullscreen}>
             {/* 상단 헤더 */}
             <View style={styles.header}>
-                <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-                    <CustomText style={styles.backButtonText}>뒤로</CustomText>
+                <TouchableOpacity style={styles.backButton} onPress={async () => {
+                    // 백엔드에 아바타 장착 옷차림 저장
+                    try {
+                        const equippedUUIDs = [];
+                        if (equipState.hat && frontendToUuidMap[equipState.hat]) equippedUUIDs.push(frontendToUuidMap[equipState.hat]);
+                        if (equipState.upper && frontendToUuidMap[equipState.upper]) equippedUUIDs.push(frontendToUuidMap[equipState.upper]);
+                        if (equipState.lower && frontendToUuidMap[equipState.lower]) equippedUUIDs.push(frontendToUuidMap[equipState.lower]);
+
+                        if (equippedUUIDs.length >= 0) {
+                            await api.patch('/avatars/me/equipment', { equippedItemIds: equippedUUIDs });
+                        }
+                    } catch (e) { console.error('Avatar Save Error', e); }
+                    navigation.goBack();
+                }}>
+                    <CustomText style={styles.backButtonText}>저장 & 뒤로</CustomText>
                 </TouchableOpacity>
                 <CustomText style={styles.headerTitle}>아바타 꾸미기</CustomText>
                 <View style={{ width: 60 }} />

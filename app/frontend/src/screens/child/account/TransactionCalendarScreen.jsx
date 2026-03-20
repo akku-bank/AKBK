@@ -1,36 +1,55 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView } from 'react-native';
 import { scale, verticalScale } from 'react-native-size-matters';
 import useTransactionStore from '../../../store/transactionStore';
 import CustomText from '../../../components/common/CustomText';
+import api from '../../../api/axios';
 
 // 임시 달력/내역 데이터 (키: YYYY-MM-DD)
 const MOCK_DAYS = ['일', '월', '화', '수', '목', '금', '토'];
 
-const MOCK_TRANSACTIONS_BY_DATE = {
-    '2024-03-12': [
-        { id: '1', time: '14:30', title: '다이소 강남점', amount: -5000, type: 'PAYMENT' },
-        { id: '2', time: '09:00', title: '아빠 주말 용돈', amount: +10000, type: 'DEPOSIT' },
-    ],
-    '2024-03-10': [
-        { id: '3', time: '18:20', title: 'GS25 역삼점', amount: -1500, type: 'PAYMENT' }
-    ],
-    '2024-03-05': [
-        { id: '4', time: '20:00', title: '칭찬 송금 (방청소)', amount: +3000, type: 'DEPOSIT' }
-    ],
-    '2024-02-28': [
-        { id: '5', time: '12:00', title: '맥도날드 강남점', amount: -8000, type: 'PAYMENT' }
-    ]
-};
+// 빈 객체로 시작 (API 연동)
 
 const TransactionCalendarScreen = ({ navigation }) => {
-    // 기본 시작 날짜를 2024년 3월 12일로 설정 (데이터 보유 기준)
-    const [currentDate, setCurrentDate] = useState(new Date(2024, 2, 12));
-    const [selectedDate, setSelectedDate] = useState(12);
+    const today = new Date();
+    const [currentDate, setCurrentDate] = useState(today);
+    const [selectedDate, setSelectedDate] = useState(today.getDate());
+    const [transactionsByDate, setTransactionsByDate] = useState({});
+
     const hiddenTransactions = useTransactionStore(state => state.hiddenTransactionIds);
 
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth(); // 0-indexed
+
+    useEffect(() => {
+        const fetchMonthlyTransactions = async () => {
+            try {
+                const res = await api.get(`/bank/transactions?year=${year}&month=${month + 1}`);
+                const txList = res.data?.data?.transactions || [];
+
+                const grouped = {};
+                txList.forEach(tx => {
+                    if (!tx.date || tx.date.length < 14) return;
+
+                    const dateKey = `${tx.date.substring(0, 4)}-${tx.date.substring(4, 6)}-${tx.date.substring(6, 8)}`;
+                    const timeStr = `${tx.date.substring(8, 10)}:${tx.date.substring(10, 12)}`;
+
+                    if (!grouped[dateKey]) grouped[dateKey] = [];
+
+                    grouped[dateKey].push({
+                        id: tx.id || Math.random().toString(),
+                        time: timeStr,
+                        title: tx.merchantName,
+                        amount: tx.amount,
+                        type: tx.amount > 0 ? 'DEPOSIT' : 'PAYMENT',
+                        isHidden: tx.isHidden
+                    });
+                });
+                setTransactionsByDate(grouped);
+            } catch (e) { console.error('Transaction Fetch Error:', e); }
+        };
+        fetchMonthlyTransactions();
+    }, [year, month]);
 
     const prevMonth = () => {
         setCurrentDate(new Date(year, month - 1, 1));
@@ -60,7 +79,7 @@ const TransactionCalendarScreen = ({ navigation }) => {
         for (let i = 1; i <= daysInMonth; i++) {
             const isSelected = selectedDate === i;
             const dateKey = formatDateKey(year, month, i);
-            const hasHistory = !!MOCK_TRANSACTIONS_BY_DATE[dateKey];
+            const hasHistory = !!transactionsByDate[dateKey];
 
             days.push(
                 <TouchableOpacity
@@ -148,7 +167,7 @@ const TransactionCalendarScreen = ({ navigation }) => {
                     <View style={styles.transactionList}>
                         {(() => {
                             const dateKey = formatDateKey(year, month, selectedDate);
-                            const dailyTransactions = MOCK_TRANSACTIONS_BY_DATE[dateKey];
+                            const dailyTransactions = transactionsByDate[dateKey];
 
                             if (dailyTransactions && dailyTransactions.length > 0) {
                                 return dailyTransactions.map(renderTransactionItem);

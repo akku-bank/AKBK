@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, Alert } from 'react-native';
 import { scale, verticalScale } from 'react-native-size-matters';
 import CustomText from '../../../components/common/CustomText';
+import api from '../../../api/axios';
 
 // 임시 출석 데이터 (7일 연속 출석)
 const MOCK_ATTENDANCE = [
@@ -17,8 +18,47 @@ const MOCK_ATTENDANCE = [
 const AttendanceScreen = ({ navigation }) => {
     const [isCheckedIn, setIsCheckedIn] = useState(false);
 
+    /* ==========================================
+       [진짜 출석 현황 조회 API]
+       ========================================== 
+    const [attendanceData, setAttendanceData] = useState([]);
+    useEffect(() => {
+        const fetchAttendance = async () => {
+            try {
+                // 이번 주 출석 현황 조회
+                // const res = await api.get('/attendance');
+                // setAttendanceData(res.data.data);
+            } catch(e) { console.error('Attendance Fetch Error', e); }
+        };
+        fetchAttendance();
+    }, []);
+    ========================================== */
+
     const handleCheckIn = () => {
+        /* ==========================================
+           [진짜 출석 체크 처리 API]
+           ========================================== 
+        try {
+            // await api.post('/attendance/checkin');
+            // 출석 성공 후 현황 재조회 또는 로컬 상태 갱신
+        } catch(e) { console.error('Attendance CheckIn Error', e); }
+        ========================================== */
+
         setIsCheckedIn(true);
+        Alert.alert('출석 완료!', '오늘의 출석 도장을 찍었습니다.\n(7일 연속 달성 시 팝업 연동 필요)');
+    };
+
+    const handleBoxClick = (dayItem) => {
+        if (dayItem.day === 7) {
+            Alert.alert(
+                '스페셜 랜덤 박스',
+                '7일 연속 출석 달성!\n랜덤 박스를 열어보시겠어요? (가챠 연동 필요)',
+                [
+                    { text: '나중에', style: 'cancel' },
+                    { text: '열기', onPress: () => Alert.alert('알림', '가챠 스크린 연동 예정') }
+                ]
+            );
+        }
     };
 
     const renderDayCard = (item) => {
@@ -40,13 +80,18 @@ const AttendanceScreen = ({ navigation }) => {
         }
 
         return (
-            <View key={item.day} style={[styles.dayCard, cardStyle]}>
+            <TouchableOpacity
+                key={item.day}
+                style={[styles.dayCard, cardStyle]}
+                activeOpacity={item.day === 7 ? 0.7 : 1}
+                onPress={() => handleBoxClick(item)}
+            >
                 <CustomText style={[styles.dayLabel, textStyle]}>{item.label}</CustomText>
                 <View style={styles.iconCircle}>
                     <CustomText style={[styles.iconText, iconStyle]}>{icon}</CustomText>
                 </View>
                 <CustomText style={[styles.rewardText, textStyle]}>{item.reward}</CustomText>
-            </View>
+            </TouchableOpacity>
         );
     };
 

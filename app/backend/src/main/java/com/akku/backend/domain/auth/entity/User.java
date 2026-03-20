@@ -51,6 +51,10 @@ public class User {
     @Builder.Default
     private Integer level = 1;
 
+    @Column(nullable = false)
+    @Builder.Default
+    private Integer score = 0;
+
     @Column(name = "is_hidden", nullable = false)
     @Builder.Default
     private Boolean isHidden = false;
@@ -96,6 +100,14 @@ public class User {
      */
     public void updateFamilyId(UUID familyId) {
         this.familyId = familyId;
+    }
+
+    public void updateScore(int amount) {
+        this.score += amount;
+    }
+
+    public void updatePinPassword(String encodedPin) {
+        this.pinPassword = encodedPin;
     }
 }
 

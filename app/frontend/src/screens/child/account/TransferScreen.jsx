@@ -3,12 +3,33 @@ import { View, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, Alert, Ke
 import { scale, verticalScale } from 'react-native-size-matters';
 import CustomText from '../../../components/common/CustomText';
 import CustomTextInput from '../../../components/common/CustomTextInput';
+import api from '../../../api/axios';
 
 const TransferScreen = ({ navigation }) => {
     const [amount, setAmount] = useState('');
     const [recipient, setRecipient] = useState('');
+    const [pin, setPin] = useState('');
+    const [myAccount, setMyAccount] = useState(null);
+    const [familyMembers, setFamilyMembers] = useState([]);
 
-    const handleTransfer = () => {
+    React.useEffect(() => {
+        // 내 계좌 정보 가져오기
+        api.get('/bank/accounts/me').then(res => {
+            if (res.data?.data) {
+                const accs = res.data.data.accounts || [];
+                if (accs.length > 0) setMyAccount(accs[0]);
+                else setMyAccount(res.data.data);
+            }
+        }).catch(err => console.error('Child account load error', err));
+
+        // 가족 목록(송금 대상 찾기 위해) 가져오기
+        api.get('/families/members').then(res => {
+            const members = res.data?.data?.members;
+            if (members) setFamilyMembers(members);
+        }).catch(err => console.error('Family members load error', err));
+    }, []);
+
+    const handleTransfer = async () => {
         if (!amount || isNaN(amount) || parseInt(amount) <= 0) {
             Alert.alert('알림', '송금할 금액을 정확히 입력해주세요.');
             return;
@@ -17,12 +38,35 @@ const TransferScreen = ({ navigation }) => {
             Alert.alert('알림', '받는 사람을 입력해주세요.');
             return;
         }
+        if (!pin || pin.length < 6) {
+            Alert.alert('알림', '6자리 결제 비밀번호를 입력해주세요.');
+            return;
+        }
+        if (!myAccount?.accountId) {
+            Alert.alert('알림', '내 출금 계좌를 찾지 못했습니다.');
+            return;
+        }
 
-        Alert.alert(
-            '송금 완료',
-            `${recipient}님에게 ${parseInt(amount).toLocaleString()}원을 보냈어요!`,
-            [{ text: '확인', onPress: () => navigation.goBack() }]
-        );
+        // 가족 이름으로 계좌 찾기
+        const targetMember = familyMembers.find(m => m.name === recipient.trim());
+        if (!targetMember || !targetMember.accountId) {
+            Alert.alert('알림', `${recipient}님을 가족 목록에서 찾을 수 없거나 계좌가 연동되어 있지 않아요.`);
+            return;
+        }
+
+        try {
+            await api.post('/bank/accounts/transfers', {
+                withdrawalAccountId: myAccount.accountId,
+                targetAccountId: targetMember.accountId,
+                amount: parseInt(amount),
+                pin: pin
+            });
+            Alert.alert('송금 완료', '송금이 성공적으로 완료되었습니다.', [{ text: '확인', onPress: () => navigation.goBack() }]);
+            return;
+        } catch (e) {
+            console.error('Transfer Error:', e.response?.data || e.message);
+            Alert.alert('오류', e.response?.data?.message || '송금 처리에 실패했습니다.');
+        }
     };
 
     return (
@@ -60,9 +104,21 @@ const TransferScreen = ({ navigation }) => {
                         <CustomText style={styles.currencyText}>원</CustomText>
                     </View>
 
+                    <CustomText style={[styles.sectionLabel, { marginTop: verticalScale(16) }]}>결제 비밀번호</CustomText>
+                    <CustomTextInput
+                        style={styles.pinInput}
+                        keyboardType="number-pad"
+                        value={pin}
+                        onChangeText={setPin}
+                        placeholder="6자리 PIN 입력"
+                        placeholderTextColor="#D1D5DB"
+                        secureTextEntry
+                        maxLength={6}
+                    />
+
                     <View style={styles.balanceInfo}>
                         <CustomText style={styles.balanceLabel}>내 지갑 잔액:</CustomText>
-                        <CustomText style={styles.balanceValue}>140,000원</CustomText>
+                        <CustomText style={styles.balanceValue}>{myAccount ? (myAccount.balance?.toLocaleString() || 0) : '0'}원</CustomText>
                     </View>
 
                 </ScrollView>
@@ -97,6 +153,10 @@ const styles = StyleSheet.create({
     },
     amountInput: { flex: 1, fontSize: scale(32), fontWeight: '900', color: '#111' },
     currencyText: { fontSize: scale(24), fontWeight: 'bold', color: '#111', marginLeft: scale(8) },
+    pinInput: {
+        backgroundColor: '#F3F4F6', borderRadius: scale(12), paddingHorizontal: scale(16), paddingVertical: verticalScale(14),
+        fontSize: scale(18), color: '#111', marginBottom: verticalScale(24), fontWeight: 'bold', letterSpacing: 8
+    },
     balanceInfo: { flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center' },
     balanceLabel: { fontSize: scale(14), color: '#6B7280', marginRight: scale(4) },
     balanceValue: { fontSize: scale(14), fontWeight: 'bold', color: '#111' },

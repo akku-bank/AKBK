@@ -3,14 +3,39 @@ import { View, StyleSheet, SafeAreaView, TouchableOpacity, Alert } from 'react-n
 import { scale, verticalScale } from 'react-native-size-matters';
 import CustomText from '../../../components/common/CustomText';
 import CustomTextInput from '../../../components/common/CustomTextInput';
+import api from '../../../api/axios';
 
 const ParentTransferScreen = ({ navigation, route }) => {
-    const child = route.params?.child || { name: '자녀' };
+    const child = route.params?.child || { name: '자녀', accountId: '' };
     const [amount, setAmount] = useState('');
+    const [pin, setPin] = useState('');
+    const [myAccount, setMyAccount] = useState(null);
+
+    React.useEffect(() => {
+        api.get('/bank/accounts/me').then(res => {
+            if (res.data?.data) {
+                const accs = res.data.data.accounts || [];
+                if (accs.length > 0) setMyAccount(accs[0]);
+                else setMyAccount(res.data.data); // in case single object
+            }
+        }).catch(err => console.error('Parent account load error', err));
+    }, []);
 
     const handleTransfer = () => {
         if (!amount || amount === '0') {
             Alert.alert('알림', '보낼 금액을 입력해주세요.');
+            return;
+        }
+        if (!pin || pin.length < 6) {
+            Alert.alert('알림', '6자리 결제 비밀번호를 입력해주세요.');
+            return;
+        }
+        if (!myAccount?.accountId) {
+            Alert.alert('알림', '출금할 계좌를 찾지 못했습니다.');
+            return;
+        }
+        if (!child?.accountId) {
+            Alert.alert('알림', '자녀의 계좌 번호가 등록되어있지 않습니다.');
             return;
         }
 
@@ -21,8 +46,20 @@ const ParentTransferScreen = ({ navigation, route }) => {
                 { text: '취소', style: 'cancel' },
                 {
                     text: '보내기',
-                    onPress: () => {
-                        Alert.alert('송금 완료!', `${child.name}의 계좌로 입금되었습니다.`, [{ text: '확인', onPress: () => navigation.goBack() }]);
+                    onPress: async () => {
+                        try {
+                            await api.post('/bank/accounts/transfers', {
+                                withdrawalAccountId: myAccount.accountId,
+                                targetAccountId: child.accountId,
+                                amount: parseInt(amount),
+                                pin: pin
+                            });
+                            Alert.alert('송금 완료!', `${child.name}의 계좌로 입금되었습니다.`, [{ text: '확인', onPress: () => navigation.goBack() }]);
+                            return;
+                        } catch (e) {
+                            console.error('Transfer Error:', e.response?.data || e.message);
+                            Alert.alert('오류', e.response?.data?.message || '송금 처리에 실패했습니다.');
+                        }
                     }
                 }
             ]
@@ -42,6 +79,12 @@ const ParentTransferScreen = ({ navigation, route }) => {
             <View style={styles.container}>
                 <CustomText style={styles.promptText}>{child.name}에게</CustomText>
                 <CustomText style={styles.promptText}>얼마를 보낼까요?</CustomText>
+
+                {myAccount && (
+                    <CustomText style={{ fontSize: scale(14), color: '#6B7280', marginTop: verticalScale(4) }}>
+                        내 잔액: {myAccount.balance?.toLocaleString() || 0}원
+                    </CustomText>
+                )}
 
                 <View style={styles.inputContainer}>
                     <CustomTextInput
@@ -64,6 +107,17 @@ const ParentTransferScreen = ({ navigation, route }) => {
                     ))}
                 </View>
 
+                <CustomText style={[styles.promptText, { fontSize: scale(16), marginTop: verticalScale(24) }]}>결제 비밀번호</CustomText>
+                <CustomTextInput
+                    style={styles.pinInput}
+                    keyboardType="number-pad"
+                    value={pin}
+                    onChangeText={setPin}
+                    placeholder="6자리 PIN 입력"
+                    placeholderTextColor="#D1D5DB"
+                    secureTextEntry
+                    maxLength={6}
+                />
             </View>
 
             <View style={styles.footer}>
@@ -96,6 +150,11 @@ const styles = StyleSheet.create({
     quickAmountRow: { flexDirection: 'row', gap: scale(8) },
     quickAmountBtn: { backgroundColor: '#F3F4F6', paddingHorizontal: scale(16), paddingVertical: verticalScale(10), borderRadius: scale(20) },
     quickAmountText: { fontSize: scale(14), fontWeight: 'bold', color: '#4B5563' },
+
+    pinInput: {
+        backgroundColor: '#F3F4F6', borderRadius: scale(12), paddingHorizontal: scale(16), paddingVertical: verticalScale(14),
+        fontSize: scale(18), color: '#111', marginTop: verticalScale(12), marginBottom: verticalScale(32), fontWeight: 'bold', letterSpacing: 8
+    },
 
     footer: { padding: scale(16), backgroundColor: '#FFFFFF' },
     mainButton: { backgroundColor: '#A3E635', paddingVertical: verticalScale(16), borderRadius: scale(16), alignItems: 'center' },
