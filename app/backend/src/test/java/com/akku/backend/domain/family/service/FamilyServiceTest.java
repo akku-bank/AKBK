@@ -196,7 +196,7 @@ class FamilyServiceTest {
         }
 
         @Test
-        @DisplayName("5. 가족 구성원 목록 조회 - 리스트 반환 확인")
+        @DisplayName("5. 가족 구성원 목록 조회 - 단일 계좌 반환 확인")
         void getFamilyMembers_Success() {
             UUID userId = UUID.randomUUID();
             UUID familyId = UUID.randomUUID();
@@ -219,6 +219,55 @@ class FamilyServiceTest {
 
             assertFalse(response.members().isEmpty());
             assertEquals(List.of(accountId), response.members().get(0).accountIds());
+        }
+
+        @Test
+        @DisplayName("5-A. 가족 구성원 목록 조회 - 연동된 유저가 여러 계좌 보유 시 전체 반환")
+        void getFamilyMembers_MultipleAccounts() {
+            UUID userId = UUID.randomUUID();
+            UUID familyId = UUID.randomUUID();
+            UUID linkedUserId = UUID.randomUUID();
+
+            User mockUser = mock(User.class);
+            given(mockUser.getFamilyId()).willReturn(familyId);
+            given(userRepository.findById(userId)).willReturn(Optional.of(mockUser));
+
+            FamilyProfileEntity profile = mock(FamilyProfileEntity.class);
+            given(profile.getLinkedUserId()).willReturn(linkedUserId);
+            given(familyProfileRepository.findAllByFamilyId(familyId)).willReturn(List.of(profile));
+
+            UUID accountId1 = UUID.randomUUID();
+            UUID accountId2 = UUID.randomUUID();
+            Account mockAccount1 = mock(Account.class);
+            Account mockAccount2 = mock(Account.class);
+            given(mockAccount1.getId()).willReturn(accountId1);
+            given(mockAccount2.getId()).willReturn(accountId2);
+            given(accountRepository.findAllByUserId(linkedUserId)).willReturn(List.of(mockAccount1, mockAccount2));
+
+            FamilyMemberListResponse response = familyService.getFamilyMembers(userId);
+
+            assertEquals(List.of(accountId1, accountId2), response.members().get(0).accountIds());
+        }
+
+        @Test
+        @DisplayName("5-B. 가족 구성원 목록 조회 - 미연동 프로필은 accountIds 빈 리스트 반환")
+        void getFamilyMembers_UnlinkedProfile_EmptyAccountIds() {
+            UUID userId = UUID.randomUUID();
+            UUID familyId = UUID.randomUUID();
+
+            User mockUser = mock(User.class);
+            given(mockUser.getFamilyId()).willReturn(familyId);
+            given(userRepository.findById(userId)).willReturn(Optional.of(mockUser));
+
+            FamilyProfileEntity profile = mock(FamilyProfileEntity.class);
+            given(profile.getLinkedUserId()).willReturn(null); // 미연동
+            given(familyProfileRepository.findAllByFamilyId(familyId)).willReturn(List.of(profile));
+
+            FamilyMemberListResponse response = familyService.getFamilyMembers(userId);
+
+            assertFalse(response.members().isEmpty());
+            assertTrue(response.members().get(0).accountIds().isEmpty());
+            verify(accountRepository, never()).findAllByUserId(any());
         }
     }
 
