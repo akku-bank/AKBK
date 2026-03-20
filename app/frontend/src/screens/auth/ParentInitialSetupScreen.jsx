@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, TextInput, KeyboardAvoidingView, Platform, Alert, ScrollView } from 'react-native';
+import CustomText from '../../components/common/CustomText';
 import { RFValue } from 'react-native-responsive-fontsize';
 import api from '../../api/axios';
 
@@ -33,8 +34,8 @@ const ParentInitialSetupScreen = ({ navigation, route }) => {
                 <ScrollView contentContainerStyle={styles.scrollContent}>
 
                     <View style={styles.stepContainer}>
-                        <Text style={styles.title}>자산 정보 등록</Text>
-                        <Text style={styles.subtitle}>아이들의 용돈을 충전해 줄{'\n'}부모님의 주거래 계좌를 연결할까요?</Text>
+                        <CustomText style={styles.title}>자산 정보 등록</CustomText>
+                        <CustomText style={styles.subtitle}>아이들의 용돈을 충전해 줄{'\n'}부모님의 주거래 계좌를 연결할까요?</CustomText>
 
                         <TextInput
                             style={styles.input}
@@ -46,7 +47,7 @@ const ParentInitialSetupScreen = ({ navigation, route }) => {
                             autoFocus={true}
                         />
                         <View style={styles.infoBox}>
-                            <Text style={styles.infoText}>🔒 입력하신 정보는 안전하게 암호화되어 보관됩니다.</Text>
+                            <CustomText style={styles.infoText}>🔒 입력하신 정보는 안전하게 암호화되어 보관됩니다.</CustomText>
                         </View>
                     </View>
 
@@ -58,7 +59,7 @@ const ParentInitialSetupScreen = ({ navigation, route }) => {
                         onPress={handleNext}
                         activeOpacity={0.8}
                     >
-                        <Text style={styles.submitButtonText}>완료</Text>
+                        <CustomText style={styles.submitButtonText}>완료</CustomText>
                     </TouchableOpacity>
                 </View>
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Platform, ActivityIndicator, Alert } from 'react-native';
+import CustomText from '../../components/common/CustomText';
 import { RFValue } from 'react-native-responsive-fontsize';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 
@@ -31,7 +32,7 @@ const QRScanScreen = ({ navigation, route }) => {
             navigation.replace('ChildFamilyJoin', {
                 tempToken,
                 role,
-                familyCode: "123-123-123"
+                familyCode: "mock-family-code"
             });
         }, 1500);
     };
@@ -50,12 +51,12 @@ const QRScanScreen = ({ navigation, route }) => {
         return (
             <SafeAreaView style={styles.safeArea}>
                 <View style={styles.centeredContainer}>
-                    <Text style={styles.title}>카메라 권한이 필요합니다.</Text>
+                    <CustomText style={styles.title}>카메라 권한이 필요합니다.</CustomText>
                     <TouchableOpacity style={styles.mockScanButton} onPress={requestPermission}>
-                        <Text style={styles.mockScanButtonText}>권한 요청하기</Text>
+                        <CustomText style={styles.mockScanButtonText}>권한 요청하기</CustomText>
                     </TouchableOpacity>
                     <TouchableOpacity style={[styles.mockScanButton, { marginTop: RFValue(12), backgroundColor: '#4B5563' }]} onPress={handleMockScan}>
-                        <Text style={styles.mockScanButtonText}>건너뛰기(임시)</Text>
+                        <CustomText style={styles.mockScanButtonText}>건너뛰기(임시)</CustomText>
                     </TouchableOpacity>
                 </View>
             </SafeAreaView>
@@ -66,8 +67,8 @@ const QRScanScreen = ({ navigation, route }) => {
         <SafeAreaView style={styles.safeArea}>
             <View style={styles.container}>
                 <View style={styles.headerSection}>
-                    <Text style={styles.title}>가족 QR 스캔</Text>
-                    <Text style={styles.subtitle}>부모님의 화면에 있는 QR코드를{'\n'}스캔해주세요.</Text>
+                    <CustomText style={styles.title}>가족 QR 스캔</CustomText>
+                    <CustomText style={styles.subtitle}>부모님의 화면에 있는 QR코드를{'\n'}스캔해주세요.</CustomText>
                 </View>
 
                 <View style={styles.cameraPlaceholder}>
@@ -96,7 +97,7 @@ const QRScanScreen = ({ navigation, route }) => {
                         disabled={scanned}
                         activeOpacity={0.8}
                     >
-                        <Text style={styles.mockScanButtonText}>가상 스캔 테스트 (임시)</Text>
+                        <CustomText style={styles.mockScanButtonText}>가상 스캔 테스트 (임시)</CustomText>
                     </TouchableOpacity>
                 </View>
             </View>

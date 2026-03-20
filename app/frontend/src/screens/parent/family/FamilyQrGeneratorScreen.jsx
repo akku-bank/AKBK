@@ -1,5 +1,6 @@
 ﻿import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, SafeAreaView, TouchableOpacity, Image } from 'react-native';
+import { View, StyleSheet, SafeAreaView, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
+import QRCode from 'react-native-qrcode-svg';
 import { scale, verticalScale } from 'react-native-size-matters';
 import CustomText from '../../../components/common/CustomText';
 import api from '../../../api/axios';
@@ -12,6 +13,7 @@ const FamilyQrGeneratorScreen = ({ navigation }) => {
     useEffect(() => {
         const fetchQr = async () => {
             try {
+                const res = await api.get('/families/qr');
                 const qrRes = res.data?.data;
                 if (!qrRes) return;
                 setQrData(qrRes.qrCode);
@@ -58,6 +60,7 @@ const FamilyQrGeneratorScreen = ({ navigation }) => {
 
                 <TouchableOpacity style={styles.refreshBtn} onPress={async () => {
                     try {
+                        const res = await api.post('/families/qr/reissue');
                         const qrRes = res.data?.data;
                         if (!qrRes) return;
                         setQrData(qrRes.qrCode);

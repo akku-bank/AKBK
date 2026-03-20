@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Platform, Alert } from 'react-native';
+import CustomText from '../../components/common/CustomText';
 import { RFValue } from 'react-native-responsive-fontsize';
 import useAuthStore from '../../store/useAuthStore';
 import api from '../../api/axios';
@@ -80,13 +81,13 @@ const PinNumberLoginScreen = ({ navigation }) => {
                             if (key === 'delete') {
                                 return (
                                     <TouchableOpacity key={keyIndex} style={styles.keypadKey} onPress={handleDelete}>
-                                        <Text style={styles.keypadText}>{'<'}</Text>
+                                        <CustomText style={styles.keypadText}>{'<'}</CustomText>
                                     </TouchableOpacity>
                                 );
                             }
                             return (
                                 <TouchableOpacity key={keyIndex} style={styles.keypadKey} onPress={() => handleKeyPress(key)}>
-                                    <Text style={styles.keypadText}>{key}</Text>
+                                    <CustomText style={styles.keypadText}>{key}</CustomText>
                                 </TouchableOpacity>
                             );
                         })}
@@ -100,7 +101,7 @@ const PinNumberLoginScreen = ({ navigation }) => {
         <SafeAreaView style={styles.safeArea}>
             <View style={styles.container}>
                 <View style={styles.headerSection}>
-                    <Text style={styles.title}>비밀번호를 입력해주세요</Text>
+                    <CustomText style={styles.title}>비밀번호를 입력해주세요</CustomText>
                 </View>
 
                 <View style={styles.dotsContainer}>

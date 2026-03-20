@@ -86,9 +86,6 @@ const ChildHomeScreen = ({ navigation }) => {
                         <CustomText style={styles.balanceCurrency}>원</CustomText>
                     </View>
                     <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
-                        <TouchableOpacity style={{ backgroundColor: '#A3E635', padding: 8, borderRadius: 8 }} onPress={() => setLevelUpModalVisible(true)}>
-                            <CustomText style={{ fontSize: 12, fontWeight: 'bold' }}>LvUP 테스트</CustomText>
-                        </TouchableOpacity>
                         <TouchableOpacity style={styles.qrButton} onPress={() => setQrModalVisible(true)}>
                             <Image source={require('../../../assets/qr.png')} style={styles.qrImage} />
                         </TouchableOpacity>
@@ -104,6 +101,7 @@ const ChildHomeScreen = ({ navigation }) => {
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.pillButton}>
                         <CustomText style={styles.pillButtonText}>알림</CustomText>
+                        {homeData?.hasUnreadNotification && <View style={styles.redDot} />}
                     </TouchableOpacity>
                 </View>
 
@@ -117,7 +115,7 @@ const ChildHomeScreen = ({ navigation }) => {
 
                 {/* 아바타 영역 */}
                 <View style={styles.avatarSection}>
-                    <CustomText style={styles.levelText}>LV.{homeData ? homeData.level : 1}</CustomText>
+                    <CustomText style={styles.levelText}>LV.{homeData ? homeData.level : 1} | 소비점수 {homeData ? homeData.score : 0}점</CustomText>
                     <CustomText style={styles.nameText}>{user ? user.name : '김싸피'}</CustomText>
 
                     <View style={styles.avatarActionRow}>
@@ -245,6 +243,15 @@ const styles = StyleSheet.create({
         fontSize: scale(15),
         fontWeight: '900',
         color: '#374151',
+    },
+    redDot: {
+        position: 'absolute',
+        top: scale(4),
+        right: scale(8),
+        width: scale(6),
+        height: scale(6),
+        borderRadius: scale(3),
+        backgroundColor: '#EF4444',
     },
     donationCard: {
         backgroundColor: '#E5E7EB',

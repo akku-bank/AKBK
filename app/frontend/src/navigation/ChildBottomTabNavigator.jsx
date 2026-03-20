@@ -1,6 +1,6 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { View, Text } from 'react-native';
+import { View, Text, Platform } from 'react-native';
 import ChildHomeScreen from '../screens/child/home/ChildHomeScreen';
 import ChallengeScreen from '../screens/child/challenge/ChallengeScreen';
 import SafeBoxScreen from '../screens/child/safeBox/SafeBoxScreen';
@@ -26,7 +26,7 @@ const ChildBottomTabNavigator = () => {
                 tabBarStyle: {
                     backgroundColor: '#FFFFFF',
                     borderTopColor: '#E5E7EB',
-                    height: 60,
+                    height: 90,
                 },
                 tabBarItemStyle: {
                     justifyContent: 'center',
@@ -35,11 +35,12 @@ const ChildBottomTabNavigator = () => {
                     margin: 0,
                 },
                 tabBarLabelStyle: {
-                    fontSize: 14,
-                    fontWeight: 'bold',
+                    fontFamily: 'Mulmaru',
+                    fontSize: 21,
+                    ...(Platform.OS === 'android' ? { fontWeight: 'normal', fontStyle: 'normal' } : { fontWeight: 'bold' }),
                     position: 'absolute',
                     top: '50%',
-                    transform: [{ translateY: -10 }],
+                    transform: [{ translateY: -15 }],
                 },
                 tabBarShowLabel: true,
                 headerShown: false,

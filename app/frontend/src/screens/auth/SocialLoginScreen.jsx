@@ -1,5 +1,7 @@
 ﻿import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Alert, ActivityIndicator, SafeAreaView, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Alert, ActivityIndicator, Platform } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import CustomText from '../../components/common/CustomText';
 import { RFValue } from 'react-native-responsive-fontsize';
 import { login as kakaoLogin } from '@react-native-seoul/kakao-login';
 import api from '../../api/axios';
@@ -28,7 +30,27 @@ const SocialLoginScreen = ({ navigation }) => {
             console.log('JWT 발급 성공!');
             console.log('토큰 키:', jwt);
 
-            await setAuthInfo(jwt, null, null);
+            let userRole = null;
+            let userName = null;
+
+            if (isRegistered && jwt) {
+                try {
+                    // 저장된 토큰을 이용해 ROLE 및 NAME 조회를 위해 /users/me 호출
+                    const userRes = await api.get('/users/me', {
+                        headers: { Authorization: `Bearer ${jwt}` }
+                    });
+                    const profile = userRes.data?.data || userRes.data || {};
+                    userRole = profile.role || null;
+                    userName = profile.name || null;
+                    console.log(`유저 프로필 로드 완료: 역할=${userRole}, 이름=${userName}`);
+                } catch (e) {
+                    console.error('사용자 정보 조회 실패:', e);
+                }
+            }
+
+            // authInfo (zustand) 에 jwt, role, name 함께 업데이트
+            await setAuthInfo(jwt, userRole, userName);
+
             if (isRegistered) {
                 navigation.replace('PinNumberLogin');
             } else {
@@ -45,12 +67,6 @@ const SocialLoginScreen = ({ navigation }) => {
         } finally {
             setIsLoading(false);
         }
-
-        /* --- 임시 모의 로직 (삭제) ---
-        setTimeout(async () => {
-            setIsLoading(false);
-        }, 500);
-        */
     };
 
     return (
@@ -63,7 +79,7 @@ const SocialLoginScreen = ({ navigation }) => {
                         style={styles.logoImage}
                         resizeMode="contain"
                     />
-                    <Text style={styles.subtitle}>우리 가족 금융 생활은 아꾸뱅꾸로</Text>
+                    <CustomText style={styles.subtitle}>우리 가족 금융 생활은 아꾸뱅꾸로</CustomText>
                 </View>
 
                 {/* 로그인 버튼 영역 */}
@@ -77,7 +93,7 @@ const SocialLoginScreen = ({ navigation }) => {
                         {isLoading ? (
                             <ActivityIndicator color="#000000" />
                         ) : (
-                            <Text style={[styles.kakaoButtonText, { color: '#000000' }]}>카카오로 시작하기</Text>
+                            <CustomText style={[styles.kakaoButtonText, { color: '#000000' }]}>카카오로 시작하기</CustomText>
                         )}
                     </TouchableOpacity>
                 </View>
@@ -93,10 +109,11 @@ const styles = StyleSheet.create({
     },
     container: {
         flex: 1,
+        paddingTop: Platform.OS === 'ios' ? RFValue(10) : RFValue(20),
+        paddingBottom: Platform.OS === 'web' ? RFValue(120) : (Platform.OS === 'ios' ? RFValue(60) : RFValue(30)),
         paddingHorizontal: RFValue(24),
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingVertical: RFValue(50),
     },
     logoSection: {
         flex: 1,
@@ -107,18 +124,19 @@ const styles = StyleSheet.create({
     logoImage: {
         width: RFValue(180),
         height: RFValue(180),
-        marginBottom: RFValue(24),
+        marginBottom: 0,
     },
     subtitle: {
         fontSize: RFValue(15),
         color: '#6B7280',
         fontWeight: '500',
-        marginTop: RFValue(10),
+        marginTop: RFValue(8),
     },
     buttonSection: {
         width: '100%',
         alignItems: 'center',
-        paddingBottom: Platform.OS === 'web' ? RFValue(70) : (Platform.OS === 'ios' ? RFValue(20) : RFValue(10)),
+        marginTop: RFValue(10),
+        marginBottom: RFValue(40),
     },
     kakaoButton: {
         width: '100%',

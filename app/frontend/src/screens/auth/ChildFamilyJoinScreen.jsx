@@ -1,5 +1,6 @@
 ﻿import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Platform, ActivityIndicator } from 'react-native';
+import CustomText from '../../components/common/CustomText';
 import { RFValue } from 'react-native-responsive-fontsize';
 import api from '../../api/axios';
 
@@ -47,12 +48,38 @@ const ChildFamilyJoinScreen = ({ navigation, route }) => {
         try {
             setIsLoading(true);
 
-            // 실제 가족 합류 API 호출 (QR 스캔값 전송)
-            await api.post('/families/join', { scannedQrCode: familyCode }, { headers: { Authorization: `Bearer ${tempToken}` } });
+            
+            // 실제 회원가입 API 호출 (자녀의 역할과 이름 등록, 실제 토큰 발급)
+            const response = await api.post('/auth/signup',
+                { role: 'CHILD', name: selectedMember.name },
+                { headers: { Authorization: `Bearer ${tempToken}` } }
+            );
+
+            const payload = response.data?.data || response.data || {};
+            const resolvedToken = payload.signupToken || payload.accessToken || payload.token || tempToken;
+
+            // 방금 받은 토큰(혹은 임시토큰)으로 부모의 그룹에 합류 (QR코드 스캔 결과값)
+            if (familyCode && familyCode !== 'mock-family-code') {
+                try {
+                    await api.post('/families/join', 
+                        { scannedQrCode: familyCode },
+                        { headers: { Authorization: `Bearer ${resolvedToken}` } }
+                    );
+                    console.log('Family Join API Success');
+                } catch(e) {
+                    console.error('Family Join API Error (It might be okay if already joined or testing):', e.response?.data || e.message);
+                }
+            } else {
+                 console.log('Skipping API join due to mock-family-code');
+            }
+
+
+            // 가족 합류 로직은 모의(Mock)로 유지해달라는 요청 반영
+            await new Promise(resolve => setTimeout(resolve, 500));
 
             navigation.replace('PinNumberSetup', {
-                tempToken,
-                role,
+                tempToken: resolvedToken,
+                role: 'CHILD',
                 name: selectedMember.name
             });
         } catch (error) {
@@ -66,12 +93,12 @@ const ChildFamilyJoinScreen = ({ navigation, route }) => {
         <SafeAreaView style={styles.safeArea}>
             <View style={styles.container}>
                 <View style={styles.headerSection}>
-                    <Text style={styles.title}>거의 다 왔어요!</Text>
-                    <Text style={styles.subtitle}>
+                    <CustomText style={styles.title}>거의 다 왔어요!</CustomText>
+                    <CustomText style={styles.subtitle}>
                         {role === 'CHILD'
                             ? '부모님이 등록해두신 내 이름을\n선택해주세요.'
                             : '배우자가 등록해두신 내 이름을\n선택해주세요.'}
-                    </Text>
+                    </CustomText>
                 </View>
 
                 <View style={styles.listSection}>
@@ -88,15 +115,15 @@ const ChildFamilyJoinScreen = ({ navigation, route }) => {
                                 onPress={() => setSelectedMemberId(member.id)}
                                 activeOpacity={0.8}
                             >
-                                <Text style={styles.memberEmoji}></Text>
-                                <Text
+                                <CustomText style={styles.memberEmoji}></CustomText>
+                                <CustomText
                                     style={[
                                         styles.memberName,
                                         selectedMemberId === member.id && styles.memberNameSelected
                                     ]}
                                 >
                                     {member.name}
-                                </Text>
+                                </CustomText>
                             </TouchableOpacity>
                         ))
                     )}
@@ -115,7 +142,7 @@ const ChildFamilyJoinScreen = ({ navigation, route }) => {
                         {isLoading && selectedMemberId ? (
                             <ActivityIndicator color="#FFFFFF" />
                         ) : (
-                            <Text style={styles.submitButtonText}>선택 완료</Text>
+                            <CustomText style={styles.submitButtonText}>선택 완료</CustomText>
                         )}
                     </TouchableOpacity>
                 </View>

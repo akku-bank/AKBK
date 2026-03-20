@@ -18,7 +18,7 @@ const ParentBottomTabNavigator = () => {
                 tabBarStyle: {
                     backgroundColor: '#FFFFFF',
                     borderTopColor: '#E5E7EB',
-                    height: 80,
+                    height: 90,
                 },
                 tabBarItemStyle: {
                     justifyContent: 'center',
@@ -31,7 +31,7 @@ const ParentBottomTabNavigator = () => {
                 },
                 tabBarLabelStyle: {
                     fontFamily: 'Mulmaru',
-                    fontSize: 15,
+                    fontSize: 21,
                     ...(Platform.OS === 'android' ? { fontWeight: 'normal', fontStyle: 'normal' } : { fontWeight: 'bold' }),
                     position: 'absolute',
                     top: '50%',

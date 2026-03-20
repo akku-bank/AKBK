@@ -3,6 +3,7 @@ import { View, StyleSheet, SafeAreaView, TouchableOpacity, Alert, ScrollView } f
 import { scale, verticalScale } from 'react-native-size-matters';
 import CustomText from '../../../components/common/CustomText';
 import CustomTextInput from '../../../components/common/CustomTextInput';
+import api from '../../../api/axios';
 
 const ParentAccountCreateScreen = ({ navigation }) => {
     const [childName, setChildName] = useState('');

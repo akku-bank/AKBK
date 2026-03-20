@@ -1,7 +1,8 @@
-﻿import React from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView } from 'react-native';
 import { scale, verticalScale } from 'react-native-size-matters';
 import CustomText from '../../../components/common/CustomText';
+import api from '../../../api/axios';
 
 // 더미 데이터 (숨김 처리된 내역 반영)
 const TRANSACTIONS = [
@@ -14,6 +15,25 @@ const TRANSACTIONS = [
 const ParentHistoryScreen = ({ navigation, route }) => {
     // route.params.childName 등 자녀 정보를 받아올 수 있음
     const childName = route?.params?.childName || '김싸피';
+    const childId = route?.params?.childId || 'temp-child-id';
+
+    const [transactions, setTransactions] = useState([]);
+    const [balance, setBalance] = useState(0);
+
+    useEffect(() => {
+        const fetchHistory = async () => {
+            try {
+                const res = await api.get(`/bank/transactions/${childId}`);
+                if (res.data?.data) {
+                    setTransactions(res.data.data.transactions || []);
+                    if (res.data.data.balance !== undefined) setBalance(res.data.data.balance);
+                }
+            } catch (err) {
+                console.error('Fetch Parent History Error', err);
+            }
+        };
+        fetchHistory();
+    }, [childId]);
 
     return (
         <SafeAreaView style={styles.safeArea}>
@@ -28,17 +48,17 @@ const ParentHistoryScreen = ({ navigation, route }) => {
             <ScrollView contentContainerStyle={styles.container}>
                 <View style={styles.balanceCard}>
                     <CustomText style={styles.balanceLabel}>현재 잔액</CustomText>
-                    <CustomText style={styles.balanceAmount}>140,000 <CustomText style={styles.balanceCurrency}>원</CustomText></CustomText>
+                    <CustomText style={styles.balanceAmount}>{balance.toLocaleString()} <CustomText style={styles.balanceCurrency}>원</CustomText></CustomText>
                 </View>
 
                 <View style={styles.listSection}>
                     <CustomText style={styles.listTitle}>최근 거래</CustomText>
-                    {TRANSACTIONS.map(tx => (
+                    {transactions.map(tx => (
                         <View key={tx.id} style={styles.txRow}>
                             <View style={styles.txLeft}>
                                 <CustomText style={styles.txDate}>{tx.date}</CustomText>
                                 {/* 자녀가 숨김 처리한 내역은 부모 화면에서도 '비공개내역'으로 표시 */}
-                                <CustomText style={[styles.txPlace, tx.isHidden && styles.txPlaceHidden]}>{tx.place}</CustomText>
+                                <CustomText style={[styles.txPlace, tx.isHidden && styles.txPlaceHidden]}>{tx.merchantName || tx.place}</CustomText>
                             </View>
                             <View style={styles.txRight}>
                                 <CustomText style={[styles.txAmount, tx.isIncome && styles.txIncome]}>

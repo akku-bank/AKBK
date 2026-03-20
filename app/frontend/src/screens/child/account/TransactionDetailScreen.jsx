@@ -76,31 +76,19 @@ const TransactionDetailScreen = ({ route, navigation }) => {
                     </View>
                 </View>
 
-                {/* 14세 이상 프라이버시 설정 카드 */}
-                {isOver14 && (
-                    <View style={styles.privacyCard}>
-                        <View style={styles.privacyTextContent}>
-                            <CustomText style={styles.privacyTitle}>부모님께 내역 숨기기</CustomText>
-                            <CustomText style={styles.privacySubtitle}>14세 이상은 거래 내역을 숨길 수 있어요.</CustomText>
-                        </View>
-                        <Switch
-                            trackColor={{ false: '#D1D5DB', true: '#3B82F6' }}
-                            thumbColor={'#FFFFFF'}
-                            ios_backgroundColor="#D1D5DB"
-                            onValueChange={async () => {
-                                /* ==========================================
-                                   [진짜 내역 비공개 상태 변경 API]
-                                   ========================================== 
-                                try {
-                                    // await api.patch(`/transactions/${detailData.id}/hidden`, { isHidden: !isPrivate });
-                                } catch (e) { console.error('Privacy Update Error:', e); }
-                                ========================================== */
-                                toggleHideTransaction(detailData.id);
-                            }}
-                            value={isPrivate}
-                        />
+                {/* 개별 결제 숨김 처리 로직 (부모님께 가맹점만 숨김) */}
+                <View style={styles.privacyCard}>
+                    <View style={styles.privacyTextContent}>
+                        <CustomText style={styles.privacyTitle}>이 결제 부모님께 숨기기 !</CustomText>
+                        <CustomText style={styles.privacySubtitle}>부모님께는 '비공개 내역'으로 보여요.</CustomText>
                     </View>
-                )}
+                    <Switch
+                        trackColor={{ false: '#E5E7EB', true: '#A3E635' }}
+                        thumbColor={'#FFFFFF'}
+                        value={isPrivate}
+                        onValueChange={() => toggleHideTransaction(detailData.id)}
+                    />
+                </View>
 
                 {/* 추가 액션 버튼 (명세 표기용) */}
                 <TouchableOpacity style={styles.memoButton}>

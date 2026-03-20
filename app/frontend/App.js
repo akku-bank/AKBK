@@ -13,6 +13,8 @@ import TransactionCalendarScreen from './src/screens/child/account/TransactionCa
 import TransactionDetailScreen from './src/screens/child/account/TransactionDetailScreen';
 import TransferScreen from './src/screens/child/account/TransferScreen';
 import PaymentScreen from './src/screens/child/account/PaymentScreen';
+import CardListScreen from './src/screens/child/account/CardListScreen';
+import CardProductScreen from './src/screens/child/account/CardProductScreen';
 import QuizScreen from './src/screens/child/challenge/QuizScreen';
 import ChallengeProposeScreen from './src/screens/child/challenge/ChallengeProposeScreen';
 import WeeklyReportScreen from './src/screens/child/report/WeeklyReportScreen';
@@ -47,7 +49,10 @@ import ParentHistoryScreen from './src/screens/parent/account/ParentHistoryScree
 import GachaScreen from './src/screens/child/safeBox/GachaScreen';
 import FriendListScreen from './src/screens/child/social/FriendListScreen';
 import FriendTownScreen from './src/screens/child/social/FriendTownScreen';
+import FriendSuccessScreen from './src/screens/child/social/FriendSuccessScreen';
+import FriendAlreadyScreen from './src/screens/child/social/FriendAlreadyScreen';
 import AttendanceScreen from './src/screens/child/challenge/AttendanceScreen';
+import ESGChallengeScreen from './src/screens/child/challenge/ESGChallengeScreen';
 import BadgeMapScreen from './src/screens/child/safeBox/BadgeMapScreen';
 
 SplashScreen.preventAutoHideAsync().catch(() => { });
@@ -108,13 +113,18 @@ export default function App() {
               <Stack.Screen name="GachaScreen" component={GachaScreen} />
               <Stack.Screen name="FriendList" component={FriendListScreen} />
               <Stack.Screen name="FriendTown" component={FriendTownScreen} />
+              <Stack.Screen name="FriendSuccess" component={FriendSuccessScreen} />
+              <Stack.Screen name="FriendAlready" component={FriendAlreadyScreen} />
               <Stack.Screen name="AttendanceScreen" component={AttendanceScreen} />
+              <Stack.Screen name="ESGChallengeScreen" component={ESGChallengeScreen} />
               <Stack.Screen name="BadgeMap" component={BadgeMapScreen} />
 
               <Stack.Screen name="TransactionCalendar" component={TransactionCalendarScreen} />
               <Stack.Screen name="TransactionDetail" component={TransactionDetailScreen} />
               <Stack.Screen name="Transfer" component={TransferScreen} />
               <Stack.Screen name="Payment" component={PaymentScreen} />
+              <Stack.Screen name="CardListScreen" component={CardListScreen} />
+              <Stack.Screen name="CardProductScreen" component={CardProductScreen} />
 
               <Stack.Screen name="ParentHome" component={ParentHomeScreen} />
               <Stack.Screen name="ParentTransferScreen" component={ParentTransferScreen} />
