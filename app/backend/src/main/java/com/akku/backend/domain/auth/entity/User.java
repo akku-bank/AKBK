@@ -104,6 +104,8 @@ public class User {
 
     public void updateScore(int amount) {
         this.score += amount;
+    }
+
     public void updatePinPassword(String encodedPin) {
         this.pinPassword = encodedPin;
     }
