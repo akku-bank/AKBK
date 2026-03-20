@@ -17,17 +17,27 @@ const ChildHomeScreen = ({ navigation }) => {
     const { equipState, setEquipState } = useContext(AvatarContext);
     const { user } = useAuthStore(); // get name from store since it's not in response
     const [homeData, setHomeData] = useState(null);
+    const [realBalance, setRealBalance] = useState(null);
 
     useEffect(() => {
         const fetchHomeData = async () => {
             try {
-                const res = await api.get('/home');
+                const [res, accRes] = await Promise.all([
+                    api.get('/home'),
+                    api.get('/bank/accounts/me').catch(() => null) // fail gracefully
+                ]);
+
                 const homeDataResult = res.data?.data;
                 if (!homeDataResult) return;
 
                 setHomeData(homeDataResult);
                 if (homeDataResult.hasLevelChanged) {
                     setLevelUpModalVisible(true);
+                }
+
+                // 실제 계좌 데이터가 있으면 덮어쓰기
+                if (accRes && accRes.data?.data?.accounts && accRes.data.data.accounts.length > 0) {
+                    setRealBalance(accRes.data.data.accounts[0].balance);
                 }
 
                 // 백엔드 아바타 장착 상태 동기화
@@ -81,7 +91,7 @@ const ChildHomeScreen = ({ navigation }) => {
                     <View style={styles.balanceWrapper}>
                         <CustomText style={styles.balanceLabel}>잔액</CustomText>
                         <CustomText style={styles.balanceAmount}>
-                            {homeData ? homeData.cashBalance.toLocaleString() : '0'}
+                            {realBalance !== null ? realBalance.toLocaleString() : (homeData ? homeData.cashBalance.toLocaleString() : '0')}
                         </CustomText>
                         <CustomText style={styles.balanceCurrency}>원</CustomText>
                     </View>

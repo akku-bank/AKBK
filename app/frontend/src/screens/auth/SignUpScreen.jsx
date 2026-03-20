@@ -6,7 +6,7 @@ import api from '../../api/axios';
 import useAuthStore from '../../store/useAuthStore';
 
 const SignUpScreen = ({ navigation, route }) => {
-    const { tempToken, role } = route.params || {};
+    const { tempToken, role, familyCode } = route.params || {};
     const [name, setName] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const { setAuthInfo } = useAuthStore();
@@ -29,7 +29,7 @@ const SignUpScreen = ({ navigation, route }) => {
             const resolvedToken = payload.signupToken || payload.accessToken || payload.token || tempToken;
 
             if (role === 'PARENT') {
-                navigation.replace('ParentInitialSetup', { tempToken: resolvedToken, role, name });
+                navigation.replace('ParentInitialSetup', { tempToken: resolvedToken, role, name, familyCode });
             } else {
                 navigation.replace('PinNumberSetup', { tempToken: resolvedToken, role, name });
             }

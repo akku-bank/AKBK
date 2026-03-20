@@ -3,8 +3,10 @@ import { View, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Alert, Sw
 import { RFValue } from 'react-native-responsive-fontsize';
 import CustomText from '../../../components/common/CustomText';
 import api from '../../../api/axios';
+import useTransactionStore from '../../../store/transactionStore';
 
 const ChildAccountScreen = ({ navigation }) => {
+    const hiddenTransactionIds = useTransactionStore(state => state.hiddenTransactionIds);
     // 임시 계좌 데이터 상태
     const [balance, setBalance] = useState(0);
     const [transactions, setTransactions] = useState([
@@ -77,17 +79,22 @@ const ChildAccountScreen = ({ navigation }) => {
                         </TouchableOpacity>
                     </View>
 
-                    {transactions.map(item => (
-                        <TouchableOpacity key={item.id} style={styles.historyRow} onPress={() => navigation.navigate('TransactionDetail', { transaction: item })}>
-                            <View>
-                                <CustomText style={styles.historyTitle}>{item.title}</CustomText>
-                                <CustomText style={styles.historyDate}>{item.date}</CustomText>
-                            </View>
-                            <CustomText style={[styles.historyAmount, { color: item.amount < 0 ? '#111' : '#3B82F6' }]}>
-                                {item.amount > 0 ? '+' : ''}{item.amount.toLocaleString()}원
-                            </CustomText>
-                        </TouchableOpacity>
-                    ))}
+                    {transactions.map(item => {
+                        const isHidden = hiddenTransactionIds.includes(item.id);
+                        return (
+                            <TouchableOpacity key={item.id} style={styles.historyRow} onPress={() => navigation.navigate('TransactionDetail', { transaction: item })}>
+                                <View>
+                                    <CustomText style={[styles.historyTitle, isHidden && { color: '#9CA3AF', fontStyle: 'italic' }]}>
+                                        {isHidden ? '비공개 내역 🤫' : item.title}
+                                    </CustomText>
+                                    <CustomText style={styles.historyDate}>{item.date}</CustomText>
+                                </View>
+                                <CustomText style={[styles.historyAmount, { color: item.amount < 0 ? '#111' : '#3B82F6' }]}>
+                                    {item.amount > 0 ? '+' : ''}{item.amount.toLocaleString()}원
+                                </CustomText>
+                            </TouchableOpacity>
+                        );
+                    })}
                 </View>
 
             </ScrollView>

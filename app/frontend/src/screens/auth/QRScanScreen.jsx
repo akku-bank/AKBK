@@ -17,23 +17,23 @@ const QRScanScreen = ({ navigation, route }) => {
 
     const handleBarCodeScanned = ({ type, data }) => {
         setScanned(true);
-        // 실제 API 연동 시 QR 정보 전송 필요
+        // 실제 API 연동 시 QR 정보 전송 필요 -> 여기 어떻게 테스트할까요 ..
         // (임시) 일단 다음 화면으로
-        navigation.replace('ChildFamilyJoin', {
-            tempToken,
-            role,
-            familyCode: data || "mock-family-code" // 인식된 데이터 전달
-        });
+        if (role === 'PARENT') {
+            navigation.replace('ParentFamilyJoin', { tempToken, role, familyCode: data || "mock-family-code" });
+        } else {
+            navigation.replace('ChildFamilyJoin', { tempToken, role, familyCode: data || "mock-family-code" });
+        }
     };
 
     const handleMockScan = () => {
         setScanned(true);
         setTimeout(() => {
-            navigation.replace('ChildFamilyJoin', {
-                tempToken,
-                role,
-                familyCode: "mock-family-code"
-            });
+            if (role === 'PARENT') {
+                navigation.replace('ParentFamilyJoin', { tempToken, role, familyCode: "mock-family-code" });
+            } else {
+                navigation.replace('ChildFamilyJoin', { tempToken, role, familyCode: "mock-family-code" });
+            }
         }, 1500);
     };
 
@@ -63,6 +63,7 @@ const QRScanScreen = ({ navigation, route }) => {
         );
     }
 
+    //부모용 QR 스캔은 다른 스크린에서 관리
     return (
         <SafeAreaView style={styles.safeArea}>
             <View style={styles.container}>
@@ -97,7 +98,7 @@ const QRScanScreen = ({ navigation, route }) => {
                         disabled={scanned}
                         activeOpacity={0.8}
                     >
-                        <CustomText style={styles.mockScanButtonText}>가상 스캔 테스트 (임시)</CustomText>
+                        <CustomText style={styles.mockScanButtonText}>(임시) 스캔 완료</CustomText>
                     </TouchableOpacity>
                 </View>
             </View>

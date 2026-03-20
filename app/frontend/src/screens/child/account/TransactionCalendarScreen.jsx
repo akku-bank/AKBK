@@ -36,13 +36,10 @@ const TransactionCalendarScreen = ({ navigation }) => {
 
                     if (!grouped[dateKey]) grouped[dateKey] = [];
 
-                    // 모든 결제(지출) 가맹점명 일괄 숨김 처리 (카테고리 또는 '결제 내역' 표출)
-                    const displayTitle = tx.amount < 0 ? (tx.category || '결제 내역') : tx.merchantName;
-
                     grouped[dateKey].push({
                         id: tx.id || Math.random().toString(),
                         time: timeStr,
-                        title: displayTitle,
+                        title: tx.merchantName || '결제 내역',
                         amount: tx.amount,
                         type: tx.amount > 0 ? 'DEPOSIT' : 'PAYMENT',
                         isHidden: tx.isHidden

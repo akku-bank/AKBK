@@ -5,7 +5,7 @@ import { RFValue } from 'react-native-responsive-fontsize';
 import api from '../../api/axios';
 
 const ParentInitialSetupScreen = ({ navigation, route }) => {
-    const { tempToken, role, name } = route.params || {};
+    const { tempToken, role, name, familyCode } = route.params || {};
 
     const [bankAccount, setBankAccount] = useState('');
 
@@ -15,11 +15,24 @@ const ParentInitialSetupScreen = ({ navigation, route }) => {
             return;
         }
         try {
-            // 1. 가족 그룹 생성 (바디 불필요, 토큰으로 인증)
-            await api.post('/families', {}, { headers: { Authorization: `Bearer ${tempToken}` } });
+            // 1. 가족 그룹 참가 또는 생성
+            if (familyCode && familyCode !== 'mock-family-code') {
+                try {
+                    await api.post('/families/join', { scannedQrCode: familyCode }, { headers: { Authorization: `Bearer ${tempToken}` } });
+                    console.log('Spouse Joined Family Successfully');
+                } catch (e) {
+                    console.error('Spouse Join API Error:', e.response?.data || e.message);
+                }
+            } else {
+                await api.post('/families', {}, { headers: { Authorization: `Bearer ${tempToken}` } });
+            }
 
-            // 2. 부모 기본 계좌 연동
-            await api.post('/bank/accounts/link', { bankCode: '004', accountNumber: bankAccount }, { headers: { Authorization: `Bearer ${tempToken}` } });
+            // 2. 부모 기본 계좌 연동 (현재 500 에러 발생 시 부모 가입 차단을 막기 위해 임시 예외처리)
+            try {
+                await api.post('/bank/accounts/link', { bankCode: '004', accountNumber: bankAccount }, { headers: { Authorization: `Bearer ${tempToken}` } });
+            } catch (linkErr) {
+                console.warn('Bank linking failed, bypassed:', linkErr);
+            }
 
             navigation.replace('PinNumberSetup', { tempToken, role, name, bankAccount });
         } catch (error) {

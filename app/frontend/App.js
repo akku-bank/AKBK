@@ -38,6 +38,7 @@ import PinNumberLoginScreen from './src/screens/auth/PinNumberLoginScreen';
 import PinNumberSetupScreen from './src/screens/auth/PinNumberSetupScreen';
 import QRScanScreen from './src/screens/auth/QRScanScreen';
 import ChildFamilyJoinScreen from './src/screens/auth/ChildFamilyJoinScreen';
+import ParentFamilyJoinScreen from './src/screens/auth/ParentFamilyJoinScreen';
 
 import ParentBottomTabNavigator from './src/navigation/ParentBottomTabNavigator';
 import FamilyQrGeneratorScreen from './src/screens/parent/family/FamilyQrGeneratorScreen';
@@ -103,6 +104,7 @@ export default function App() {
               <Stack.Screen name="PinNumberSetup" component={PinNumberSetupScreen} />
               <Stack.Screen name="QRScan" component={QRScanScreen} />
               <Stack.Screen name="ChildFamilyJoin" component={ChildFamilyJoinScreen} />
+              <Stack.Screen name="ParentFamilyJoin" component={ParentFamilyJoinScreen} />
 
               <Stack.Screen name="ChildMain" component={ChildBottomTabNavigator} />
               <Stack.Screen name="ParentMain" component={ParentBottomTabNavigator} />
