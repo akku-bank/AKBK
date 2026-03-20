@@ -97,6 +97,10 @@ public class User {
     public void updateFamilyId(UUID familyId) {
         this.familyId = familyId;
     }
+
+    public void updatePinPassword(String encodedPin) {
+        this.pinPassword = encodedPin;
+    }
 }
 
 

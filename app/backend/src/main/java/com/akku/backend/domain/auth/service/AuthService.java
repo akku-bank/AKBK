@@ -1,8 +1,11 @@
 package com.akku.backend.domain.auth.service;
 
 import com.akku.backend.domain.auth.dto.KakaoUserInfo;
+import com.akku.backend.domain.auth.dto.LoginRequest;
 import com.akku.backend.domain.auth.dto.RefreshData;
 import com.akku.backend.domain.auth.dto.SignupData;
+import com.akku.backend.domain.auth.dto.SignupPinData;
+import com.akku.backend.domain.auth.dto.SignupPinRequest;
 import com.akku.backend.domain.auth.dto.SignupRequest;
 import com.akku.backend.domain.auth.dto.SocialLoginData;
 import com.akku.backend.domain.auth.entity.LogoutToken;
@@ -33,6 +36,7 @@ public class AuthService {
     private final UserRepository userRepository;
     private final LogoutTokenRepository logoutTokenRepository;
     private final JwtProvider jwtProvider;
+    private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
 
     /**
      * 카카오 소셜 로그인 처리
@@ -102,9 +106,67 @@ public class AuthService {
         user.updateProfile(request.name(), request.role());
 
         String signupToken = jwtProvider.generateAccessToken(user.getId(), user.getRole());
-        log.info("signup 완료 - userId: {}, role: {}", userId, request.role());
+        log.info("signup 1단계 완료(프로필 저장) - userId: {}, role: {}", userId, request.role());
 
         return new SignupData(signupToken);
+    }
+
+    /**
+     * 신규 계정 가입 2단계: PIN 설정 → 최종 JWT 토큰 발급
+     */
+    @Transactional
+    public SignupPinData signupPin(UUID userId, SignupPinRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ApiException(UserErrorCode.USER_NOT_FOUND));
+
+        // PIN 암호화 저장
+        String encodedPin = passwordEncoder.encode(request.pin());
+        user.updatePinPassword(encodedPin);
+
+        String accessToken = jwtProvider.generateAccessToken(user.getId(), user.getRole());
+        String refreshToken = jwtProvider.generateRefreshToken(user.getId());
+
+        log.info("signup 2단계 완료(PIN 설정) - userId: {}", userId);
+
+        return new SignupPinData(accessToken, refreshToken);
+    }
+
+    /**
+     * 간편 로그인: userId와 pin 확인 후 JWT 토큰 발급
+     */
+    @Transactional
+    public SocialLoginData login(LoginRequest request) {
+        // userId(UUID 형식) 기반 사용자 조회
+        UUID uuid;
+        try {
+            uuid = UUID.fromString(request.userId());
+        } catch (IllegalArgumentException e) {
+            throw new ApiException(AuthErrorCode.LOGIN_FAILED);
+        }
+
+        User user = userRepository.findById(uuid)
+                .orElseThrow(() -> new ApiException(UserErrorCode.USER_NOT_FOUND));
+
+        // 비밀번호 검증
+        if (user.getPinPassword() == null || !passwordEncoder.matches(request.pin(), user.getPinPassword())) {
+            throw new ApiException(AuthErrorCode.PIN_MISMATCH);
+        }
+
+        // 탈퇴/비활성 사용자 차단
+        if (!user.getIsActive()) {
+            throw new ApiException(AuthErrorCode.ACCESS_DENIED);
+        }
+
+        // FCM 토큰 갱신
+        if (request.fcmToken() != null) {
+            user.updateFcmToken(request.fcmToken());
+        }
+
+        String accessToken = jwtProvider.generateAccessToken(user.getId(), user.getRole());
+        String refreshToken = jwtProvider.generateRefreshToken(user.getId());
+        log.info("간편 로그인 성공 - userId: {}", user.getId());
+
+        return SocialLoginData.existingUser(accessToken, refreshToken);
     }
 
     /**

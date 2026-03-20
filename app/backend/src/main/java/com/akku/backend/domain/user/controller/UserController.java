@@ -83,4 +83,18 @@ public class UserController {
                 null
         ));
     }
+
+    /**
+     * PIN 변경
+     * PATCH /api/users/me/pin
+     */
+    @Operation(summary = "간편 비밀번호 변경", description = "로그인된 사용자의 PIN을 확인 후 새로운 PIN으로 변경합니다.")
+    @PatchMapping("/me/pin")
+    public ResponseEntity<ApiResponse<Void>> updatePin(
+            @AuthenticationPrincipal UUID userId,
+            @Valid @RequestBody com.akku.backend.domain.user.dto.PinChangeRequest request
+    ) {
+        userService.updatePin(userId, request);
+        return ResponseEntity.ok(ApiResponse.success("간편 비밀번호가 성공적으로 변경되었습니다.", null));
+    }
 }
