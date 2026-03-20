@@ -181,22 +181,20 @@ public class FamilyService {
         List<FamilyMemberResponse> members = familyProfileRepository.findAllByFamilyId(familyId).stream()
                 .map(profile -> {
                     UUID linkedUserId = profile.getLinkedUserId();
-                    UUID accountId = null;
 
-                    if (linkedUserId != null) {
-                        accountId = accountRepository.findAllByUserId(linkedUserId)
-                                .stream()
-                                .findFirst()
-                                .map(Account::getId)
-                                .orElse(null);
-                    }
+                    List<UUID> accountIds = linkedUserId != null
+                            ? accountRepository.findAllByUserId(linkedUserId)
+                                    .stream()
+                                    .map(Account::getId)
+                                    .toList()
+                            : List.of();
 
                     return new FamilyMemberResponse(
                             profile.getId(),
                             linkedUserId,
                             profile.getName(),
                             profile.getRole(),
-                            accountId
+                            accountIds
                     );
                 })
                 .toList();
