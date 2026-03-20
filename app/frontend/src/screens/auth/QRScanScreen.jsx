@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Platform, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Platform, ActivityIndicator, Alert, TextInput } from 'react-native';
 import CustomText from '../../components/common/CustomText';
 import { RFValue } from 'react-native-responsive-fontsize';
 import { CameraView, useCameraPermissions } from 'expo-camera';
@@ -8,6 +8,7 @@ const QRScanScreen = ({ navigation, route }) => {
     const { tempToken, role } = route.params || {};
     const [scanned, setScanned] = useState(false);
     const [permission, requestPermission] = useCameraPermissions();
+    const [manualCode, setManualCode] = useState('');
 
     useEffect(() => {
         if (!permission?.granted && permission?.canAskAgain) {
@@ -27,14 +28,15 @@ const QRScanScreen = ({ navigation, route }) => {
     };
 
     const handleMockScan = () => {
+        const payloadCode = manualCode.trim() || 'mock-family-code';
         setScanned(true);
         setTimeout(() => {
             if (role === 'PARENT') {
-                navigation.replace('ParentFamilyJoin', { tempToken, role, familyCode: "mock-family-code" });
+                navigation.replace('ParentFamilyJoin', { tempToken, role, familyCode: payloadCode });
             } else {
-                navigation.replace('ChildFamilyJoin', { tempToken, role, familyCode: "mock-family-code" });
+                navigation.replace('ChildFamilyJoin', { tempToken, role, familyCode: payloadCode });
             }
-        }, 1500);
+        }, 800);
     };
 
     if (!permission) {
@@ -90,8 +92,15 @@ const QRScanScreen = ({ navigation, route }) => {
                     </CameraView>
                 </View>
 
-                {/* 개발용 우회 버튼 */}
+                {/* 개발용 수동 입력 및 우회 버튼 */}
                 <View style={styles.buttonSection}>
+                    <TextInput
+                        style={styles.manualInput}
+                        placeholder="[개발용] 가족 코드 수동 입력"
+                        placeholderTextColor="#9CA3AF"
+                        value={manualCode}
+                        onChangeText={setManualCode}
+                    />
                     <TouchableOpacity
                         style={styles.mockScanButton}
                         onPress={handleMockScan}
@@ -216,6 +225,17 @@ const styles = StyleSheet.create({
         fontSize: RFValue(16),
         fontWeight: 'bold',
         color: '#FFFFFF',
+    },
+    manualInput: {
+        width: '100%',
+        backgroundColor: '#FFFFFF',
+        height: RFValue(50),
+        borderRadius: RFValue(12),
+        paddingHorizontal: RFValue(16),
+        fontSize: RFValue(14),
+        fontWeight: 'bold',
+        color: '#111',
+        marginBottom: RFValue(4),
     }
 });
 

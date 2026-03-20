@@ -56,6 +56,11 @@ const FamilyQrGeneratorScreen = ({ navigation }) => {
                         <Image source={require('../../../assets/qr.png')} style={styles.qrImage} resizeMode="contain" />
                     </View>
                     <CustomText style={styles.timerText}>인증 유효시간 {formatTime(timeLeft)}</CustomText>
+                    {qrData && (
+                        <CustomText style={{ marginTop: 12, color: '#6B7280', fontSize: scale(14), fontWeight: 'bold' }}>
+                            [개발용 코드] {qrData}
+                        </CustomText>
+                    )}
                 </View>
 
                 <TouchableOpacity style={styles.refreshBtn} onPress={async () => {
