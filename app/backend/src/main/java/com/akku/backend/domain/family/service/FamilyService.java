@@ -8,6 +8,8 @@ import com.akku.backend.domain.family.repository.FamilyRepository;
 import com.akku.backend.domain.family.exception.FamilyErrorCode;
 import com.akku.backend.domain.auth.entity.User;
 import com.akku.backend.domain.auth.repository.UserRepository;
+import com.akku.backend.domain.bank.entity.Account;
+import com.akku.backend.domain.bank.repository.AccountRepository;
 import com.akku.backend.domain.user.exception.UserErrorCode;
 import com.akku.backend.global.error.ApiException;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +28,7 @@ public class FamilyService {
     private final FamilyRepository familyRepository;
     private final FamilyProfileRepository familyProfileRepository;
     private final UserRepository userRepository;
+    private final AccountRepository accountRepository;
 
     // ── 헬퍼: userId → User 조회 후 familyId 반환. 가족 미가입 시 FAMILY_NOT_FOUND ──
     private UUID resolveFamilyId(UUID userId) {
@@ -178,21 +181,20 @@ public class FamilyService {
         List<FamilyMemberResponse> members = familyProfileRepository.findAllByFamilyId(familyId).stream()
                 .map(profile -> {
                     UUID linkedUserId = profile.getLinkedUserId();
-                    UUID accountId = null;
 
-                    if (linkedUserId != null) {
-                        // TODO: AccountRepository가 완성되면 아래 주석을 풀고 연결
-                        // accountId = accountRepository.findByUserId(linkedUserId)
-                        //         .map(AccountEntity::getId)
-                        //         .orElse(null);
-                    }
+                    List<UUID> accountIds = linkedUserId != null
+                            ? accountRepository.findAllByUserId(linkedUserId)
+                                    .stream()
+                                    .map(Account::getId)
+                                    .toList()
+                            : List.of();
 
                     return new FamilyMemberResponse(
                             profile.getId(),
                             linkedUserId,
                             profile.getName(),
                             profile.getRole(),
-                            accountId
+                            accountIds
                     );
                 })
                 .toList();
