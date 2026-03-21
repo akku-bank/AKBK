@@ -133,4 +133,18 @@ public class AuthController {
         RefreshData data = authService.refresh(request.refreshToken());
         return ResponseEntity.ok(ApiResponse.success("토큰이 재발급되었습니다.", data));
     }
+
+    /**
+     * 개발용 우회 로그인
+     * POST /api/auth/test/login
+     * Body: { "userId": "uuid" }
+     */
+    @Operation(summary = "개발용 우회 로그인", description = "카카오 인증 없이 유저 ID만으로 로그인을 시도합니다.")
+    @PostMapping("/test/login")
+    public ResponseEntity<ApiResponse<SocialLoginData>> testLogin(
+            @Valid @RequestBody com.akku.backend.domain.auth.dto.TestLoginRequest request
+    ) {
+        SocialLoginData data = authService.testLogin(request.userId());
+        return ResponseEntity.ok(ApiResponse.success("개발용 로그인에 성공했습니다.", data));
+    }
 }
