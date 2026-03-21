@@ -11,5 +11,8 @@ public record SignupRequest(
 
         @NotBlank(message = "이름은 필수입니다.")
         @Size(max = 50, message = "이름은 50자 이내여야 합니다.")
-        String name
+        String name,
+
+        @jakarta.validation.constraints.NotNull(message = "생년월일은 필수입니다.")
+        java.time.LocalDate birthDate
 ) {}
