@@ -73,6 +73,10 @@ public class SpendingChallenge {
         this.parentMessage = null;
     }
 
-
+    // 부모의 승인/반려 처리
+    public void replyToChallenge(ChallengeStatus status, String parentMessage) {
+        this.status = status;
+        this.parentMessage = parentMessage;
+    }
 
 }

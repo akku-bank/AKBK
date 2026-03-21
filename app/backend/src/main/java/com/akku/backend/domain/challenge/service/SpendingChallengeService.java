@@ -7,8 +7,8 @@ import com.akku.backend.domain.challenge.repository.SpendingChallengeRepository;
 import com.akku.backend.domain.challenge.exception.ChallengeErrorCode;
 import com.akku.backend.domain.auth.entity.User;
 import com.akku.backend.domain.auth.repository.UserRepository;
+import com.akku.backend.domain.user.exception.UserErrorCode;
 import com.akku.backend.global.error.ApiException;
-// UserErrorCode 등 유저 도메인 에러 코드가 있다고 가정 (import 생략)
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,8 +34,7 @@ public class SpendingChallengeService {
 
         // 1. 유저 정보 조회
         User user = userRepository.findById(userId)
-                // TODO: UserErrorCode.USER_NOT_FOUND 등 유저 도메인 에러 코드로 대체 필요
-                .orElseThrow(() -> new RuntimeException("존재하지 않는 사용자입니다."));
+                .orElseThrow(() -> new ApiException(UserErrorCode.USER_NOT_FOUND));
 
         LocalDate today = LocalDate.now();
 
@@ -80,7 +79,7 @@ public class SpendingChallengeService {
 
         // 1. 유저 및 챌린지 조회
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("존재하지 않는 사용자입니다."));
+                .orElseThrow(() -> new ApiException(UserErrorCode.USER_NOT_FOUND));
 
         SpendingChallenge challenge = spendingChallengeRepository.findById(challengeId)
                 .orElseThrow(() -> new ApiException(ChallengeErrorCode.CHALLENGE_NOT_FOUND));
@@ -135,7 +134,7 @@ public class SpendingChallengeService {
 
         // 1. 유저 및 챌린지 조회
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("존재하지 않는 사용자입니다."));
+                .orElseThrow(() -> new ApiException(UserErrorCode.USER_NOT_FOUND));
 
         SpendingChallenge challenge = spendingChallengeRepository.findById(challengeId)
                 .orElseThrow(() -> new ApiException(ChallengeErrorCode.CHALLENGE_NOT_FOUND));
@@ -152,5 +151,50 @@ public class SpendingChallengeService {
 
         // 4. Hard Delete
         spendingChallengeRepository.delete(challenge);
+    }
+
+    /*
+        4. 소비 챌린지 승인/반려 (부모)
+        - 승인 대기중인 상태에서만 가능
+     */
+    @Transactional
+    public SpendingChallengeDto.StatusUpdateResponse updateChallengeStatus(UUID parentId, UUID challengeId, SpendingChallengeDto.StatusUpdateRequest request) {
+
+        // 1. 부모 유저 및 챌린지 조회
+        User parent = userRepository.findById(parentId)
+                .orElseThrow(() -> new ApiException(UserErrorCode.USER_NOT_FOUND));
+
+        SpendingChallenge challenge = spendingChallengeRepository.findById(challengeId)
+                .orElseThrow(() -> new ApiException(ChallengeErrorCode.CHALLENGE_NOT_FOUND));
+
+        // 2. 부모 권한 검증 (User 엔티티의 Role 필드 확인 - 실제 필드명에 맞게 수정 필요)
+        // if (parent.getRole() != Role.PARENT) {
+        //     throw new ApiException(ChallengeErrorCode.ACCESS_DENIED);
+        // }
+
+        // 3. 가족 관계 검증 (부모의 가족 ID와 챌린지 등록 자녀의 가족 ID 일치 여부 확인)
+        // User 엔티티에 Family 연관관계가 있다고 가정
+        // if (!parent.getFamily().getId().equals(challenge.getUser().getFamily().getId())) {
+        //     throw new ApiException(ChallengeErrorCode.ACCESS_DENIED);
+        // }
+
+        // 4. 요청된 상태값 유효성 검증 (APPROVED 또는 REJECTED만 허용)
+        if (request.getStatus() != ChallengeStatus.APPROVED && request.getStatus() != ChallengeStatus.REJECTED) {
+            throw new ApiException(ChallengeErrorCode.INVALID_STATUS_UPDATE);
+        }
+
+        // 5. 현재 챌린지 상태 검증 (PENDING 상태에서만 승인/반려 가능)
+        if (challenge.getStatus() != ChallengeStatus.PENDING) {
+            throw new ApiException(ChallengeErrorCode.INVALID_STATUS_UPDATE);
+        }
+
+        // 6. 상태 및 메시지 업데이트 (Dirty Checking)
+        challenge.replyToChallenge(request.getStatus(), request.getParentMessage());
+
+        return SpendingChallengeDto.StatusUpdateResponse.builder()
+                .challengeId(challenge.getId())
+                .status(challenge.getStatus().name())
+                .parentMessage(challenge.getParentMessage())
+                .build();
     }
 }

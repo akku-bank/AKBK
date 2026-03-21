@@ -1,5 +1,6 @@
 package com.akku.backend.domain.challenge.dto;
 
+import com.akku.backend.domain.challenge.entity.ChallengeStatus;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -37,6 +38,22 @@ public class SpendingChallengeDto {
     public static class UpdateResponse {
         private UUID challengeId;
         private String status;
+    }
+
+    // --- 상태 변경 (Status Update - 부모 전용) ---
+    @Getter
+    @NoArgsConstructor
+    public static class StatusUpdateRequest {
+        private ChallengeStatus status; // APPROVED 또는 REJECTED
+        private String parentMessage;   // 승인 응원 메시지 또는 반려 사유
+    }
+
+    @Getter
+    @Builder
+    public static class StatusUpdateResponse {
+        private UUID challengeId;
+        private String status;
+        private String parentMessage;
     }
 
 }

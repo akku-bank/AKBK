@@ -50,4 +50,17 @@ public class SpendingChallengeController {
 
         return ResponseEntity.ok(ApiResponse.success("소비 목표 챌린지 제안이 삭제되었습니다.", null));
     }
+
+    // 4. 소비 목표 계획 승인/반려 (부모 전용)
+    @PatchMapping("/{challengeId}/status")
+    public ResponseEntity<ApiResponse<SpendingChallengeDto.StatusUpdateResponse>> updateChallengeStatus(
+            @PathVariable UUID challengeId,
+            @RequestBody SpendingChallengeDto.StatusUpdateRequest request,
+            @RequestAttribute("userId") UUID parentId) {
+
+        SpendingChallengeDto.StatusUpdateResponse response = spendingChallengeService.updateChallengeStatus(parentId, challengeId, request);
+
+        return ResponseEntity.ok(ApiResponse.success("소비 목표 챌린지 상태가 업데이트되었습니다.", response));
+    }
+
 }
