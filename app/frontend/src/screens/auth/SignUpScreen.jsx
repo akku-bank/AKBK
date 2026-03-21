@@ -18,6 +18,25 @@ const SignUpScreen = ({ navigation, route }) => {
 
         setIsLoading(true);
         try {
+            /* ==========================================
+               [진짜 회원가입 API 연동 코드]
+               ========================================== 
+            const response = await api.post('/auth/signup',
+                { role, name },
+                { headers: { Authorization: `Bearer ${tempToken}` } }
+            );
+            
+            // 발급된 실제 토큰
+            const resolvedToken = response.data?.accessToken; // 백엔드 응답 구조에 맞게 수정
+
+            if (role === 'PARENT') {
+                navigation.replace('ParentInitialSetup', { tempToken: resolvedToken, role, name });
+            } else {
+                navigation.replace('PinNumberSetup', { tempToken: resolvedToken, role, name });
+            }
+            ========================================== */
+
+            // --- 실제 연동 시 아래 블록 전체 삭제 ---
             if (tempToken?.includes("dev-bypass")) {
                 if (role === 'PARENT') {
                     navigation.replace('ParentInitialSetup', { tempToken, role, name });
@@ -27,22 +46,14 @@ const SignUpScreen = ({ navigation, route }) => {
                 return;
             }
 
-            // (임시) 토큰 수동 주입 -> 실제 회원가입 진행
-            // const response = await api.post('/auth/signup',
-            //     { role, name },
-            //     { headers: { Authorization: `Bearer ${tempToken}` } }
-            // );
-
-            // (임시) 회원가입 성공했다치고 발급된 토큰 가져오기
-            // 실제로는 ->  response.data?.data?.accessToken
             const resolvedToken = tempToken;
 
-            // 핀 번호 설정 or 부모 초기 설정으로 이동
             if (role === 'PARENT') {
                 navigation.replace('ParentInitialSetup', { tempToken: resolvedToken, role, name });
             } else {
                 navigation.replace('PinNumberSetup', { tempToken: resolvedToken, role, name });
             }
+            // ------------------------------------
 
         } catch (error) {
             console.error('Signup Error:', error);

@@ -1,15 +1,41 @@
-﻿import React, { useState } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, SafeAreaView, TouchableOpacity, Alert, ScrollView, Image } from 'react-native';
 import { scale, verticalScale } from 'react-native-size-matters';
 import CustomText from '../../../components/common/CustomText';
 import CustomTextInput from '../../../components/common/CustomTextInput';
+import api from '../../../api/axios';
+import useAuthStore from '../../../store/useAuthStore';
 
 const ChildEditProfileScreen = ({ navigation }) => {
-    const [nickname, setNickname] = useState('김싸피');
+    const { user, setUser } = useAuthStore();
+    const [nickname, setNickname] = useState(user?.name || '');
     const [statusMessage, setStatusMessage] = useState('돈을 아끼자!');
 
-    const handleSave = () => {
-        Alert.alert('저장 완료', '프로필이 수정되었습니다.', [{ text: '확인', onPress: () => navigation.goBack() }]);
+    useEffect(() => {
+        if (user?.name) {
+            setNickname(user.name);
+        }
+    }, [user?.name]);
+
+    useEffect(() => {
+        // 기타 마이페이지 데이터가 있다면 여기서 페칭
+    }, []);
+
+    const handleSave = async () => {
+        if (!nickname.trim()) {
+            Alert.alert('알림', '닉네임을 입력해주세요.');
+            return;
+        }
+
+        try {
+            await api.patch('/users/me', { name: nickname });
+            if (user) {
+                setUser({ ...user, name: nickname });
+            }
+            Alert.alert('저장 완료', '프로필이 수정되었습니다.', [{ text: '확인', onPress: () => navigation.goBack() }]);
+        } catch (error) {
+            Alert.alert('오류', '프로필 수정에 실패했습니다.');
+        }
     };
 
     return (

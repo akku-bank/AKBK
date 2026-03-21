@@ -2,6 +2,7 @@
 import { View, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView } from 'react-native';
 import { scale, verticalScale } from 'react-native-size-matters';
 import CustomText from '../../../components/common/CustomText';
+import api from '../../../api/axios';
 
 // 더미 챌린지 내역
 const CHALLENGES = [
@@ -11,6 +12,22 @@ const CHALLENGES = [
 ];
 
 const ParentChallengeManageScreen = ({ navigation }) => {
+    /* ==========================================
+       [진짜 자녀 미션 내역 조회 API]
+       ========================================== 
+    const [challenges, setChallenges] = useState([]);
+    useEffect(() => {
+        const fetchChallenges = async () => {
+            try {
+                // 부모 계정에 연결된 모든 자녀들의 제안/진행/완료 미션 조회
+                // const res = await api.get('/challenges/parent');
+                // setChallenges(res.data.data);
+            } catch(e) { console.error('Challenges Fetch Error', e); }
+        };
+        fetchChallenges();
+    }, []);
+    ========================================== */
+
     return (
         <SafeAreaView style={styles.safeArea}>
             <View style={styles.header}>

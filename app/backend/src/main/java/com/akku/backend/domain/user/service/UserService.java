@@ -20,6 +20,7 @@ import java.util.UUID;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
 
     /**
      * 내 정보 조회
@@ -77,5 +78,23 @@ public class UserService {
 
         user.deactivate();
         log.info("회원 탈퇴 완료 (soft delete) - userId: {}", userId);
+    }
+
+    /**
+     * PIN 변경
+     */
+    @Transactional
+    public void updatePin(UUID userId, com.akku.backend.domain.user.dto.PinChangeRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ApiException(UserErrorCode.USER_NOT_FOUND));
+
+        // 기존 PIN 검증
+        if (user.getPinPassword() == null || !passwordEncoder.matches(request.oldPin(), user.getPinPassword())) {
+            throw new ApiException(com.akku.backend.domain.auth.exception.AuthErrorCode.PIN_MISMATCH);
+        }
+
+        // 새 PIN 암호화 저장
+        user.updatePinPassword(passwordEncoder.encode(request.newPin()));
+        log.info("PIN 변경 완료 - userId: {}", userId);
     }
 }

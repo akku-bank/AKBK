@@ -18,6 +18,7 @@ const PlaceholderScreen = ({ name }) => (
 const ChildBottomTabNavigator = () => {
     return (
         <Tab.Navigator
+            initialRouteName="Home"
             screenOptions={{
                 tabBarIcon: () => null,
                 tabBarActiveTintColor: '#000000ff',
