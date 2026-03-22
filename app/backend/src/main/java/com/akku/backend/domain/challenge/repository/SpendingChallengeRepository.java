@@ -10,6 +10,7 @@ import org.springframework.data.repository.query.Param;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface SpendingChallengeRepository extends JpaRepository<SpendingChallenge, UUID> {
@@ -39,4 +40,28 @@ public interface SpendingChallengeRepository extends JpaRepository<SpendingChall
             @Param("start") LocalDateTime start,
             @Param("end") LocalDateTime end
     );
+
+    // 실시간 FAIL 판정용 — 결제 이벤트 수신 시 진행 중인 챌린지 조회
+    // 해당 유저의 특정 카테고리 챌린지 중, 결제일이 챌린지 기간(startDate~endDate) 안에 속하는 IN_PROGRESS 챌린지
+    @Query("SELECT sc FROM SpendingChallenge sc " +
+            "WHERE sc.user.id = :userId " +
+            "AND sc.subCategoryName = :subCategoryName " +
+            "AND sc.status = :status " +
+            "AND sc.startDate <= :date " +
+            "AND sc.endDate >= :date")
+    Optional<SpendingChallenge> findActiveChallenge(
+            @Param("userId") UUID userId,
+            @Param("subCategoryName") String subCategoryName,
+            @Param("status") ChallengeStatus status,
+            @Param("date") LocalDate date
+    );
+
+    // 주간 정산 배치용 — 지난주 IN_PROGRESS 챌린지 일괄 조회 (스케줄러 STEP 1)
+    List<SpendingChallenge> findAllByStatusAndEndDate(ChallengeStatus status, LocalDate endDate);
+
+    // 주간 활성화 배치용 — 이번주 APPROVED 챌린지 일괄 조회 (스케줄러 STEP 2)
+    List<SpendingChallenge> findAllByStatusAndStartDate(ChallengeStatus status, LocalDate startDate);
+
+    // 미수령 보상 목록 조회용 — 특정 유저의 SUCCESS + 특정 endDate 챌린지 조회
+    List<SpendingChallenge> findAllByUserAndStatusAndEndDate(User user, ChallengeStatus status, LocalDate endDate);
 }

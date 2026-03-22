@@ -92,4 +92,20 @@ public class SpendingChallengeDto {
         private LocalDate endDate;
         private Long currentSpending; // 실시간 누적 소비액
     }
+
+    // --- 미수령 보상 목록 조회 (Unclaimed - 자녀 전용) ---
+    // ChallengeSummary를 재사용하고, 목록 래퍼만 별도 정의
+    @Getter
+    @Builder
+    public static class UnclaimedListResponse {
+        private List<ChallengeSummary> challenges;
+    }
+
+    // --- 보상 요청 응답 (Reward Request) ---
+    @Getter
+    @Builder
+    public static class RewardRequestResponse {
+        private UUID challengeId;
+        private String status; // REWARD_REQUESTED
+    }
 }

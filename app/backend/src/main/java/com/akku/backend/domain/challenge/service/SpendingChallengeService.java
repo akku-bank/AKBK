@@ -3,13 +3,15 @@ package com.akku.backend.domain.challenge.service;
 import com.akku.backend.domain.challenge.dto.SpendingChallengeDto;
 import com.akku.backend.domain.challenge.entity.ChallengeStatus;
 import com.akku.backend.domain.challenge.entity.SpendingChallenge;
-import com.akku.backend.domain.challenge.repository.SpendingChallengeRepository;
+import com.akku.backend.domain.challenge.event.RewardRequestedEvent;
 import com.akku.backend.domain.challenge.exception.ChallengeErrorCode;
+import com.akku.backend.domain.challenge.repository.SpendingChallengeRepository;
 import com.akku.backend.domain.auth.entity.User;
 import com.akku.backend.domain.auth.repository.UserRepository;
 import com.akku.backend.domain.user.exception.UserErrorCode;
 import com.akku.backend.global.error.ApiException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,6 +30,7 @@ public class SpendingChallengeService {
 
     private final SpendingChallengeRepository spendingChallengeRepository;
     private final UserRepository userRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     /*
         1. 소비 챌린지 등록 (자녀)
@@ -316,5 +319,96 @@ public class SpendingChallengeService {
                 .endDate(challenge.getEndDate())
                 .currentSpending(currentSpending)
                 .build();
+    }
+
+    /*
+        7. 미수령 보상 목록 조회 (자녀 전용)
+        - 상태가 SUCCESS이고, endDate가 '지난주 일요일'인 챌린지만 반환
+        - 오늘이 언제든 항상 "직전 주의 일요일"을 정확히 계산
+     */
+    public SpendingChallengeDto.UnclaimedListResponse getUnclaimedChallenges(UUID userId) {
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ApiException(UserErrorCode.USER_NOT_FOUND));
+
+        LocalDate lastSunday = resolveLastSunday();
+
+        List<SpendingChallenge> challenges =
+                spendingChallengeRepository.findAllByUserAndStatusAndEndDate(user, ChallengeStatus.SUCCESS, lastSunday);
+
+        List<SpendingChallengeDto.ChallengeSummary> summaries = challenges.stream()
+                .map(c -> SpendingChallengeDto.ChallengeSummary.builder()
+                        .challengeId(c.getId())
+                        .category(c.getSubCategoryName())
+                        .targetSpending(c.getTargetSpending())
+                        .rewardAmount(c.getRewardAmount())
+                        .status(c.getStatus().name())
+                        .startDate(c.getStartDate())
+                        .endDate(c.getEndDate())
+                        .build())
+                .collect(Collectors.toList());
+
+        return SpendingChallengeDto.UnclaimedListResponse.builder()
+                .challenges(summaries)
+                .build();
+    }
+
+    /*
+        8. 보상 요청 (자녀 전용)
+        - SUCCESS 상태이며 endDate가 지난주 일요일인 챌린지에 대해서만 요청 가능
+        - 상태를 REWARD_REQUESTED로 변경 후 이벤트 발행 → 부모 FCM 알림
+     */
+    @Transactional
+    public SpendingChallengeDto.RewardRequestResponse requestReward(UUID userId, UUID challengeId) {
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ApiException(UserErrorCode.USER_NOT_FOUND));
+
+        SpendingChallenge challenge = spendingChallengeRepository.findById(challengeId)
+                .orElseThrow(() -> new ApiException(ChallengeErrorCode.CHALLENGE_NOT_FOUND));
+
+        // 1. 자녀 본인의 챌린지인지 검증
+        if (!challenge.getUser().getId().equals(userId)) {
+            throw new ApiException(ChallengeErrorCode.ACCESS_DENIED);
+        }
+
+        // 2. 상태 검증 — 정확히 SUCCESS 상태여야만 요청 가능
+        if (challenge.getStatus() != ChallengeStatus.SUCCESS) {
+            throw new ApiException(ChallengeErrorCode.INVALID_STATUS_UPDATE);
+        }
+
+        // 3. 기한 검증 — endDate가 '지난주 일요일'이어야만 요청 가능 (2주 이상 지난 챌린지는 기한 만료)
+        LocalDate lastSunday = resolveLastSunday();
+        if (!challenge.getEndDate().equals(lastSunday)) {
+            throw new ApiException(ChallengeErrorCode.REWARD_PERIOD_EXPIRED);
+        }
+
+        // 4. 상태 변경 (Dirty Checking)
+        challenge.updateStatus(ChallengeStatus.REWARD_REQUESTED);
+
+        // 5. 이벤트 발행 — AFTER_COMMIT 이후 리스너가 부모에게 FCM 알림 발송
+        eventPublisher.publishEvent(new RewardRequestedEvent(
+                challenge.getId(),
+                user.getFamilyId(),
+                user.getName(),
+                challenge.getSubCategoryName(),
+                challenge.getRewardAmount()
+        ));
+
+        return SpendingChallengeDto.RewardRequestResponse.builder()
+                .challengeId(challenge.getId())
+                .status(challenge.getStatus().name())
+                .build();
+    }
+
+    /**
+     * "지난주 일요일" 날짜 계산.
+     * 오늘이 무슨 요일이든 항상 직전 주의 일요일을 반환한다.
+     *   - 이번 주 월요일 = today.with(previousOrSame(MONDAY))
+     *   - 지난주 일요일 = 이번 주 월요일 - 1일
+     */
+    private LocalDate resolveLastSunday() {
+        LocalDate thisMonday = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        return thisMonday.minusDays(1);
     }
 }

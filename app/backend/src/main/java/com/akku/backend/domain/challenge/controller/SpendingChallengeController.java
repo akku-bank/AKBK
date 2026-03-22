@@ -86,4 +86,25 @@ public class SpendingChallengeController {
 
         return ResponseEntity.ok(ApiResponse.success("소비 목표 챌린지 상세 정보를 불러왔습니다.", response));
     }
+
+    // 7. 미수령 보상 목록 조회 (자녀 전용) — 지난주 SUCCESS 챌린지만 반환
+    @GetMapping("/unclaimed")
+    public ResponseEntity<ApiResponse<SpendingChallengeDto.UnclaimedListResponse>> getUnclaimedChallenges(
+            @RequestAttribute("userId") UUID userId) {
+
+        SpendingChallengeDto.UnclaimedListResponse response = spendingChallengeService.getUnclaimedChallenges(userId);
+
+        return ResponseEntity.ok(ApiResponse.success("보상 요청 가능한 챌린지 목록을 불러왔습니다.", response));
+    }
+
+    // 8. 보상 요청 (자녀 전용) — SUCCESS + 지난주 챌린지에 대해서만 REWARD_REQUESTED로 전환
+    @PostMapping("/{challengeId}/reward")
+    public ResponseEntity<ApiResponse<SpendingChallengeDto.RewardRequestResponse>> requestReward(
+            @PathVariable UUID challengeId,
+            @RequestAttribute("userId") UUID userId) {
+
+        SpendingChallengeDto.RewardRequestResponse response = spendingChallengeService.requestReward(userId, challengeId);
+
+        return ResponseEntity.ok(ApiResponse.success("보상 요청이 완료되었습니다. 부모님께 알림을 전송했습니다.", response));
+    }
 }
