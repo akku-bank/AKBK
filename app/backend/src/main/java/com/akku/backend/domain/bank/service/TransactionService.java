@@ -5,6 +5,8 @@ import com.akku.backend.domain.auth.repository.UserRepository;
 import com.akku.backend.domain.auth.exception.AuthErrorCode;
 import com.akku.backend.domain.auth.service.SsafyFinanceService;
 import com.akku.backend.domain.bank.dto.TransactionHistoryResponse;
+import com.akku.backend.domain.bank.dto.TransactionVisibilityRequest;
+import com.akku.backend.domain.bank.dto.TransactionVisibilityResponse;
 import com.akku.backend.domain.bank.entity.Account;
 import com.akku.backend.domain.bank.repository.AccountRepository;
 import com.akku.backend.domain.user.exception.UserErrorCode;
@@ -12,13 +14,11 @@ import com.akku.backend.global.error.ApiException;
 import com.akku.backend.global.finance.dto.FinanceTransactionHistoryResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -53,7 +53,7 @@ public class TransactionService {
                             h.transactionDate() + h.transactionTime(),
                             h.transactionSummary(),
                             h.transactionType().equals("1") ? Long.parseLong(h.transactionBalance()) : -Long.parseLong(h.transactionBalance()),
-                            h.transactionSummary().contains("비밀") // 임시
+                            user.getIsHidden() // 모든 내역에 대해 유저의 글로벌 설정 적용
                     ))
                     .collect(Collectors.toList()));
         }
@@ -65,7 +65,7 @@ public class TransactionService {
 
     /**
      * 자녀 세부 소비 내역 조회 (부모용)
-     * - 숨김 처리된 내역은 "비공개 내역"으로 마스킹
+     * - 자녀의 글로벌 설정(isHidden)이 true인 경우 모든 가맹점명 마스킹
      */
     public TransactionHistoryResponse getChildTransactionHistory(UUID parentId, UUID childId, int year, int month) {
         // 가족 관계 검증
@@ -83,22 +83,33 @@ public class TransactionService {
         // 자녀의 전체 내역 조회
         TransactionHistoryResponse fullHistory = getTransactionHistory(childId, year, month);
 
-        // 숨김 처리된 내역 마스킹
-        List<TransactionHistoryResponse.TransactionInfo> maskedTransactions = fullHistory.transactions().stream()
-                .map(t -> {
-                    if (t.isHidden()) {
-                        return new TransactionHistoryResponse.TransactionInfo(
-                                t.id(),
-                                t.date(),
-                                "비공개 내역", // 가맹점명 마스킹
-                                t.amount(),   // 금액은 유지
-                                true
-                        );
-                    }
-                    return t;
-                })
-                .collect(Collectors.toList());
+        // 자녀가 비공개 모드인 경우 모든 가맹점명 마스킹
+        if (Boolean.TRUE.equals(child.getIsHidden())) {
+            List<TransactionHistoryResponse.TransactionInfo> maskedTransactions = fullHistory.transactions().stream()
+                    .map(t -> new TransactionHistoryResponse.TransactionInfo(
+                            t.id(),
+                            t.date(),
+                            "비공개 내역", // 전체 마스킹
+                            t.amount(),
+                            true
+                    ))
+                    .collect(Collectors.toList());
+            return new TransactionHistoryResponse(maskedTransactions);
+        }
 
-        return new TransactionHistoryResponse(maskedTransactions);
+        return fullHistory;
+    }
+
+    @Transactional
+    public TransactionVisibilityResponse updateGlobalVisibility(UUID userId, TransactionVisibilityRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ApiException(UserErrorCode.USER_NOT_FOUND));
+
+        user.updateIsHidden(request.isHidden());
+        userRepository.save(user);
+
+        return new TransactionVisibilityResponse(user.getIsHidden());
     }
 }
+
+
