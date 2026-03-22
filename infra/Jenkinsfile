@@ -96,6 +96,9 @@ pipeline {
                         echo "[Deploy] 프로젝트 디렉토리로 이동: ${DEPLOY_PATH}"
                         cd ${DEPLOY_PATH}
 
+                        echo "[Deploy] git safe.directory 설정"
+                        git config --global --add safe.directory ${DEPLOY_PATH}
+
                         echo "[Deploy] 원격 저장소 fetch"
                         git fetch origin
 
