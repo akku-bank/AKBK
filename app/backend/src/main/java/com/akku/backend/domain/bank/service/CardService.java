@@ -189,7 +189,7 @@ public class CardService {
         }
 
         // 금융망에 결제 요청 (반환값 캡처 — categoryName 추출용)
-        FinanceCardPaymentResponse result = ssafyFinanceService.createCardTransaction(
+        FinanceCardPaymentResponse.Rec result = ssafyFinanceService.createCardTransaction(
                 user.getUserKey(),
                 card.getCardNo(),
                 card.getCvc(),
@@ -200,8 +200,8 @@ public class CardService {
         // 결제 완료 이벤트 발행 — AFTER_COMMIT 이후 challenge 도메인 리스너가 수신
         eventPublisher.publishEvent(new CardPaymentEvent(
                 userId,
-                result.rec().categoryName(),
-                result.rec().paymentBalance(),
+                result.categoryName(),
+                result.paymentBalance(),
                 java.time.LocalDate.now()
         ));
     }
