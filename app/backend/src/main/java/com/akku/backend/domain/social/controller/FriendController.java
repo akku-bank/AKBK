@@ -2,6 +2,7 @@ package com.akku.backend.domain.social.controller;
 
 import com.akku.backend.domain.social.dto.FriendInviteData;
 import com.akku.backend.domain.social.dto.FriendInformationData;
+import com.akku.backend.domain.social.dto.FriendListResponse;
 import com.akku.backend.domain.social.service.FriendService;
 import com.akku.backend.global.dto.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -47,5 +48,32 @@ public class FriendController {
     ) {
         FriendInformationData data = friendService.getInviteInfo(inviteCode);
         return ResponseEntity.ok(ApiResponse.success("초대자 정보를 불러왔습니다.", data));
+    }
+
+    /**
+     * 친구 목록 조회
+     */
+    @Operation(summary = "친구 목록 조회", description = "나의 친구 목록을 조회합니다.")
+    @GetMapping
+    @PreAuthorize("hasRole('CHILD')")
+    public ResponseEntity<ApiResponse<FriendListResponse>> getFriends(
+            @AuthenticationPrincipal UUID userId
+    ) {
+        FriendListResponse data = friendService.getFriendList(userId);
+        return ResponseEntity.ok(ApiResponse.success("친구 목록을 조회했습니다.", data));
+    }
+
+    /**
+     * 친구 삭제
+     */
+    @Operation(summary = "친구 삭제", description = "특정 친구를 삭제합니다.")
+    @DeleteMapping("/{friendId}")
+    @PreAuthorize("hasRole('CHILD')")
+    public ResponseEntity<ApiResponse<Void>> deleteFriend(
+            @AuthenticationPrincipal UUID userId,
+            @PathVariable UUID friendId
+    ) {
+        friendService.deleteFriend(userId, friendId);
+        return ResponseEntity.ok(ApiResponse.success("친구를 삭제했습니다."));
     }
 }
