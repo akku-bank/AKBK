@@ -50,7 +50,7 @@ pipeline {
                         "de"   : "DATA",
                         "be"   : "BACKEND",
                         "fe"   : "FRONTEND",
-                        "in"   : "INFRA"
+                        "infra"   : "INFRA"
                     ]
 
                     env.TARGET_TEAM = teamMap.get(teamCode, "COMMON_OPS")
@@ -91,22 +91,31 @@ pipeline {
             steps {
                 script {
                     echo "develop 브랜치 감지 — EC2 배포를 시작합니다."
-                    sh """
+                }
+
+                withCredentials([usernamePassword(
+                    credentialsId: 'gitlab_auth',
+                    usernameVariable: 'GIT_USERNAME',
+                    passwordVariable: 'GIT_PASSWORD'
+                )]) {
+                    sh '''
                         set -e
                         echo "[Deploy] 프로젝트 디렉토리로 이동: ${DEPLOY_PATH}"
-                        cd ${DEPLOY_PATH}
+                        cd "${DEPLOY_PATH}"
 
                         echo "[Deploy] git safe.directory 설정"
-                        git config --global --add safe.directory ${DEPLOY_PATH}
+                        git config --global --add safe.directory "${DEPLOY_PATH}"
 
-                        echo "[Deploy] 원격 저장소 fetch"
-                        git fetch origin
+                        echo "[Deploy] credential helper 설정"
+                        git config --global credential.helper \
+                        '!f() { echo username=$GIT_USERNAME; echo password=$GIT_PASSWORD; }; f'
 
-                        echo "[Deploy] develop 브랜치 체크아웃"
-                        git checkout develop
+                        echo "[Deploy] origin URL 설정"
+                        git remote set-url origin https://lab.ssafy.com/s14-fintech-finance-sub1/S14P21B101.git
 
-                        echo "[Deploy] git pull origin develop"
-                        git pull origin develop
+                        echo "[Deploy] develop 브랜치 최신화"
+                        git fetch origin develop
+                        git reset --hard origin/develop
 
                         echo "[Deploy] docker compose 빌드 및 재기동"
                         docker compose -f infra/docker-compose.yml up -d --build
@@ -114,8 +123,11 @@ pipeline {
                         echo "[Deploy] 미사용 이미지 정리"
                         docker image prune -f
 
+                        echo "[Deploy] credential helper 정리"
+                        git config --global --unset credential.helper || true
+
                         echo "[Deploy] 배포 완료"
-                    """
+                    '''
                     env.DEPLOY_STATUS = "배포: EC2 develop 반영 완료"
                 }
             }
