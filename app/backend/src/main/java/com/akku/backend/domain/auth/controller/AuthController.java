@@ -53,7 +53,7 @@ public class AuthController {
      * Header: Authorization: Bearer {tempToken}
      * Body: { "role": "PARENT", "name": "홍길동" }
      */
-    @Operation(summary = "회원가입", description = "역할(부모/자녀)과 이름을 등록합니다.")
+    @Operation(summary = "회원가입 1단계", description = "역할(부모/자녀)과 이름을 등록합니다. 완료 후 signupToken이 발급됩니다.")
     @PostMapping("/signup")
     public ResponseEntity<ApiResponse<SignupData>> signup(
             @AuthenticationPrincipal UUID userId,
@@ -64,6 +64,36 @@ public class AuthController {
                 "기본 정보 등록이 완료되었습니다. 간편 비밀번호를 설정해주세요.",
                 data
         ));
+    }
+
+    /**
+     * 신규 계정 가입 2단계: PIN 설정
+     * POST /api/auth/signup/pin
+     * Header: Authorization: Bearer {signupToken}
+     * Body: { "pin": "123456" }
+     */
+    @Operation(summary = "PIN 설정", description = "6자리 간편 비밀번호를 설정하고 회원가입을 완료합니다.")
+    @PostMapping("/signup/pin")
+    public ResponseEntity<ApiResponse<com.akku.backend.domain.auth.dto.SignupPinData>> signupPin(
+            @AuthenticationPrincipal UUID userId,
+            @Valid @RequestBody com.akku.backend.domain.auth.dto.SignupPinRequest request
+    ) {
+        com.akku.backend.domain.auth.dto.SignupPinData data = authService.signupPin(userId, request);
+        return ResponseEntity.ok(ApiResponse.success("회원가입이 최종 완료되었습니다.", data));
+    }
+
+    /**
+     * 간편 로그인
+     * POST /api/auth/login
+     * Body: { "userId": "uuid-or-email", "pin": "123456" }
+     */
+    @Operation(summary = "간편 로그인", description = "사용자 ID와 PIN으로 로그인을 시도합니다.")
+    @PostMapping("/login")
+    public ResponseEntity<ApiResponse<SocialLoginData>> login(
+            @Valid @RequestBody com.akku.backend.domain.auth.dto.LoginRequest request
+    ) {
+        SocialLoginData data = authService.login(request);
+        return ResponseEntity.ok(ApiResponse.success("로그인에 성공했습니다.", data));
     }
 
     /**
@@ -102,5 +132,19 @@ public class AuthController {
     ) {
         RefreshData data = authService.refresh(request.refreshToken());
         return ResponseEntity.ok(ApiResponse.success("토큰이 재발급되었습니다.", data));
+    }
+
+    /**
+     * 개발용 우회 로그인
+     * POST /api/auth/test/login
+     * Body: { "userId": "uuid" }
+     */
+    @Operation(summary = "개발용 우회 로그인", description = "카카오 인증 없이 유저 ID만으로 로그인을 시도합니다.")
+    @PostMapping("/test/login")
+    public ResponseEntity<ApiResponse<SocialLoginData>> testLogin(
+            @Valid @RequestBody com.akku.backend.domain.auth.dto.TestLoginRequest request
+    ) {
+        SocialLoginData data = authService.testLogin(request.userId());
+        return ResponseEntity.ok(ApiResponse.success("개발용 로그인에 성공했습니다.", data));
     }
 }

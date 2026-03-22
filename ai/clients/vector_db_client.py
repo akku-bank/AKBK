@@ -4,7 +4,7 @@ from typing import Any
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
-from ai.core.config import Settings
+from ai.core.config import settings
 
 
 class VectorDbClient:
@@ -76,7 +76,7 @@ class VectorDbClient:
 
         try:
             # 설정 모듈에서 읽어온 접속 정보로 PostgreSQL/pgvector에 연결합니다.
-            with psycopg2.connect(Settings.vector_db_dsn()) as conn:
+            with psycopg2.connect(settings.vector_db_dsn()) as conn:
                 with conn.cursor(cursor_factory=RealDictCursor) as cur:
                     # 같은 query vector를 score 계산과 정렬 기준에 모두 사용합니다.
                     cur.execute(

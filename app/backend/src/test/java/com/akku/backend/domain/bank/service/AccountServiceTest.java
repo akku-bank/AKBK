@@ -8,6 +8,7 @@ import com.akku.backend.domain.bank.entity.Account;
 import com.akku.backend.domain.bank.repository.AccountRepository;
 import com.akku.backend.global.finance.dto.FinanceAccountCreateResponse;
 import com.akku.backend.global.finance.dto.FinanceAccountListResponse;
+import com.akku.backend.global.finance.dto.FinanceTransferResponse;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -48,9 +49,10 @@ class AccountServiceTest {
         void createAccount_Success() {
             UUID parentId = UUID.randomUUID();
             UUID childId = UUID.randomUUID();
+            UUID familyId = UUID.randomUUID();
             AccountCreateRequest request = new AccountCreateRequest(childId, "CASH");
-            User parent = User.builder().id(parentId).role("PARENT").build();
-            User child = User.builder().id(childId).userKey("child-key").build();
+            User parent = User.builder().id(parentId).role("PARENT").familyId(familyId).build();
+            User child = User.builder().id(childId).userKey("child-key").role("CHILD").familyId(familyId).build();
             given(userRepository.findById(parentId)).willReturn(Optional.of(parent));
             given(userRepository.findById(childId)).willReturn(Optional.of(child));
             
@@ -71,13 +73,22 @@ class AccountServiceTest {
         }
 
         @Test
-        @DisplayName("3. 타행 계좌 연동 - 성공")
-        void linkExternalAccount_Success() {
+        @DisplayName("3. 타행 계좌 연동 - 미구현 예외 발생 검증")
+        void linkExternalAccount_NotImplemented() {
             UUID userId = UUID.randomUUID();
             AccountLinkRequest request = new AccountLinkRequest("004", "1234567890");
             User user = User.builder().id(userId).userKey("user-key").build();
+            
             given(userRepository.findById(userId)).willReturn(Optional.of(user));
-            accountService.linkExternalAccount(userId, request);
+            
+            // 아직 미구현 상태이므로 예외가 발생하는지 검증
+            doThrow(new UnsupportedOperationException("아직 구현되지 않은 기능입니다: 타행 계좌 연동"))
+                .when(ssafyFinanceService).linkAccount(anyString(), anyString(), anyString());
+
+            assertThrows(UnsupportedOperationException.class, () -> {
+                accountService.linkExternalAccount(userId, request);
+            });
+            
             verify(ssafyFinanceService).linkAccount("user-key", "004", "1234567890");
         }
     }
@@ -101,6 +112,54 @@ class AccountServiceTest {
             assertFalse(response.accounts().isEmpty());
             assertEquals(1, response.accounts().size());
             assertEquals("12345", response.accounts().get(0).accountNumber());
+        }
+    }
+
+    @Nested
+    @DisplayName("계좌 이체")
+    class AccountTransferTests {
+        @Test
+        @DisplayName("1. 계좌 이체 - 성공")
+        void transfer_Success() {
+            UUID userId = UUID.randomUUID();
+            UUID withdrawalAccountId = UUID.randomUUID();
+            UUID targetAccountId = UUID.randomUUID();
+            TransferRequest request = new TransferRequest(withdrawalAccountId.toString(), targetAccountId.toString(), 10000L, "123456");
+            
+            User user = User.builder()
+                    .id(userId)
+                    .userKey("user-key")
+                    .pinPassword("123456")
+                    .build();
+            
+            Account withdrawalAccount = Account.builder()
+                    .id(withdrawalAccountId)
+                    .userId(userId)
+                    .accountNumber("11111")
+                    .bankCode("001")
+                    .balance(50000L)
+                    .build();
+            
+            Account depositAccount = Account.builder()
+                    .id(targetAccountId)
+                    .accountNumber("22222")
+                    .bankCode("002")
+                    .build();
+
+            given(userRepository.findById(userId)).willReturn(Optional.of(user));
+            given(accountRepository.findById(withdrawalAccountId)).willReturn(Optional.of(withdrawalAccount));
+            given(accountRepository.findById(targetAccountId)).willReturn(Optional.of(depositAccount));
+            
+            FinanceTransferResponse.Rec mockFinRec = new FinanceTransferResponse.Rec(
+                "tx-123", "20240323", "TRANSFER", "이체", "22222"
+            );
+            given(ssafyFinanceService.transfer(anyString(), anyString(), anyString(), anyString(), anyString(), anyLong())).willReturn(mockFinRec);
+
+            TransferResponse response = accountService.transfer(userId, request);
+
+            assertNotNull(response.transactionId());
+            assertEquals(40000L, response.remainBalance());
+            verify(ssafyFinanceService).transfer(eq("user-key"), eq("001"), eq("11111"), eq("002"), eq("22222"), eq(10000L));
         }
     }
 }

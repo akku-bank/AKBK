@@ -2,6 +2,10 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { View, Text } from 'react-native';
 import ChildHomeScreen from '../screens/child/home/ChildHomeScreen';
+import ChallengeScreen from '../screens/child/challenge/ChallengeScreen';
+import SafeBoxScreen from '../screens/child/safeBox/SafeBoxScreen';
+import ChildAccountScreen from '../screens/child/account/ChildAccountScreen';
+import ChildMyPageScreen from '../screens/child/mypage/ChildMyPageScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -14,6 +18,7 @@ const PlaceholderScreen = ({ name }) => (
 const ChildBottomTabNavigator = () => {
     return (
         <Tab.Navigator
+            initialRouteName="Home"
             screenOptions={{
                 tabBarIcon: () => null,
                 tabBarActiveTintColor: '#000000ff',
@@ -42,12 +47,12 @@ const ChildBottomTabNavigator = () => {
         >
             <Tab.Screen
                 name="Challenge"
-                component={() => <PlaceholderScreen name="챌린지" />}
+                component={ChallengeScreen}
                 options={{ tabBarLabel: '챌린지' }}
             />
             <Tab.Screen
                 name="SafeBox"
-                component={() => <PlaceholderScreen name="세이프박스" />}
+                component={SafeBoxScreen}
                 options={{ tabBarLabel: '젤링' }}
             />
             <Tab.Screen
@@ -57,12 +62,12 @@ const ChildBottomTabNavigator = () => {
             />
             <Tab.Screen
                 name="Account"
-                component={() => <PlaceholderScreen name="계좌 내역" />}
+                component={ChildAccountScreen}
                 options={{ tabBarLabel: '결제' }}
             />
             <Tab.Screen
                 name="MyPage"
-                component={() => <PlaceholderScreen name="마이페이지" />}
+                component={ChildMyPageScreen}
                 options={{ tabBarLabel: 'My' }}
             />
         </Tab.Navigator>
