@@ -1,15 +1,110 @@
 ﻿import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Alert, ActivityIndicator, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Alert, ActivityIndicator, Platform, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import CustomText from '../../components/common/CustomText';
 import { RFValue } from 'react-native-responsive-fontsize';
 import { login as kakaoLogin } from '@react-native-seoul/kakao-login';
 import api from '../../api/axios';
 import useAuthStore from '../../store/useAuthStore';
+import * as Device from 'expo-device';
+import * as Notifications from 'expo-notifications';
 
 const SocialLoginScreen = ({ navigation }) => {
     const [isLoading, setIsLoading] = useState(false);
+    const [testUserId, setTestUserId] = useState('');
     const { setAuthInfo } = useAuthStore();
+
+    const handleTestLogin = async () => {
+        if (!testUserId) {
+            Alert.alert('테스트 에러', 'userId를 입력하세요.');
+            return;
+        }
+        setIsLoading(true);
+        try {
+            const response = await api.post('/auth/test/login', { userId: testUserId.trim() });
+            const payload = response.data?.data || response.data || {};
+            const jwt = payload.token || payload.tempToken || payload.jwt || payload.accessToken;
+
+            let userRole = null;
+            let userName = null;
+            let isAlreadyRegistered = false;
+
+            try {
+                // 저장된 토큰 이용해 ROLE 및 NAME 조회해서 현재 등록된 유저인지 파악
+                const userRes = await api.get('/users/me', {
+                    headers: { Authorization: `Bearer ${jwt}` }
+                });
+                const profile = userRes.data?.data || userRes.data || {};
+                userRole = profile.role || null;
+                userName = profile.name || null;
+                // 이름이나 역할이 있으면 가입 완료된 유저로 간주
+                if ((userRole === 'PARENT' || userRole === 'CHILD') && userName) {
+                    isAlreadyRegistered = true;
+                }
+            } catch (e) {
+                console.log('신규 테스트 유저이거나 프로필 조회 실패:', e.message);
+            }
+
+            // 전역 상태에 토큰 및 정보 저장 (카카오 로그인과 동일한 흐름)
+            await setAuthInfo(jwt, userRole, userName);
+            await handleFcmRegistration(jwt);
+
+            Alert.alert('테스트 로그인 성공', '임시/정식 토큰 발급 성공!', [
+                { text: '확인', onPress: () => {
+                    if (isAlreadyRegistered) {
+                        navigation.replace('PinNumberLogin');
+                    } else {
+                        navigation.replace('RoleSelect', { tempToken: jwt });
+                    }
+                }}
+            ]);
+        } catch (error) {
+            console.error('Test Login Error:', error);
+            Alert.alert('테스트 로그인 실패', 'API 연동에 실패했습니다.');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // FCM 기기 등록 공통 헬퍼 함수
+    const handleFcmRegistration = async (jwt) => {
+        try {
+            let fcmTokenToUse = 'expo-dummy-token-for-dev-test';
+
+            if (Platform.OS === 'android') {
+                await Notifications.setNotificationChannelAsync('default', {
+                    name: 'default',
+                    importance: Notifications.AndroidImportance.MAX,
+                });
+            }
+
+            const { status: existingStatus } = await Notifications.getPermissionsAsync();
+            let finalStatus = existingStatus;
+            if (existingStatus !== 'granted') {
+                const { status } = await Notifications.requestPermissionsAsync();
+                finalStatus = status;
+            }
+
+            if (finalStatus === 'granted') {
+                try {
+                    // 백엔드가 Spring Boot FCM SDK 이므로 Expo Push Token이 아닌 순수 FCM Device Token 추출
+                    const tokenData = await Notifications.getDevicePushTokenAsync();
+                    if (tokenData && tokenData.data) {
+                        fcmTokenToUse = tokenData.data;
+                    }
+                } catch (tokenErr) {
+                    console.log('기기 토큰 추출 실패 (혹은 에뮬레이터 제한 환경):', tokenErr);
+                }
+            }
+
+            await api.put('/users/me/fcm-token', { fcmToken: fcmTokenToUse }, {
+                headers: { Authorization: `Bearer ${jwt}` }
+            });
+            console.log('최종 디바이스 기기 토큰 등록 완료:', fcmTokenToUse);
+        } catch (fcmErr) {
+            console.error('FCM Token Registration Failed:', fcmErr);
+        }
+    };
 
     const handleKakaoLogin = async () => {
         setIsLoading(true);
@@ -20,7 +115,7 @@ const SocialLoginScreen = ({ navigation }) => {
             console.log('카카오 토큰:', token.accessToken);
 
             // 토큰 발급 완료 테스트 성공 -> 백엔드로 전송
-            const response = await api.post('auth/social/kakao', { socialToken: token.accessToken });
+            const response = await api.post('/auth/social/kakao', { socialToken: token.accessToken });
             const payload = response.data?.data || response.data || {};
 
             // Jackson 직렬화 이슈 대비 (isRegistered -> registered) 및 각종 토큰 변수명 대비
@@ -35,7 +130,7 @@ const SocialLoginScreen = ({ navigation }) => {
 
             if (isRegistered && jwt) {
                 try {
-                    // 저장된 토큰을 이용해 ROLE 및 NAME 조회를 위해 /users/me 호출
+                    // 저장된 토큰 이용해 ROLE 및 NAME 조회 위해서 /users/me 호출
                     const userRes = await api.get('/users/me', {
                         headers: { Authorization: `Bearer ${jwt}` }
                     });
@@ -50,6 +145,9 @@ const SocialLoginScreen = ({ navigation }) => {
 
             // authInfo (zustand) 에 jwt, role, name 함께 업데이트
             await setAuthInfo(jwt, userRole, userName);
+
+            // 로그인 성공 시 백엔드로 FCM 토큰 전송 시도
+            await handleFcmRegistration(jwt);
 
             if (isRegistered) {
                 navigation.replace('PinNumberLogin');
@@ -96,6 +194,23 @@ const SocialLoginScreen = ({ navigation }) => {
                             <CustomText style={[styles.kakaoButtonText, { color: '#000000' }]}>카카오로 시작하기</CustomText>
                         )}
                     </TouchableOpacity>
+
+                    {/* 개발 연동 테스트 전용 섹션 */}
+                    <View style={styles.testLoginBox}>
+                        <CustomText style={styles.testLoginLabel}>[테스트용] 우회 로그인</CustomText>
+                        <View style={styles.testInputRow}>
+                            <TextInput
+                                style={styles.testInput}
+                                placeholder="ex) 2"
+                                keyboardType="number-pad"
+                                value={testUserId}
+                                onChangeText={setTestUserId}
+                            />
+                            <TouchableOpacity style={styles.testButton} onPress={handleTestLogin}>
+                                <CustomText style={styles.testButtonText}>테스트 접속</CustomText>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
                 </View>
             </View>
         </SafeAreaView>
@@ -163,6 +278,47 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         paddingHorizontal: RFValue(20),
         lineHeight: RFValue(16),
+    },
+    testLoginBox: {
+        marginTop: RFValue(20),
+        width: '100%',
+        padding: RFValue(12),
+        backgroundColor: '#F3F4F6',
+        borderRadius: RFValue(8),
+        borderWidth: 1,
+        borderColor: '#D1D5DB',
+        borderStyle: 'dashed'
+    },
+    testLoginLabel: {
+        fontSize: RFValue(11),
+        color: '#4B5563',
+        marginBottom: RFValue(8),
+        fontWeight: 'bold',
+    },
+    testInputRow: {
+        flexDirection: 'row',
+        gap: RFValue(8),
+    },
+    testInput: {
+        flex: 1,
+        backgroundColor: '#FFF',
+        borderWidth: 1,
+        borderColor: '#D1D5DB',
+        borderRadius: RFValue(6),
+        paddingHorizontal: RFValue(10),
+        height: RFValue(36),
+    },
+    testButton: {
+        backgroundColor: '#111',
+        paddingHorizontal: RFValue(16),
+        borderRadius: RFValue(6),
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    testButtonText: {
+        color: '#FFF',
+        fontSize: RFValue(12),
+        fontWeight: 'bold',
     }
 });
 

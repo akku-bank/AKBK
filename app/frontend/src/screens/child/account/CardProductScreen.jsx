@@ -38,7 +38,19 @@ const CardProductScreen = ({ navigation }) => {
                     text: '발급하기',
                     onPress: async () => {
                         try {
-                            await api.post('/bank/cards', { productId });
+                            const accountRes = await api.get('/bank/accounts/me');
+                            const accounts = accountRes.data?.data?.accounts || [];
+                            if (accounts.length === 0) {
+                                Alert.alert('결제 계좌 없음', '먼저 부모님을 통해 내 계좌를 연동/개설해 주세요.');
+                                return;
+                            }
+                            const withdrawalAccountNo = accounts[0].accountNumber;
+
+                            await api.post('/bank/cards', {
+                                cardProductId: productId,
+                                withdrawalAccountNo: withdrawalAccountNo,
+                                withdrawalDate: '10'
+                            });
                             Alert.alert('완료', '카드 발급이 완료되었습니다!', [
                                 { text: '확인', onPress: () => navigation.goBack() }
                             ]);
@@ -76,10 +88,10 @@ const CardProductScreen = ({ navigation }) => {
                     products.map((item, idx) => (
                         <View key={idx} style={styles.productCard}>
                             <View style={styles.productInfo}>
-                                <CustomText style={styles.productName}>{item.name || 'AKKU 스마일 카드'}</CustomText>
-                                <CustomText style={styles.productDesc}>{item.description || '편의점 10% 적립 혜택!'}</CustomText>
+                                <CustomText style={styles.productName}>{item.cardName || 'AKKU 스마일 카드'}</CustomText>
+                                <CustomText style={styles.productDesc}>{item.cardDescription || '편의점 10% 적립 혜택!'}</CustomText>
                             </View>
-                            <TouchableOpacity style={styles.issueButton} onPress={() => handleIssueCard(item.id || idx)}>
+                            <TouchableOpacity style={styles.issueButton} onPress={() => handleIssueCard(item.id || item.cardProductId || idx)}>
                                 <CustomText style={styles.issueButtonText}>발급</CustomText>
                             </TouchableOpacity>
                         </View>

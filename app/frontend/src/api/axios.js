@@ -16,7 +16,7 @@ api.interceptors.request.use(
         // 로그인/회원가입 등 인증이 필요 없거나 토큰 자체가 필요한 라우트에는 헤더 추가 생략
         const isAuthRoute = config.url.includes('auth/social') || config.url.includes('auth/signup') || config.url.includes('auth/refresh');
 
-        if (token && !isAuthRoute) {
+        if (token && !isAuthRoute && !config.headers.Authorization) {
             config.headers = {
                 ...config.headers,
                 Authorization: `Bearer ${token}`,

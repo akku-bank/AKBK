@@ -16,10 +16,10 @@ const TransactionCalendarScreen = ({ navigation }) => {
     const [selectedDate, setSelectedDate] = useState(today.getDate());
     const [transactionsByDate, setTransactionsByDate] = useState({});
 
-    const hiddenTransactions = useTransactionStore(state => state.hiddenTransactionIds);
+    const hiddenTransactionIds = useTransactionStore(state => state.hiddenTransactionIds);
 
     const year = currentDate.getFullYear();
-    const month = currentDate.getMonth(); // 0-indexed
+    const month = currentDate.getMonth();
 
     useEffect(() => {
         const fetchMonthlyTransactions = async () => {
@@ -98,7 +98,7 @@ const TransactionCalendarScreen = ({ navigation }) => {
 
     const renderTransactionItem = (item) => {
         const isDeposit = item.amount > 0;
-        const isHidden = hiddenTransactions.includes(item.id);
+        const isHidden = item.isHidden || hiddenTransactionIds.includes(item.id);
 
         return (
             <TouchableOpacity
@@ -107,12 +107,12 @@ const TransactionCalendarScreen = ({ navigation }) => {
                 activeOpacity={0.7}
                 onPress={() => navigation.navigate('TransactionDetail', { transaction: item })}
             >
-                <View style={styles.transactionIconBox}>
-                    <CustomText style={styles.transactionIcon}>{isHidden ? '🔒' : (isDeposit ? '💰' : '🏪')}</CustomText>
+                <View style={[styles.transactionIconBox, isHidden && { opacity: 0.5 }]}>
+                    <CustomText style={styles.transactionIcon}>{isDeposit ? '💰' : '🏪'}</CustomText>
                 </View>
                 <View style={styles.transactionInfo}>
                     <CustomText style={[styles.transactionTitle, isHidden && styles.hiddenText]}>
-                        {isHidden ? '비공개 내역' : item.title}
+                        {item.title} {isHidden && '(비공개)'}
                     </CustomText>
                     <CustomText style={styles.transactionTime}>{item.time}</CustomText>
                 </View>

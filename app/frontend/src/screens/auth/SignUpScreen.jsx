@@ -8,6 +8,7 @@ import useAuthStore from '../../store/useAuthStore';
 const SignUpScreen = ({ navigation, route }) => {
     const { tempToken, role, familyCode } = route.params || {};
     const [name, setName] = useState('');
+    const [birthDate, setBirthDate] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const { setAuthInfo } = useAuthStore();
 
@@ -17,10 +18,18 @@ const SignUpScreen = ({ navigation, route }) => {
             return;
         }
 
+        // 간단한 생년월일 형식 검증 (YYYY-MM-DD)
+        const birthDateRegex = /^\d{4}-\d{2}-\d{2}$/;
+        const finalBirthDate = birthDateRegex.test(birthDate) ? birthDate : '2015-05-05';
+        // 폼을 강제하지 않기 위해 기본값(개발용) 할당해둡니다.
+
         setIsLoading(true);
         try {
+            const reqPayload = { role, name, birthDate: finalBirthDate };
+            console.log('가입 페이로드:', reqPayload);
+
             const response = await api.post('/auth/signup',
-                { role, name },
+                reqPayload,
                 { headers: { Authorization: `Bearer ${tempToken}` } }
             );
 
@@ -54,6 +63,7 @@ const SignUpScreen = ({ navigation, route }) => {
                     </View>
 
                     <View style={styles.inputSection}>
+                        <CustomText style={styles.inputLabel}>이름 (닉네임)</CustomText>
                         <TextInput
                             style={styles.input}
                             placeholder="이름 입력 (예: 사스케)"
@@ -63,6 +73,20 @@ const SignUpScreen = ({ navigation, route }) => {
                             autoFocus={true}
                             maxLength={10}
                         />
+
+                        <View style={{ height: RFValue(20) }} />
+
+                        <CustomText style={styles.inputLabel}>생년월일 (YYYY-MM-DD)</CustomText>
+                        <TextInput
+                            style={styles.input}
+                            placeholder="예: 2015-05-05"
+                            placeholderTextColor="#9CA3AF"
+                            value={birthDate}
+                            onChangeText={setBirthDate}
+                            keyboardType="number-pad"
+                            maxLength={10}
+                        />
+                        <CustomText style={styles.helperText}>* 자녀-부모 연동 시 입력한 생일과 일치해야 합니다.</CustomText>
                     </View>
                 </View>
 
@@ -115,13 +139,24 @@ const styles = StyleSheet.create({
     inputSection: {
         width: '100%',
     },
+    inputLabel: {
+        fontSize: RFValue(13),
+        fontWeight: 'bold',
+        color: '#4B5563',
+        marginBottom: RFValue(4),
+    },
     input: {
-        fontSize: RFValue(22),
+        fontSize: RFValue(20),
         color: '#111',
         fontWeight: 'bold',
         borderBottomWidth: 2,
         borderBottomColor: '#111',
-        paddingVertical: RFValue(10),
+        paddingVertical: RFValue(8),
+    },
+    helperText: {
+        fontSize: RFValue(11),
+        color: '#3B82F6',
+        marginTop: RFValue(8),
     },
     buttonSection: {
         paddingHorizontal: RFValue(24),

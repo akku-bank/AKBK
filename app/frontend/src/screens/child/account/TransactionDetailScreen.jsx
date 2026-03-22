@@ -76,19 +76,26 @@ const TransactionDetailScreen = ({ route, navigation }) => {
                     </View>
                 </View>
 
-                {/* 개별 결제 숨김 처리 로직 (부모님께 가맹점만 숨김) */}
-                <View style={styles.privacyCard}>
-                    <View style={styles.privacyTextContent}>
-                        <CustomText style={styles.privacyTitle}>이 결제 부모님께 숨기기 !</CustomText>
-                        <CustomText style={styles.privacySubtitle}>부모님께는 '비공개 내역'으로 보여요.</CustomText>
+
+
+                {/* 프라이버시 토글 (14세 이상 전용이라 가정) */}
+                {isOver14 && (
+                    <View style={styles.privacyCard}>
+                        <View style={styles.privacyTextContent}>
+                            <CustomText style={styles.privacyTitle}>부모님께 내역 숨기기</CustomText>
+                            <CustomText style={styles.privacySubtitle}>이 결제 내역을 부모님이 볼 수 없게 합니다.</CustomText>
+                        </View>
+                        <Switch
+                            value={isPrivate}
+                            onValueChange={() => {
+                                toggleHideTransaction(detailData.id);
+                                // TODO: await api.patch(`/bank/transactions/${detailData.id}/visibility`, { isHidden: !isPrivate })
+                            }}
+                            trackColor={{ false: '#E5E7EB', true: '#34D399' }}
+                            thumbColor="#FFFFFF"
+                        />
                     </View>
-                    <Switch
-                        trackColor={{ false: '#E5E7EB', true: '#A3E635' }}
-                        thumbColor={'#FFFFFF'}
-                        value={isPrivate}
-                        onValueChange={() => toggleHideTransaction(detailData.id)}
-                    />
-                </View>
+                )}
 
                 {/* 추가 액션 버튼 (명세 표기용) */}
                 <TouchableOpacity style={styles.memoButton}>

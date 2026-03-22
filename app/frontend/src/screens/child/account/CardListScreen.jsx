@@ -54,11 +54,11 @@ const CardListScreen = ({ navigation }) => {
                         <View key={idx} style={styles.cardItem}>
                             <View style={[styles.cardGraphic, { backgroundColor: card.color || '#3B82F6' }]}>
                                 <CustomText style={styles.cardGraphicText}>{card.cardName || 'AKKU 카드'}</CustomText>
-                                <CustomText style={styles.cardNumber}>**** **** **** {card.cardNumber?.slice(-4) || '1234'}</CustomText>
+                                <CustomText style={styles.cardNumber}>**** **** **** {card.cardNo?.slice(-4) || '1234'}</CustomText>
                             </View>
                             <View style={styles.cardInfo}>
                                 <CustomText style={styles.cardName}>{card.cardName || '기본 카드'}</CustomText>
-                                <CustomText style={styles.cardDesc}>결제 계좌: {card.linkedAccount || '연동됨'}</CustomText>
+                                <CustomText style={styles.cardDesc}>결제 계좌: {card.withdrawalAccountNo || '연동됨'}</CustomText>
                             </View>
                         </View>
                     ))

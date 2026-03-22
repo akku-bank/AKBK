@@ -4,12 +4,12 @@ import { scale, verticalScale } from 'react-native-size-matters';
 import CustomText from '../../../components/common/CustomText';
 import api from '../../../api/axios';
 
-// 더미 데이터 (숨김 처리된 내역 반영)
+// 더미 데이터 (숨김 처리 로직 제거, 일괄 마스킹 정책 반영)
 const TRANSACTIONS = [
-    { id: '1', date: '3월 14일', place: 'CU 편의점', amount: -2000, time: '14:30', isHidden: false },
-    { id: '2', date: '3월 14일', place: '문방구', amount: -1500, time: '10:00', isHidden: false },
-    { id: '3', date: '3월 13일', place: '비공개내역', amount: -3000, time: '18:20', isHidden: true },
-    { id: '4', date: '3월 12일', place: '부모님 송금', amount: 50000, time: '09:00', isHidden: false, isIncome: true },
+    { id: '1', date: '3월 14일', place: '음식', amount: -2000, time: '14:30' },
+    { id: '2', date: '3월 14일', place: '문구', amount: -1500, time: '10:00' },
+    { id: '3', date: '3월 13일', place: '쇼핑', amount: -3000, time: '18:20' },
+    { id: '4', date: '3월 12일', place: '부모님 송금', amount: 50000, time: '09:00', isIncome: true },
 ];
 
 const ParentHistoryScreen = ({ navigation, route }) => {
@@ -57,8 +57,8 @@ const ParentHistoryScreen = ({ navigation, route }) => {
                         <View key={tx.id} style={styles.txRow}>
                             <View style={styles.txLeft}>
                                 <CustomText style={styles.txDate}>{tx.date}</CustomText>
-                                {/* 자녀가 숨김 처리한 내역은 부모 화면에서도 '비공개내역'으로 표시 */}
-                                <CustomText style={[styles.txPlace, tx.isHidden && styles.txPlaceHidden]}>{tx.merchantName || tx.place}</CustomText>
+                                {/* 일괄 숨김 정책에 따라 부모 화면에서는 가맹점 상세 대신 카테고리만 노출 */}
+                                <CustomText style={styles.txPlace}>{tx.categoryName || tx.place || '결제 내역'}</CustomText>
                             </View>
                             <View style={styles.txRight}>
                                 <CustomText style={[styles.txAmount, tx.isIncome && styles.txIncome]}>
@@ -94,7 +94,6 @@ const styles = StyleSheet.create({
     txLeft: { flex: 1 },
     txDate: { fontSize: scale(12), color: '#9CA3AF', marginBottom: verticalScale(4) },
     txPlace: { fontSize: scale(16), fontWeight: 'bold', color: '#111' },
-    txPlaceHidden: { color: '#9CA3AF', fontStyle: 'italic' },
 
     txRight: { alignItems: 'flex-end' },
     txAmount: { fontSize: scale(16), fontWeight: 'bold', color: '#111', marginBottom: verticalScale(4) },

@@ -17,6 +17,7 @@
     },
     "android": {
       "package": "com.ssafy.akbk",
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -33,6 +34,22 @@
         {
           "kakaoAppKey": "bff262c021fc340dbb1e13d140dd31e7",
           "kotlinVersion": "2.0.21"
+        }
+      ],
+      [
+        "expo-font",
+        {
+          "fonts": [
+            "./src/assets/Mulmaru.ttf"
+          ]
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "ndkVersion": "26.1.10909125"
+          }
         }
       ]
     ]

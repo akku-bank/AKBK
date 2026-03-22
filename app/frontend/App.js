@@ -55,6 +55,9 @@ import FriendAlreadyScreen from './src/screens/child/social/FriendAlreadyScreen'
 import AttendanceScreen from './src/screens/child/challenge/AttendanceScreen';
 import ESGChallengeScreen from './src/screens/child/challenge/ESGChallengeScreen';
 import BadgeMapScreen from './src/screens/child/safeBox/BadgeMapScreen';
+import ChildChangePasswordScreen from './src/screens/child/mypage/ChildChangePasswordScreen';
+import ParentChildEditScreen from './src/screens/parent/family/ParentChildEditScreen';
+import ParentChangePasswordScreen from './src/screens/parent/mypage/ParentChangePasswordScreen';
 
 SplashScreen.preventAutoHideAsync().catch(() => { });
 
@@ -63,8 +66,6 @@ const Stack = createNativeStackNavigator();
 export default function App() {
   const [fontsLoaded] = useFonts({
     'Mulmaru': require('./src/assets/Mulmaru.ttf'),
-    'Pretendard-Regular': require('./src/assets/Pretendard-Regular.ttf'),
-    'Pretendard-Bold': require('./src/assets/Pretendard-Bold.ttf'),
   });
 
   useEffect(() => {
@@ -146,6 +147,9 @@ export default function App() {
               <Stack.Screen name="ParentEditProfile" component={ParentEditProfileScreen} />
               <Stack.Screen name="ChildEditProfile" component={ChildEditProfileScreen} />
               <Stack.Screen name="ParentAccountCreate" component={ParentAccountCreateScreen} />
+              <Stack.Screen name="ChildChangePassword" component={ChildChangePasswordScreen} />
+              <Stack.Screen name="ParentChildEdit" component={ParentChildEditScreen} />
+              <Stack.Screen name="ParentChangePassword" component={ParentChangePasswordScreen} />
             </Stack.Navigator>
           </NavigationContainer>
         </AvatarProvider>

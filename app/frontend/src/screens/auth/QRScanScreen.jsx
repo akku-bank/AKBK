@@ -57,9 +57,19 @@ const QRScanScreen = ({ navigation, route }) => {
                     <TouchableOpacity style={styles.mockScanButton} onPress={requestPermission}>
                         <CustomText style={styles.mockScanButtonText}>권한 요청하기</CustomText>
                     </TouchableOpacity>
-                    <TouchableOpacity style={[styles.mockScanButton, { marginTop: RFValue(12), backgroundColor: '#4B5563' }]} onPress={handleMockScan}>
-                        <CustomText style={styles.mockScanButtonText}>건너뛰기(임시)</CustomText>
-                    </TouchableOpacity>
+
+                    <View style={{ width: '100%', marginTop: 40 }}>
+                        <TextInput
+                            style={styles.manualInput}
+                            placeholder="[에뮬레이터용] 여기에 부모 코드를 입력하세요"
+                            placeholderTextColor="#9CA3AF"
+                            value={manualCode}
+                            onChangeText={setManualCode}
+                        />
+                        <TouchableOpacity style={[styles.mockScanButton, { marginTop: 12, backgroundColor: '#4B5563' }]} onPress={handleMockScan}>
+                            <CustomText style={styles.mockScanButtonText}>코드 입력 완료 및 넘어가기</CustomText>
+                        </TouchableOpacity>
+                    </View>
                 </View>
             </SafeAreaView>
         );
