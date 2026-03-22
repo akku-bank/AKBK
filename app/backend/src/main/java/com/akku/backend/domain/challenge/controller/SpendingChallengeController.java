@@ -107,4 +107,16 @@ public class SpendingChallengeController {
 
         return ResponseEntity.ok(ApiResponse.success("보상 요청이 완료되었습니다. 부모님께 알림을 전송했습니다.", response));
     }
+
+    // 9. 보상 송금 (부모 전용) — REWARD_REQUESTED 챌린지에 대해 실제 계좌 이체 수행
+    @PostMapping("/{challengeId}/reward-transfer")
+    public ResponseEntity<ApiResponse<SpendingChallengeDto.RewardTransferResponse>> processRewardTransfer(
+            @PathVariable UUID challengeId,
+            @RequestAttribute("userId") UUID parentId) {
+
+        SpendingChallengeDto.RewardTransferResponse response =
+                spendingChallengeService.processRewardTransfer(parentId, challengeId);
+
+        return ResponseEntity.ok(ApiResponse.success("보상 송금이 완료되었습니다.", response));
+    }
 }

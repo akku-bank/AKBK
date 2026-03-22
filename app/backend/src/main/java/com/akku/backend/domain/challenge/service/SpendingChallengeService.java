@@ -1,9 +1,11 @@
 package com.akku.backend.domain.challenge.service;
 
+import com.akku.backend.domain.bank.service.AccountService;
 import com.akku.backend.domain.challenge.dto.SpendingChallengeDto;
 import com.akku.backend.domain.challenge.entity.ChallengeStatus;
 import com.akku.backend.domain.challenge.entity.SpendingChallenge;
 import com.akku.backend.domain.challenge.event.RewardRequestedEvent;
+import com.akku.backend.domain.challenge.event.RewardTransferredEvent;
 import com.akku.backend.domain.challenge.exception.ChallengeErrorCode;
 import com.akku.backend.domain.challenge.repository.SpendingChallengeRepository;
 import com.akku.backend.domain.auth.entity.User;
@@ -31,6 +33,7 @@ public class SpendingChallengeService {
     private final SpendingChallengeRepository spendingChallengeRepository;
     private final UserRepository userRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final AccountService accountService;
 
     /*
         1. 소비 챌린지 등록 (자녀)
@@ -398,6 +401,66 @@ public class SpendingChallengeService {
         return SpendingChallengeDto.RewardRequestResponse.builder()
                 .challengeId(challenge.getId())
                 .status(challenge.getStatus().name())
+                .build();
+    }
+
+    /*
+        9. 보상 송금 처리 (부모 전용)
+        - REWARD_REQUESTED 상태 검증 → 이중 출금 방지 핵심 가드
+        - AccountService.internalRewardTransfer() 호출 → 실패 시 예외 전파 → 전체 트랜잭션 롤백
+        - 성공 시 REWARDED 상태로 변경 후 자녀 FCM 이벤트 발행
+     */
+    @Transactional
+    public SpendingChallengeDto.RewardTransferResponse processRewardTransfer(UUID parentId, UUID challengeId) {
+
+        // 1. 부모 유저 및 챌린지 조회
+        User parent = userRepository.findById(parentId)
+                .orElseThrow(() -> new ApiException(UserErrorCode.USER_NOT_FOUND));
+
+        SpendingChallenge challenge = spendingChallengeRepository.findById(challengeId)
+                .orElseThrow(() -> new ApiException(ChallengeErrorCode.CHALLENGE_NOT_FOUND));
+
+        User child = challenge.getUser();
+
+        // 2. 가족 관계 검증 (부모와 챌린지 소유 자녀가 같은 familyId)
+        if (parent.getFamilyId() == null || child.getFamilyId() == null
+                || !parent.getFamilyId().equals(child.getFamilyId())) {
+            throw new ApiException(ChallengeErrorCode.ACCESS_DENIED);
+        }
+
+        // 3. 상태 검증 — 이중 출금 방지 핵심 가드 (REWARD_REQUESTED 상태에서만 진입 허용)
+        if (challenge.getStatus() != ChallengeStatus.REWARD_REQUESTED) {
+            throw new ApiException(ChallengeErrorCode.INVALID_STATUS_UPDATE);
+        }
+
+        // 4. 적요(메모) 구성
+        String depositMemo = String.format("주간 소비 챌린지 보상 (%s)", challenge.getSubCategoryName());
+        String withdrawalMemo = String.format("챌린지 보상 송금 (%s)", challenge.getSubCategoryName());
+
+        // 5. 송금 실행 (AccountService 위임 — 잔액 부족 등 실패 시 예외 전파 → 트랜잭션 롤백)
+        accountService.internalRewardTransfer(
+                parentId,
+                child.getId(),
+                challenge.getRewardAmount(),
+                depositMemo,
+                withdrawalMemo
+        );
+
+        // 6. 챌린지 상태 REWARDED로 업데이트 (Dirty Checking)
+        challenge.updateStatus(ChallengeStatus.REWARDED);
+
+        // 7. 자녀 FCM 알림 이벤트 발행 (AFTER_COMMIT 이후 비동기 처리)
+        eventPublisher.publishEvent(new RewardTransferredEvent(
+                challenge.getId(),
+                child.getId(),
+                challenge.getRewardAmount(),
+                challenge.getSubCategoryName()
+        ));
+
+        return SpendingChallengeDto.RewardTransferResponse.builder()
+                .challengeId(challenge.getId())
+                .status(ChallengeStatus.REWARDED.name())
+                .rewardAmount(challenge.getRewardAmount())
                 .build();
     }
 

@@ -108,4 +108,13 @@ public class SpendingChallengeDto {
         private UUID challengeId;
         private String status; // REWARD_REQUESTED
     }
+
+    // --- 보상 송금 응답 (Reward Transfer - 부모 전용) ---
+    @Getter
+    @Builder
+    public static class RewardTransferResponse {
+        private UUID challengeId;
+        private String status; // REWARDED
+        private Long rewardAmount;
+    }
 }
