@@ -110,6 +110,11 @@ public class User {
     public void updatePinPassword(String encodedPin) {
         this.pinPassword = encodedPin;
     }
+
+    public void updateIsHidden(boolean isHidden) {
+        this.isHidden = isHidden;
+    }
 }
+
 
 
