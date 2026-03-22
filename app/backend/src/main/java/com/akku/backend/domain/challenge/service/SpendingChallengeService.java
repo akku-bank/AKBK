@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.temporal.TemporalAdjusters;
 import java.util.List;
 import java.util.UUID;
@@ -261,6 +262,59 @@ public class SpendingChallengeService {
 
         return SpendingChallengeDto.ListResponse.builder()
                 .challenges(summaries)
+                .build();
+    }
+
+    /*
+        6. 소비 챌린지 단건 상세 조회 (부모/자녀 공통)
+     */
+    public SpendingChallengeDto.DetailResponse getChallengeDetail(UUID requestUserId, UUID challengeId) {
+
+        // 1. 요청자 및 챌린지 조회 (기존 로직 동일)
+        User requestUser = userRepository.findById(requestUserId)
+                .orElseThrow(() -> new ApiException(UserErrorCode.USER_NOT_FOUND));
+
+        SpendingChallenge challenge = spendingChallengeRepository.findById(challengeId)
+                .orElseThrow(() -> new ApiException(ChallengeErrorCode.CHALLENGE_NOT_FOUND));
+
+        // 2. 권한 검증 (기존 로직 동일)
+        String role = requestUser.getRole();
+        if ("CHILD".equals(role)) {
+            if (!challenge.getUser().getId().equals(requestUserId)) {
+                throw new ApiException(ChallengeErrorCode.ACCESS_DENIED);
+            }
+        } else if ("PARENT".equals(role)) {
+            if (requestUser.getFamilyId() == null || challenge.getUser().getFamilyId() == null ||
+                    !requestUser.getFamilyId().equals(challenge.getUser().getFamilyId())) {
+                throw new ApiException(ChallengeErrorCode.ACCESS_DENIED);
+            }
+        } else {
+            throw new ApiException(ChallengeErrorCode.ACCESS_DENIED);
+        }
+
+        // 3. 실시간 소비 누적액 계산 (월요일 00:00:00 ~ 일요일 23:59:59)
+        LocalDateTime startDateTime = challenge.getStartDate().atStartOfDay();
+        LocalDateTime endDateTime = challenge.getEndDate().atTime(23, 59, 59);
+
+        // 변경된 부분: transactionRepository 대신 spendingChallengeRepository의 Native Query 호출
+        Long currentSpending = spendingChallengeRepository.calculateCurrentSpending(
+                challenge.getUser().getId(),
+                challenge.getSubCategoryName(),
+                startDateTime,
+                endDateTime
+        );
+
+        // 4. 응답 DTO 반환
+        return SpendingChallengeDto.DetailResponse.builder()
+                .challengeId(challenge.getId())
+                .category(challenge.getSubCategoryName())
+                .targetSpending(challenge.getTargetSpending())
+                .rewardAmount(challenge.getRewardAmount())
+                .status(challenge.getStatus().name())
+                .parentMessage(challenge.getParentMessage())
+                .startDate(challenge.getStartDate())
+                .endDate(challenge.getEndDate())
+                .currentSpending(currentSpending)
                 .build();
     }
 }

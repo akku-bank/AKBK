@@ -76,4 +76,14 @@ public class SpendingChallengeController {
         return ResponseEntity.ok(ApiResponse.success("소비 목표 챌린지 목록을 불러왔습니다.", response));
     }
 
+    // 6. 소비 목표 챌린지 단건 상세 조회 (부모, 자녀 공통)
+    @GetMapping("/{challengeId}")
+    public ResponseEntity<ApiResponse<SpendingChallengeDto.DetailResponse>> getChallengeDetail(
+            @PathVariable UUID challengeId,
+            @RequestAttribute("userId") UUID requestUserId) {
+
+        SpendingChallengeDto.DetailResponse response = spendingChallengeService.getChallengeDetail(requestUserId, challengeId);
+
+        return ResponseEntity.ok(ApiResponse.success("소비 목표 챌린지 상세 정보를 불러왔습니다.", response));
+    }
 }
