@@ -1,9 +1,21 @@
 ALTER TABLE users ADD COLUMN IF NOT EXISTS score INTEGER DEFAULT 0;
-ALTER TABLE users ADD CONSTRAINT uq_provider UNIQUE (provider, provider_id);
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'uq_provider') THEN
+        ALTER TABLE users ADD CONSTRAINT uq_provider UNIQUE (provider, provider_id);
+    END IF;
+END $$;
 
 -- 2. accounts 테이블: 계좌번호 필수 및 유니크 제약 설정
 ALTER TABLE accounts ALTER COLUMN account_number SET NOT NULL;
-ALTER TABLE accounts ADD CONSTRAINT uq_account_number UNIQUE (account_number);
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'uq_account_number') THEN
+        ALTER TABLE accounts ADD CONSTRAINT uq_account_number UNIQUE (account_number);
+    END IF;
+END $$;
 
 -- 3. account_verifications 테이블 생성 (계좌 점유 인증)
 CREATE TABLE IF NOT EXISTS account_verifications (
