@@ -23,7 +23,7 @@ public class FriendInvite {
     @Column(name = "invite_code", length = 100)
     private String inviteCode;
 
-    @Column(name = "user_id", nullable = false)
+    @Column(name = "user_id", nullable = false, unique = true)
     private UUID userId;
 
     @CreationTimestamp

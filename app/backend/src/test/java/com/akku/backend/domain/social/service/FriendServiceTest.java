@@ -13,6 +13,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import java.util.List;
 import java.util.Optional;
@@ -51,7 +52,7 @@ class FriendServiceTest {
 
         // then
         assertThat(result.inviteCode()).isNotNull();
-        verify(friendInviteRepository, times(1)).save(any(FriendInvite.class));
+        verify(friendInviteRepository, times(1)).saveAndFlush(any(FriendInvite.class));
     }
 
     @Test
@@ -71,7 +72,33 @@ class FriendServiceTest {
 
         // then
         assertThat(result.inviteCode()).isEqualTo(existingCode);
-        verify(friendInviteRepository, times(0)).save(any(FriendInvite.class));
+        verify(friendInviteRepository, times(0)).saveAndFlush(any(FriendInvite.class));
+    }
+
+    @Test
+    @DisplayName("초대 코드 생성 - 동시성 상황에서 중복 생성이 시도되면 기존 코드를 반환한다")
+    void createInviteCode_ConcurrencyConflict() {
+        // given
+        UUID userId = UUID.randomUUID();
+        String existingCode = "already-created-code";
+        FriendInvite existingInvite = FriendInvite.builder()
+                .inviteCode(existingCode)
+                .userId(userId)
+                .build();
+
+        given(friendInviteRepository.findByUserId(userId))
+                .willReturn(Optional.empty()) // 첫 조회시에는 없음
+                .willReturn(Optional.of(existingInvite)); // 예외 발생 후 재조회 시에는 있음
+
+        given(friendInviteRepository.saveAndFlush(any(FriendInvite.class)))
+                .willThrow(new DataIntegrityViolationException("Unique constraint violation"));
+
+        // when
+        FriendInviteData result = friendService.createInviteCode(userId);
+
+        // then
+        assertThat(result.inviteCode()).isEqualTo(existingCode);
+        verify(friendInviteRepository, times(2)).findByUserId(userId);
     }
 
     @Test
