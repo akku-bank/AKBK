@@ -95,7 +95,7 @@ export default function App() {
       <SafeAreaProvider style={{ flex: 1 }}>
         <AvatarProvider>
           <NavigationContainer>
-            <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="OnboardingTutorial">
+            <Stack.Navigator screenOptions={{ headerShown: false, freezeOnBlur: false, animationEnabled: false }} detachInactiveScreens={false} initialRouteName="OnboardingTutorial">
               <Stack.Screen name="OnboardingTutorial" component={OnboardingTutorialScreen} />
               <Stack.Screen name="FamilyInvitation" component={FamilyInvitationScreen} />
               <Stack.Screen name="SocialLogin" component={SocialLoginScreen} />

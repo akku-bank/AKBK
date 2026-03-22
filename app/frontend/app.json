@@ -2,6 +2,7 @@
   "expo": {
     "name": "frontend",
     "slug": "frontend",
+    "scheme": "frontend",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -33,7 +34,7 @@
         "@react-native-seoul/kakao-login",
         {
           "kakaoAppKey": "bff262c021fc340dbb1e13d140dd31e7",
-          "kotlinVersion": "2.0.21"
+          "kotlinVersion": "1.9.24"
         }
       ],
       [
@@ -51,7 +52,8 @@
             "ndkVersion": "26.1.10909125"
           }
         }
-      ]
+      ],
+      "expo-notifications"
     ]
   }
 }

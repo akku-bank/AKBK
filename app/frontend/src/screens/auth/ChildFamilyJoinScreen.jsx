@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { View, StyleSheet, TouchableOpacity, SafeAreaView, Platform, ActivityIndicator, TextInput, Alert } from 'react-native';
 import CustomText from '../../components/common/CustomText';
 import { RFValue } from 'react-native-responsive-fontsize';
@@ -31,12 +31,12 @@ const ChildFamilyJoinScreen = ({ navigation, route }) => {
             // 2. 가족 합류 API 전송 (이름 + 생일 완벽 일치 매칭 로직)
             if (familyCode && familyCode !== 'mock-family-code') {
                 try {
-                    await api.post('/families/join', 
+                    await api.post('/families/join',
                         { scannedQrCode: familyCode },
                         { headers: { Authorization: `Bearer ${resolvedToken}` } }
                     );
                     console.log('가족 합류 API 전송 성공');
-                } catch(e) {
+                } catch (e) {
                     console.error('가족 합류 에러:', e.response?.data || e.message);
                     setIsLoading(false);
                     Alert.alert('연동 실패', '부모님이 등록하신 정보와 일치하지 않거나 코드가 다릅니다.');
@@ -62,15 +62,12 @@ const ChildFamilyJoinScreen = ({ navigation, route }) => {
             <View style={styles.container}>
                 <View style={styles.headerSection}>
                     <CustomText style={styles.title}>부모님이 등록하신{'\n'}내 정보를 똑같이 입력해주세요!</CustomText>
-                    <CustomText style={styles.subtitle}>
-                        백엔드가 깐깐해서 생년월일도 똑같아야 합니다.
-                    </CustomText>
                 </View>
 
                 <View style={styles.inputSection}>
                     <TextInput
                         style={styles.textInput}
-                        placeholder="이름 (예: 안싸피)"
+                        placeholder="이름 (예: 김싸피)"
                         placeholderTextColor="#9CA3AF"
                         value={childName}
                         onChangeText={setChildName}
@@ -99,7 +96,7 @@ const ChildFamilyJoinScreen = ({ navigation, route }) => {
                     </TouchableOpacity>
                 </View>
             </View>
-        </SafeAreaView>
+        </SafeAreaView >
     );
 };
 

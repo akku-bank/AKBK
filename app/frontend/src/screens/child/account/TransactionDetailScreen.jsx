@@ -78,7 +78,7 @@ const TransactionDetailScreen = ({ route, navigation }) => {
 
 
 
-                {/* 프라이버시 토글 (14세 이상 전용이라 가정) */}
+                {/* 프라이버시 토글 (14세 이상 전용) */}
                 {isOver14 && (
                     <View style={styles.privacyCard}>
                         <View style={styles.privacyTextContent}>

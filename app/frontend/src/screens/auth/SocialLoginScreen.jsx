@@ -11,7 +11,7 @@ import * as Notifications from 'expo-notifications';
 
 const SocialLoginScreen = ({ navigation }) => {
     const [isLoading, setIsLoading] = useState(false);
-    const [testUserId, setTestUserId] = useState('');
+    const [testUserId, setTestUserId] = useState('123e4567-e89b-12d3-a456-426614174000');
     const { setAuthInfo } = useAuthStore();
 
     const handleTestLogin = async () => {
@@ -27,6 +27,7 @@ const SocialLoginScreen = ({ navigation }) => {
 
             let userRole = null;
             let userName = null;
+            let userId = null;
             let isAlreadyRegistered = false;
 
             try {
@@ -37,7 +38,7 @@ const SocialLoginScreen = ({ navigation }) => {
                 const profile = userRes.data?.data || userRes.data || {};
                 userRole = profile.role || null;
                 userName = profile.name || null;
-                // 이름이나 역할이 있으면 가입 완료된 유저로 간주
+                userId = profile.userId || null;
                 if ((userRole === 'PARENT' || userRole === 'CHILD') && userName) {
                     isAlreadyRegistered = true;
                 }
@@ -46,17 +47,19 @@ const SocialLoginScreen = ({ navigation }) => {
             }
 
             // 전역 상태에 토큰 및 정보 저장 (카카오 로그인과 동일한 흐름)
-            await setAuthInfo(jwt, userRole, userName);
+            await setAuthInfo(jwt, userRole, userName, userId);
             await handleFcmRegistration(jwt);
 
             Alert.alert('테스트 로그인 성공', '임시/정식 토큰 발급 성공!', [
-                { text: '확인', onPress: () => {
-                    if (isAlreadyRegistered) {
-                        navigation.replace('PinNumberLogin');
-                    } else {
-                        navigation.replace('RoleSelect', { tempToken: jwt });
+                {
+                    text: '확인', onPress: () => {
+                        if (isAlreadyRegistered) {
+                            navigation.replace('PinNumberLogin');
+                        } else {
+                            navigation.replace('RoleSelect', { tempToken: jwt });
+                        }
                     }
-                }}
+                }
             ]);
         } catch (error) {
             console.error('Test Login Error:', error);
@@ -119,6 +122,7 @@ const SocialLoginScreen = ({ navigation }) => {
             const payload = response.data?.data || response.data || {};
 
             // Jackson 직렬화 이슈 대비 (isRegistered -> registered) 및 각종 토큰 변수명 대비
+            // Jackson 직렬화 이슈 대비 (isRegistered -> registered) 및 각종 토큰 변수명 대비
             const isRegistered = payload.isRegistered ?? payload.registered ?? !!payload.token;
             const jwt = payload.token || payload.tempToken || payload.jwt || payload.accessToken;
 
@@ -127,6 +131,7 @@ const SocialLoginScreen = ({ navigation }) => {
 
             let userRole = null;
             let userName = null;
+            let userId = null;
 
             if (isRegistered && jwt) {
                 try {
@@ -137,6 +142,7 @@ const SocialLoginScreen = ({ navigation }) => {
                     const profile = userRes.data?.data || userRes.data || {};
                     userRole = profile.role || null;
                     userName = profile.name || null;
+                    userId = profile.userId || null;
                     console.log(`유저 프로필 로드 완료: 역할=${userRole}, 이름=${userName}`);
                 } catch (e) {
                     console.error('사용자 정보 조회 실패:', e);
@@ -144,7 +150,7 @@ const SocialLoginScreen = ({ navigation }) => {
             }
 
             // authInfo (zustand) 에 jwt, role, name 함께 업데이트
-            await setAuthInfo(jwt, userRole, userName);
+            await setAuthInfo(jwt, userRole, userName, userId);
 
             // 로그인 성공 시 백엔드로 FCM 토큰 전송 시도
             await handleFcmRegistration(jwt);
@@ -197,12 +203,11 @@ const SocialLoginScreen = ({ navigation }) => {
 
                     {/* 개발 연동 테스트 전용 섹션 */}
                     <View style={styles.testLoginBox}>
-                        <CustomText style={styles.testLoginLabel}>[테스트용] 우회 로그인</CustomText>
+                        <CustomText style={styles.testLoginLabel}>[테스트용] 우회 계정 UUID</CustomText>
                         <View style={styles.testInputRow}>
                             <TextInput
                                 style={styles.testInput}
-                                placeholder="ex) 2"
-                                keyboardType="number-pad"
+                                placeholder="[자녀용] UUID"
                                 value={testUserId}
                                 onChangeText={setTestUserId}
                             />

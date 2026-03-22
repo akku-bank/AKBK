@@ -26,7 +26,7 @@ const ChildChangePasswordScreen = ({ navigation }) => {
 
         try {
             await api.patch('/users/me/pin', {
-                currentPin,
+                oldPin: currentPin,
                 newPin
             });
             Alert.alert('변경 완료', '비밀번호가 성공적으로 변경되었습니다!', [

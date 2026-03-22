@@ -9,7 +9,7 @@ const Tab = createBottomTabNavigator();
 
 const ParentBottomTabNavigator = () => {
     return (
-        <Tab.Navigator
+        <Tab.Navigator detachInactiveScreens={false}
             initialRouteName="Home"
             screenOptions={{
                 tabBarIcon: () => null,

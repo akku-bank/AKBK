@@ -15,7 +15,7 @@ const ChildHomeScreen = ({ navigation }) => {
     const [isQrModalVisible, setQrModalVisible] = useState(false);
     const [isLevelUpModalVisible, setLevelUpModalVisible] = useState(false);
     const { equipState, setEquipState } = useContext(AvatarContext);
-    const { user } = useAuthStore(); // get name from store since it's not in response
+    const { user, cachedLevel, setCachedLevel } = useAuthStore();
     const [homeData, setHomeData] = useState(null);
     const [realBalance, setRealBalance] = useState(null);
 
@@ -31,11 +31,18 @@ const ChildHomeScreen = ({ navigation }) => {
                 if (!homeDataResult) return;
 
                 setHomeData(homeDataResult);
-                if (homeDataResult.hasLevelChanged) {
+
+                // 프론트엔드 레벨업 감지 (Zustand 메모리 캐싱)
+                const currentLevel = homeDataResult.level || 1;
+
+                if (cachedLevel !== null && currentLevel > cachedLevel) {
                     setLevelUpModalVisible(true);
+                    setCachedLevel(currentLevel);
+                } else if (cachedLevel === null) {
+                    setCachedLevel(currentLevel);
                 }
 
-                // 실제 계좌 데이터가 있으면 덮어쓰기
+                // 실제 계좌 데이터 있으면 덮어쓰기
                 if (accRes && accRes.data?.data?.accounts && accRes.data.data.accounts.length > 0) {
                     setRealBalance(accRes.data.data.accounts[0].balance);
                 }

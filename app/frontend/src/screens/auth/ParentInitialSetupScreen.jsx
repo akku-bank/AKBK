@@ -24,7 +24,15 @@ const ParentInitialSetupScreen = ({ navigation, route }) => {
                     console.error('Spouse Join API Error:', e.response?.data || e.message);
                 }
             } else {
-                await api.post('/families', {}, { headers: { Authorization: `Bearer ${tempToken}` } });
+                try {
+                    await api.post('/families', {}, { headers: { Authorization: `Bearer ${tempToken}` } });
+                } catch (famErr) {
+                    if (famErr.response?.data?.errorCode === 'FAM_008') {
+                        console.log('이미 가족 그룹이 존재하므로 패스합니다.');
+                    } else {
+                        throw famErr;
+                    }
+                }
             }
 
             // 2. 부모 기본 계좌 연동 (현재 500 에러 발생 시 부모 가입 차단을 막기 위해 임시 예외처리)
