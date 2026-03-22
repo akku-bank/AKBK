@@ -4,6 +4,9 @@ import com.akku.backend.domain.challenge.entity.ChallengeStatus;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+
+import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 public class SpendingChallengeDto {
@@ -56,4 +59,37 @@ public class SpendingChallengeDto {
         private String parentMessage;
     }
 
+    // --- 다건 조회 (List - 차주 챌린지) ---
+    @Getter
+    @Builder
+    public static class ChallengeSummary {
+        private UUID challengeId;
+        private String category;         // DB의 subCategoryName 매핑
+        private Long targetSpending;
+        private Long rewardAmount;
+        private String status;
+        private LocalDate startDate;
+        private LocalDate endDate;
+    }
+
+    @Getter
+    @Builder
+    public static class ListResponse {
+        private List<ChallengeSummary> challenges;
+    }
+
+    // --- 단건 상세 조회 (Detail) ---
+    @Getter
+    @Builder
+    public static class DetailResponse {
+        private UUID challengeId;
+        private String category;
+        private Long targetSpending;
+        private Long rewardAmount;
+        private String status;
+        private String parentMessage; // 반려 사유 또는 응원 메시지
+        private LocalDate startDate;
+        private LocalDate endDate;
+        private Long currentSpending; // 실시간 누적 소비액
+    }
 }

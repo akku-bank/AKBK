@@ -2,7 +2,8 @@ package com.akku.backend.domain.challenge.controller;
 
 import com.akku.backend.domain.challenge.dto.SpendingChallengeDto;
 import com.akku.backend.domain.challenge.service.SpendingChallengeService;
-import com.akku.backend.global.dto.ApiResponse; // 팀에서 쓰는 공통 응답 포맷이라 가정
+import com.akku.backend.global.dto.ApiResponse;
+import com.akku.backend.domain.challenge.entity.ChallengeStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -61,6 +62,18 @@ public class SpendingChallengeController {
         SpendingChallengeDto.StatusUpdateResponse response = spendingChallengeService.updateChallengeStatus(parentId, challengeId, request);
 
         return ResponseEntity.ok(ApiResponse.success("소비 목표 챌린지 상태가 업데이트되었습니다.", response));
+    }
+
+    // 5. 차주 소비 목표 챌린지 목록 조회 (부모, 자녀 공통)
+    @GetMapping
+    public ResponseEntity<ApiResponse<SpendingChallengeDto.ListResponse>> getNextWeekChallenges(
+            @RequestParam(required = false) UUID childId,
+            @RequestParam(required = false) ChallengeStatus status,
+            @RequestAttribute("userId") UUID requestUserId) {
+
+        SpendingChallengeDto.ListResponse response = spendingChallengeService.getNextWeekChallenges(requestUserId, childId, status);
+
+        return ResponseEntity.ok(ApiResponse.success("소비 목표 챌린지 목록을 불러왔습니다.", response));
     }
 
 }

@@ -16,7 +16,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.temporal.TemporalAdjusters;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -195,6 +197,70 @@ public class SpendingChallengeService {
                 .challengeId(challenge.getId())
                 .status(challenge.getStatus().name())
                 .parentMessage(challenge.getParentMessage())
+                .build();
+    }
+
+    /*
+        5. 차주 소비 목표 챌린지 목록 조회 (부모/자녀 공통)
+     */
+    public SpendingChallengeDto.ListResponse getNextWeekChallenges(UUID requestUserId, UUID childId, ChallengeStatus status) {
+
+        // 1. 요청자 조회
+        User requestUser = userRepository.findById(requestUserId)
+                .orElseThrow(() -> new ApiException(UserErrorCode.USER_NOT_FOUND));
+
+        User searchUser;
+
+        // 2. 권한에 따른 타겟 유저 결정 및 가족 매칭 검증
+        String role = requestUser.getRole(); // String 타입이므로 .name() 제거
+
+        if ("CHILD".equals(role)) {
+            // 자녀인 경우 본인의 데이터만 조회
+            searchUser = requestUser;
+        } else if ("PARENT".equals(role)) {
+            // 부모인 경우 childId 필수
+            if (childId == null) {
+                throw new ApiException(ChallengeErrorCode.INVALID_STATUS_UPDATE); // BAD_REQUEST 성격의 에러 코드로 대체 권장
+            }
+            // 자녀 유저 조회
+            searchUser = userRepository.findById(childId)
+                    .orElseThrow(() -> new ApiException(UserErrorCode.USER_NOT_FOUND));
+
+            // 가족 매칭 검증 (UUID 타입의 familyId 직접 비교)
+            if (requestUser.getFamilyId() == null || searchUser.getFamilyId() == null ||
+                    !requestUser.getFamilyId().equals(searchUser.getFamilyId())) {
+                throw new ApiException(ChallengeErrorCode.ACCESS_DENIED);
+            }
+        } else {
+            throw new ApiException(ChallengeErrorCode.ACCESS_DENIED);
+        }
+
+        // 3. 차주 월요일 날짜 계산
+        LocalDate nextMonday = LocalDate.now().with(TemporalAdjusters.next(DayOfWeek.MONDAY));
+
+        // 4. 데이터 조회 (상태 필터링 유무 분기)
+        List<SpendingChallenge> challenges;
+        if (status != null) {
+            challenges = spendingChallengeRepository.findAllByUserAndStartDateAndStatus(searchUser, nextMonday, status);
+        } else {
+            challenges = spendingChallengeRepository.findAllByUserAndStartDate(searchUser, nextMonday);
+        }
+
+        // 5. DTO 변환 (Collectors 임포트 필요)
+        List<SpendingChallengeDto.ChallengeSummary> summaries = challenges.stream()
+                .map(c -> SpendingChallengeDto.ChallengeSummary.builder()
+                        .challengeId(c.getId())
+                        .category(c.getSubCategoryName())
+                        .targetSpending(c.getTargetSpending())
+                        .rewardAmount(c.getRewardAmount())
+                        .status(c.getStatus().name())
+                        .startDate(c.getStartDate())
+                        .endDate(c.getEndDate())
+                        .build())
+                .collect(Collectors.toList());
+
+        return SpendingChallengeDto.ListResponse.builder()
+                .challenges(summaries)
                 .build();
     }
 }
