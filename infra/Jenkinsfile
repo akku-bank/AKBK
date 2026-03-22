@@ -128,6 +128,9 @@ pipeline {
 
                         echo "[Deploy] 배포 완료"
                     '''
+                }
+
+                script {
                     env.DEPLOY_STATUS = "배포: EC2 develop 반영 완료"
                 }
             }
