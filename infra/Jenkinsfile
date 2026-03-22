@@ -118,7 +118,7 @@ pipeline {
                         git reset --hard origin/develop
 
                         echo "[Deploy] docker compose 빌드 및 재기동"
-                        docker compose -f infra/docker-compose.yml up -d --build
+                        docker-compose -f infra/docker-compose.yml up -d --build
 
                         echo "[Deploy] 미사용 이미지 정리"
                         docker image prune -f
