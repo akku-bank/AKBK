@@ -3,6 +3,7 @@ package com.akku.backend.domain.social.controller;
 import com.akku.backend.domain.social.dto.FriendInviteData;
 import com.akku.backend.domain.social.dto.FriendInformationData;
 import com.akku.backend.domain.social.dto.FriendListResponse;
+import com.akku.backend.domain.social.dto.FriendTownResponse;
 import com.akku.backend.domain.social.service.FriendService;
 import com.akku.backend.global.dto.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -75,5 +76,18 @@ public class FriendController {
     ) {
         friendService.deleteFriend(userId, friendId);
         return ResponseEntity.ok(ApiResponse.success("친구를 삭제했습니다."));
+    }
+
+    /**
+     * 친구 타운 정보 조회
+     */
+    @Operation(summary = "친구 타운 정보 조회", description = "친구의 타운 방문 시 필요한 정보를 조회합니다.")
+    @GetMapping("/api/social/town/{friendId}")
+    @PreAuthorize("hasRole('CHILD')")
+    public ResponseEntity<ApiResponse<FriendTownResponse>> getFriendTown(
+            @PathVariable UUID friendId
+    ) {
+        FriendTownResponse data = friendService.getFriendTown(friendId);
+        return ResponseEntity.ok(ApiResponse.success("친구 타운 정보를 조회했습니다.", data));
     }
 }
