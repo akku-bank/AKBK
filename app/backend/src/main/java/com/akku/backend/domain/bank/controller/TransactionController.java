@@ -1,6 +1,8 @@
 package com.akku.backend.domain.bank.controller;
 
 import com.akku.backend.domain.bank.dto.TransactionHistoryResponse;
+import com.akku.backend.domain.bank.dto.TransactionVisibilityRequest;
+import com.akku.backend.domain.bank.dto.TransactionVisibilityResponse;
 import com.akku.backend.domain.bank.service.TransactionService;
 import com.akku.backend.global.dto.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -41,4 +43,16 @@ public class TransactionController {
         TransactionHistoryResponse response = transactionService.getChildTransactionHistory(parentId, childId, year, month);
         return ApiResponse.success("자녀 거래 내역 조회 성공", response);
     }
+
+    @Operation(summary = "프라이버시 제어 (글로벌)", description = "사용자의 모든 거래 내역에 대해 '부모 노출 여부(isHidden)' 설정을 일괄 업데이트합니다.")
+    @PatchMapping("/visibility")
+    public ApiResponse<TransactionVisibilityResponse> updateVisibility(
+            @AuthenticationPrincipal UUID userId,
+            @RequestBody TransactionVisibilityRequest request
+    ) {
+        TransactionVisibilityResponse response = transactionService.updateGlobalVisibility(userId, request);
+        return ApiResponse.success("프라이버시 설정이 변경되었습니다.", response);
+    }
 }
+
+
