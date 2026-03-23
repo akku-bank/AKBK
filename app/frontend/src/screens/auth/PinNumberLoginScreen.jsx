@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Platform, Alert } from 'react-native';
+import CustomText from '../../components/common/CustomText';
 import { RFValue } from 'react-native-responsive-fontsize';
 import useAuthStore from '../../store/useAuthStore';
 import api from '../../api/axios';
 
 const PinNumberLoginScreen = ({ navigation }) => {
     const [pin, setPin] = useState('');
-    const { user, token } = useAuthStore();
+    const { user, token, setAuthInfo } = useAuthStore();
+    const name = user?.name;
     const role = user?.role;
 
     const handleKeyPress = (num) => {
@@ -25,37 +27,17 @@ const PinNumberLoginScreen = ({ navigation }) => {
 
     const handlePinSubmit = async (finalPin) => {
         try {
-            /* ==========================================
-               [진짜 핀번호 검증 API 연동 코드]
-               ========================================== 
-            const response = await api.post('/auth/login', { pin: finalPin });
-            const { accessToken, role, name } = response.data; // 서버 응답 구조에 맞게 수정
-            
-            await setAuthInfo(accessToken, role, name);
+            const response = await api.post('/auth/login', { userId: user?.id || user?.userKey || token, pin: finalPin });
+            const payload = response.data?.data || response.data || {};
+            const jwt = payload.token || payload.tempToken || payload.accessToken;
+
+            await setAuthInfo(jwt, role, name);
 
             if (role === 'PARENT') {
                 navigation.replace('ParentMain');
             } else {
                 navigation.replace('ChildMain');
             }
-            ========================================== */
-
-            // --- 실제 연동 시 아래 블록 전체 삭제 ---
-            if (token?.includes("dev-bypass")) {
-                if (role === 'PARENT') {
-                    navigation.replace('ParentMain');
-                } else {
-                    navigation.replace('ChildMain');
-                }
-                return;
-            }
-
-            if (role === 'PARENT') {
-                navigation.replace('ParentMain');
-            } else {
-                navigation.replace('ChildMain');
-            }
-            // ------------------------------------
         } catch (error) {
             console.error('PIN Login Error:', error);
             Alert.alert('오류', '비밀번호가 일치하지 않습니다.');
@@ -80,13 +62,13 @@ const PinNumberLoginScreen = ({ navigation }) => {
                             if (key === 'delete') {
                                 return (
                                     <TouchableOpacity key={keyIndex} style={styles.keypadKey} onPress={handleDelete}>
-                                        <Text style={styles.keypadText}>{'<'}</Text>
+                                        <CustomText style={styles.keypadText}>{'<'}</CustomText>
                                     </TouchableOpacity>
                                 );
                             }
                             return (
                                 <TouchableOpacity key={keyIndex} style={styles.keypadKey} onPress={() => handleKeyPress(key)}>
-                                    <Text style={styles.keypadText}>{key}</Text>
+                                    <CustomText style={styles.keypadText}>{key}</CustomText>
                                 </TouchableOpacity>
                             );
                         })}
@@ -100,7 +82,7 @@ const PinNumberLoginScreen = ({ navigation }) => {
         <SafeAreaView style={styles.safeArea}>
             <View style={styles.container}>
                 <View style={styles.headerSection}>
-                    <Text style={styles.title}>비밀번호를 입력해주세요</Text>
+                    <CustomText style={styles.title}>비밀번호를 입력해주세요</CustomText>
                 </View>
 
                 <View style={styles.dotsContainer}>

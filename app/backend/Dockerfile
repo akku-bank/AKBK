@@ -6,8 +6,8 @@ WORKDIR /build
 COPY . .
 
 # 권한 부여 및 빌드 (테스트 제외)
-RUN chmod +x ./gradlew
-RUN ./gradlew clean bootJar -x test
+# sed: Windows CRLF → LF 변환 (Windows 환경에서 clone 시 gradlew에 \r 삽입되어 exit 127 발생)
+RUN sed -i 's/\r$//' ./gradlew && chmod +x ./gradlew && ./gradlew clean bootJar -x test
 
 # --- 2. Runtime Stage (실행 단계) ---
 FROM eclipse-temurin:17-jre-alpine

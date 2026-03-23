@@ -4,9 +4,11 @@ import com.akku.backend.domain.quiz.dto.ChatResponse;
 import com.akku.backend.domain.quiz.event.ChatResponseEvent;
 import com.akku.backend.domain.quiz.service.QuizService;
 import com.akku.backend.domain.quiz.sse.SseConnectionManager;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.stereotype.Component;
 
 /**
@@ -14,38 +16,32 @@ import org.springframework.stereotype.Component;
  *
  * <h3>처리 순서</h3>
  * <ol>
+ *   <li>raw JSON String → {@link ChatResponseEvent} 역직렬화 (ObjectMapper 직접 사용)</li>
  *   <li>chatJson null/blank 가드 — FastAPI 계약 위반 감지 시 DB 업데이트 완전 차단</li>
  *   <li>DB UPSERT — {@link QuizService#upsertChatLog}의 {@code @Transactional} 경계 내에서 실행.
  *       이 메서드가 반환된 시점(= 트랜잭션 커밋 완료)에만 SSE 푸시를 진행한다.</li>
  *   <li>SSE 푸시 — 클라이언트에게 AI 응답 전달</li>
  *   <li>SSE 종료 — 스트림을 정상 완료 처리</li>
+ *   <li>ack.acknowledge() — 오프셋 수동 커밋</li>
  * </ol>
+ *
+ * <h3>역직렬화 방식 변경 이유</h3>
+ * <p>기존에는 application.yml 의 {@code spring.json.value.default.type} 을 통해
+ * 전역 Kafka Consumer 가 {@link ChatResponseEvent} 로 자동 역직렬화했다.
+ * 이 방식은 bank 등 다른 도메인 이벤트를 추가할 때 전역 설정을 오염시킨다.
+ * 개선 후에는 공통 ConsumerFactory 가 값을 {@code String} 으로 수신하고,
+ * 각 컨슈머가 ObjectMapper 로 자신이 원하는 타입에 직접 역직렬화한다.</p>
  *
  * <p><b>트랜잭션 설계 의도:</b> 이 리스너 메서드 자체는 {@code @Transactional}이 아니다.
  * DB 쓰기는 {@code quizService.upsertChatLog()}의 독립적인 트랜잭션에 위임함으로써,
- * 트랜잭션 커밋 이후에 SSE 전송이 실행됨을 보장한다.
- * (트랜잭션 내부에서 SSE를 전송하면 커밋 전 클라이언트가 응답을 받는 경쟁 조건이 발생할 수 있다.)</p>
- *
- * <p>TODO: application.yml에 아래 Kafka Consumer 설정 필요:
- * <pre>
- * spring:
- *   kafka:
- *     consumer:
- *       group-id: ${akku.kafka.consumer.group-id:quiz-chat-group}
- *       auto-offset-reset: latest
- *       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
- *       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
- *       properties:
- *         spring.json.trusted.packages: "com.akku.backend.domain.quiz.event"
- *         spring.json.value.default.type: "com.akku.backend.domain.quiz.event.ChatResponseEvent"
- * </pre>
- * </p>
+ * 트랜잭션 커밋 이후에 SSE 전송이 실행됨을 보장한다.</p>
  */
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class QuizKafkaConsumer {
 
+    private final ObjectMapper objectMapper;
     private final QuizService quizService;
     private final SseConnectionManager sseConnectionManager;
 
@@ -56,16 +52,34 @@ public class QuizKafkaConsumer {
      * {@code chatJson}이 null 또는 blank인 경우, FastAPI의 Stateful 보장이 깨진 것으로 간주한다.
      * 이때 기존 {@code chat_logs} 데이터를 절대 덮어쓰지 않으며 DB 업데이트를 완전히 중단한다.
      * 사용자에게 reply 텍스트만 SSE로 전달하여 UX 단절을 최소화한다.</p>
+     *
+     * <h3>ack 정책 요약</h3>
+     * <ul>
+     *   <li><b>역직렬화 실패</b>: 재시도 불가(poison-pill) → ack 후 return</li>
+     *   <li><b>chatJson null/blank (계약 위반)</b>: 재시도 불가 → ack 후 return</li>
+     *   <li><b>DB UPSERT 실패</b>: 재시도 필요 → ack 하지 않고 예외 전파 (Kafka가 재소비 또는 DLQ 처리)</li>
+     *   <li><b>SSE 전송 실패</b>: DB 커밋 완료 후이므로 ack 허용 — SSE 오류는 경고 로그로 처리</li>
+     * </ul>
      */
     @KafkaListener(
-            topics    = "${akku.kafka.topic.quiz-chat-response:quiz.chat.response}",
-            groupId   = "${akku.kafka.consumer.group-id:quiz-chat-group}"
+            topics  = "${akku.kafka.topic.quiz-chat-response:quiz.chat.response}",
+            groupId = "${akku.kafka.consumer.group.quiz-chat:quiz-chat-group}"
     )
-    public void handleChatResponse(ChatResponseEvent event) {
+    public void handleChatResponse(String payload, Acknowledgment ack) {
+        // ── [1] 역직렬화 실패: 재시도해도 동일하게 실패하므로 ack 후 버린다 ──────────
+        ChatResponseEvent event;
+        try {
+            event = objectMapper.readValue(payload, ChatResponseEvent.class);
+        } catch (Exception e) {
+            log.error("CHAT_RESPONSE 역직렬화 실패 - payload: {}", payload, e);
+            ack.acknowledge();
+            return;
+        }
+
         log.info("CHAT_RESPONSE 수신 - eventId: {}, userId: {}, quizId: {}",
                 event.eventId(), event.userId(), event.quizId());
 
-        // ── [CRITICAL] chatJson null/blank 가드 ──────────────────────────────
+        // ── [2] chatJson null/blank 계약 위반: DB를 건드리지 않고 ack 후 버린다 ────
         if (event.chatJson() == null || event.chatJson().isBlank()) {
             log.error(
                     "CRITICAL: chatJson null/blank — FastAPI Stateful 계약 위반. " +
@@ -74,33 +88,49 @@ public class QuizKafkaConsumer {
                     event.eventId(), event.userId(), event.quizId()
             );
             // DB는 건드리지 않고, reply가 있을 경우에만 SSE로 텍스트 전달 (chatJson=null 명시)
-            if (event.reply() != null && !event.reply().isBlank()) {
-                sseConnectionManager.send(
-                        event.userId(),
-                        new ChatResponse(event.reply(), null),
-                        "chat-response"
-                );
+            try {
+                if (event.reply() != null && !event.reply().isBlank()) {
+                    sseConnectionManager.send(
+                            event.userId(),
+                            new ChatResponse(event.reply(), null),
+                            "chat-response"
+                    );
+                }
+            } catch (Exception sseEx) {
+                log.warn("계약 위반 페이로드 SSE 전송 실패 - userId: {}", event.userId(), sseEx);
+            } finally {
+                sseConnectionManager.complete(event.userId());
             }
-            sseConnectionManager.complete(event.userId());
+            ack.acknowledge(); // poison-pill: 재시도해도 동일하게 실패
             return;
         }
 
-        // ── 1. DB UPSERT + 2. SSE 푸시 ───────────────────────────────────────
-        // finally로 complete() 보장 — upsert/send 예외 시에도 SSE 연결이 hang되지 않음
+        // ── [3] DB UPSERT: 실패 시 ack 없이 예외 전파 → Kafka 재소비 또는 DLQ ──────
+        // quizService.upsertChatLog()의 @Transactional 경계 내에서 실행된다.
+        // 이 호출이 반환된 시점 = 트랜잭션 커밋 완료.
         try {
-            // quizService.upsertChatLog()의 @Transactional 경계 내에서 실행된다.
-            // 이 호출이 반환된 시점 = 트랜잭션 커밋 완료. 이후에만 SSE 전송을 진행한다.
             quizService.upsertChatLog(event.userId(), event.quizId(), event.chatJson());
-            log.debug("채팅 로그 UPSERT 완료 - userId: {}, quizId: {}", event.userId(), event.quizId());
+        } catch (Exception e) {
+            log.error("채팅 로그 UPSERT 실패 — ack 없이 예외 전파. eventId={}, userId={}, quizId={}",
+                    event.eventId(), event.userId(), event.quizId(), e);
+            throw e;
+        }
+        log.debug("채팅 로그 UPSERT 완료 - userId: {}, quizId: {}", event.userId(), event.quizId());
 
-            // 재사용 기존 ChatResponse DTO: reply(AI 텍스트) + chatJson(전체 누적 기록)
+        // ── [4] DB 커밋 완료 → 오프셋 커밋. 이후 SSE 실패는 재소비 이유가 아니다 ────
+        ack.acknowledge();
+
+        // ── [5] SSE 푸시: DB 커밋·ack 완료 후 실행. 실패해도 ack는 되돌리지 않는다 ──
+        try {
             sseConnectionManager.send(
                     event.userId(),
                     new ChatResponse(event.reply(), event.chatJson()),
                     "chat-response"
             );
+        } catch (Exception e) {
+            log.warn("SSE 전송 실패 (DB 커밋 및 ack 완료) - userId: {}, quizId: {}",
+                    event.userId(), event.quizId(), e);
         } finally {
-            // ── 3. SSE 스트림 정상 종료 ─────────────────────────────────────
             sseConnectionManager.complete(event.userId());
         }
     }

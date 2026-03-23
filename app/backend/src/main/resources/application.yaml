@@ -18,21 +18,9 @@ spring:
     enabled: true
     baseline-on-migrate: true
   kafka:
-    # 환경 변수가 있으면 그걸 쓰고, 없으면 로컬용 28080 사용
-    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:28080}
-    consumer:
-      group-id: quiz-chat-group
-      auto-offset-reset: latest
-      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
-      properties:
-        spring.json.trusted.packages: "com.akku.backend.domain.quiz.event"
-        spring.json.value.default.type: "com.akku.backend.domain.quiz.event.ChatResponseEvent"
-    producer:
-      key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
-      properties:
-        spring.json.add.type.headers: false
+    # 환경 변수가 있으면 그걸 쓰고, 없으면 29092 사용
+    # Consumer / Producer 세부 설정은 global.kafka.config.KafkaConfig 에서 프로그래밍 방식으로 관리
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:akkubangkku_kafka:29092}
 
 # 카카오 소셜 로그인
 kakao:
@@ -96,6 +84,30 @@ logging:
 external:
   fastapi:
     base-url: "http://localhost:8000" # 로컬 테스트용. 개발/운영 환경에 맞춰 분리 필요
+
+# =========================================================
+# Kafka 토픽명 / 컨슈머 그룹 ID
+# 토픽명과 그룹 ID는 이 곳에서 한 번만 선언한다.
+# 코드에서는 @Value("${akku.kafka.topic.*}") 또는
+# KafkaTopicProperties 빈으로 주입해 사용한다.
+# =========================================================
+akku:
+  kafka:
+    topic:
+      quiz-chat-request:  quiz.chat.request
+      quiz-chat-response: quiz.chat.response
+      payment:            payment
+      transfer:           transfer
+      deposit:            deposit
+      transaction:        transaction
+    consumer:
+      group:
+        quiz-chat:               quiz-chat-group
+        payment-storage:         payment-storage-group
+        transfer-storage:        transfer-storage-group
+        deposit-storage:         deposit-storage-group
+        transaction-notification: transaction-notification-group
+        transaction-jelly:       transaction-jelly-group
 # 암호화 설정
 encryption:
   key: ${ENCRYPTION_KEY:}

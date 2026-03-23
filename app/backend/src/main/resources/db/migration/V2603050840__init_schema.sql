@@ -60,9 +60,9 @@ CREATE TABLE transactions
     account_id       UUID        NOT NULL,
     merchant_id      BIGINT,
     amount           BIGINT      NOT NULL, -- 피드백 반영: 돈은 BIGINT
-    transaction_type VARCHAR(30) NOT NULL,
-    category         VARCHAR(50),
-    merchant_name    VARCHAR(255),
+    transaction_type  VARCHAR(30) NOT NULL,
+    sub_category_name VARCHAR(50),
+    merchant_name     VARCHAR(100),
     created_at       TIMESTAMP        DEFAULT CURRENT_TIMESTAMP
 );
 
