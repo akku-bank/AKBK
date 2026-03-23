@@ -1,5 +1,6 @@
 ﻿import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Platform, Alert } from 'react-native';
+import CustomText from '../../components/common/CustomText';
 import { RFValue } from 'react-native-responsive-fontsize';
 import useAuthStore from '../../store/useAuthStore';
 import api from '../../api/axios';
@@ -26,37 +27,8 @@ const PinNumberSetupScreen = ({ navigation, route }) => {
 
     const handlePinSubmit = async (finalPin) => {
         try {
-            /* ==========================================
-               [진짜 간편 비밀번호 설정 API 연동 코드]
-               ========================================== 
             await api.post('/auth/signup/pin', { pin: finalPin }, { headers: { Authorization: `Bearer ${tempToken}` } });
             
-            await setAuthInfo(tempToken, role, name);
-            setIsSuccess(true);
-            setTimeout(() => {
-                if (role === 'PARENT') {
-                    navigation.replace('ParentMain');
-                } else {
-                    navigation.replace('ChildMain');
-                }
-            }, 1000);
-            return;
-            ========================================== */
-
-            // --- 실제 연동 시 아래 블록 전체 삭제 ---
-            if (tempToken?.includes("dev-bypass")) {
-                await setAuthInfo(tempToken, role, name);
-                setIsSuccess(true);
-                setTimeout(() => {
-                    if (role === 'PARENT') {
-                        navigation.replace('ParentMain');
-                    } else {
-                        navigation.replace('ChildMain');
-                    }
-                }, 1000);
-                return;
-            }
-
             await setAuthInfo(tempToken, role, name);
             setIsSuccess(true);
             setTimeout(() => {
@@ -90,13 +62,13 @@ const PinNumberSetupScreen = ({ navigation, route }) => {
                             if (key === 'delete') {
                                 return (
                                     <TouchableOpacity key={keyIndex} style={styles.keypadKey} onPress={handleDelete}>
-                                        <Text style={styles.keypadText}>{'<'}</Text>
+                                        <CustomText style={styles.keypadText}>{'<'}</CustomText>
                                     </TouchableOpacity>
                                 );
                             }
                             return (
                                 <TouchableOpacity key={keyIndex} style={styles.keypadKey} onPress={() => handleKeyPress(key)}>
-                                    <Text style={styles.keypadText}>{key}</Text>
+                                    <CustomText style={styles.keypadText}>{key}</CustomText>
                                 </TouchableOpacity>
                             );
                         })}
@@ -110,8 +82,8 @@ const PinNumberSetupScreen = ({ navigation, route }) => {
         <SafeAreaView style={styles.safeArea}>
             <View style={styles.container}>
                 <View style={styles.headerSection}>
-                    <Text style={styles.title}>간편 비밀번호 설정</Text>
-                    <Text style={styles.subtitle}>앞으로 로그인에 사용할{'\n'}6자리 비밀번호를 입력해주세요.</Text>
+                    <CustomText style={styles.title}>간편 비밀번호 설정</CustomText>
+                    <CustomText style={styles.subtitle}>앞으로 로그인에 사용할{'\n'}6자리 비밀번호를 입력해주세요.</CustomText>
                 </View>
 
                 <View style={styles.dotsContainer}>
@@ -128,8 +100,8 @@ const PinNumberSetupScreen = ({ navigation, route }) => {
 
                 {isSuccess ? (
                     <View style={styles.successContainer}>
-                        <Text style={styles.successIcon}>🎉</Text>
-                        <Text style={styles.successText}>가입을 환영합니다!</Text>
+                        <CustomText style={styles.successIcon}>🎉</CustomText>
+                        <CustomText style={styles.successText}>가입을 환영합니다!</CustomText>
                     </View>
                 ) : (
                     renderKeypad()

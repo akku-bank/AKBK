@@ -76,28 +76,23 @@ const TransactionDetailScreen = ({ route, navigation }) => {
                     </View>
                 </View>
 
-                {/* 14세 이상 프라이버시 설정 카드 */}
+
+
+                {/* 프라이버시 토글 (14세 이상 전용) */}
                 {isOver14 && (
                     <View style={styles.privacyCard}>
                         <View style={styles.privacyTextContent}>
                             <CustomText style={styles.privacyTitle}>부모님께 내역 숨기기</CustomText>
-                            <CustomText style={styles.privacySubtitle}>14세 이상은 거래 내역을 숨길 수 있어요.</CustomText>
+                            <CustomText style={styles.privacySubtitle}>이 결제 내역을 부모님이 볼 수 없게 합니다.</CustomText>
                         </View>
                         <Switch
-                            trackColor={{ false: '#D1D5DB', true: '#3B82F6' }}
-                            thumbColor={'#FFFFFF'}
-                            ios_backgroundColor="#D1D5DB"
-                            onValueChange={async () => {
-                                /* ==========================================
-                                   [진짜 내역 비공개 상태 변경 API]
-                                   ========================================== 
-                                try {
-                                    // await api.patch(`/transactions/${detailData.id}/hidden`, { isHidden: !isPrivate });
-                                } catch (e) { console.error('Privacy Update Error:', e); }
-                                ========================================== */
-                                toggleHideTransaction(detailData.id);
-                            }}
                             value={isPrivate}
+                            onValueChange={() => {
+                                toggleHideTransaction(detailData.id);
+                                // TODO: await api.patch(`/bank/transactions/${detailData.id}/visibility`, { isHidden: !isPrivate })
+                            }}
+                            trackColor={{ false: '#E5E7EB', true: '#34D399' }}
+                            thumbColor="#FFFFFF"
                         />
                     </View>
                 )}

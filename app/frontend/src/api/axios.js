@@ -13,7 +13,10 @@ api.interceptors.request.use(
         console.log(`\n[네트워크 요청] ${config.method.toUpperCase()} ${fullUrl}`);
         if (config.data) console.log('[요청 데이터]:', JSON.stringify(config.data, null, 2));
         const token = useAuthStore.getState().token;
-        if (token) {
+        // 로그인/회원가입 등 인증이 필요 없거나 토큰 자체가 필요한 라우트에는 헤더 추가 생략
+        const isAuthRoute = config.url.includes('auth/social') || config.url.includes('auth/signup') || config.url.includes('auth/refresh');
+
+        if (token && !isAuthRoute && !config.headers.Authorization) {
             config.headers = {
                 ...config.headers,
                 Authorization: `Bearer ${token}`,
