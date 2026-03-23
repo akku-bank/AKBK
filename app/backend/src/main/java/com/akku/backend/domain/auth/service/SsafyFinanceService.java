@@ -227,10 +227,51 @@ public class SsafyFinanceService {
     }
 
     /**
-     * 타행 계좌 연동
+     * 1원 송금 (계좌 점유 인증 요청)
      */
-    public void linkAccount(String userKey, String bankCode, String accountNumber) {
-        throw new UnsupportedOperationException("아직 구현되지 않은 기능입니다: 타행 계좌 연동");
+    public FinanceAccountAuthResponse.Rec openAccountAuth(String userKey, String accountNo, String authText) {
+        FinanceRequestHeader header = createHeader("openAccountAuth", "openAccountAuth", userKey);
+        FinanceAccountAuthRequest data = new FinanceAccountAuthRequest(accountNo, authText);
+        
+        FinanceRequest<FinanceAccountAuthRequest> request = new FinanceRequest<>(header, data);
+
+        FinanceResponse<FinanceAccountAuthResponse> response = restClient.post()
+                .uri("/edu/accountAuth/openAccountAuth")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(request)
+                .retrieve()
+                .body(new ParameterizedTypeReference<>() {});
+
+        validateResponse(response);
+        if (response != null && response.data() != null && response.data().rec() != null) {
+            return response.data().rec();
+        }
+        
+        throw new RuntimeException("금융망 1원 송금 요청 실패");
+    }
+
+    /**
+     * 1원 송금 검증 (인증 코드 확인)
+     */
+    public FinanceAccountAuthCheckResponse.Rec checkAuthCode(String userKey, String accountNo, String authText, String authCode) {
+        FinanceRequestHeader header = createHeader("checkAuthCode", "checkAuthCode", userKey);
+        FinanceAccountAuthCheckRequest data = new FinanceAccountAuthCheckRequest(accountNo, authText, authCode);
+        
+        FinanceRequest<FinanceAccountAuthCheckRequest> request = new FinanceRequest<>(header, data);
+
+        FinanceResponse<FinanceAccountAuthCheckResponse> response = restClient.post()
+                .uri("/edu/accountAuth/checkAuthCode")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(request)
+                .retrieve()
+                .body(new ParameterizedTypeReference<>() {});
+
+        validateResponse(response);
+        if (response != null && response.data() != null && response.data().rec() != null) {
+            return response.data().rec();
+        }
+        
+        throw new RuntimeException("금융망 인증 코드 검증 실패");
     }
 
     /**
