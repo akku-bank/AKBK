@@ -431,7 +431,8 @@ public class SpendingChallengeService {
         User parent = userRepository.findById(parentId)
                 .orElseThrow(() -> new ApiException(UserErrorCode.USER_NOT_FOUND));
 
-        SpendingChallenge challenge = spendingChallengeRepository.findById(challengeId)
+        // 비관적 락으로 조회 — 동일 챌린지에 대한 동시 송금 요청이 직렬화됨
+        SpendingChallenge challenge = spendingChallengeRepository.findByIdForUpdate(challengeId)
                 .orElseThrow(() -> new ApiException(ChallengeErrorCode.CHALLENGE_NOT_FOUND));
 
         User child = challenge.getUser();

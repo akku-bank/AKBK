@@ -3,7 +3,9 @@ package com.akku.backend.domain.challenge.repository;
 import com.akku.backend.domain.challenge.entity.ChallengeStatus;
 import com.akku.backend.domain.challenge.entity.SpendingChallenge;
 import com.akku.backend.domain.auth.entity.User;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -64,4 +66,9 @@ public interface SpendingChallengeRepository extends JpaRepository<SpendingChall
 
     // 미수령 보상 목록 조회용 — 특정 유저의 SUCCESS + 특정 endDate 챌린지 조회
     List<SpendingChallenge> findAllByUserAndStatusAndEndDate(User user, ChallengeStatus status, LocalDate endDate);
+
+    // 보상 송금 동시성 제어용 — SELECT ... FOR UPDATE (비관적 쓰기 락)
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT sc FROM SpendingChallenge sc WHERE sc.id = :id")
+    Optional<SpendingChallenge> findByIdForUpdate(@Param("id") UUID id);
 }
