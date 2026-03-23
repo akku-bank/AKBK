@@ -111,6 +111,11 @@ public class User {
         this.pinPassword = encodedPin;
     }
 
+    public void updateLevelAndScore(int level, int score) {
+        this.level = level;
+        this.score = score;
+    }
+
     public void updateIsHidden(boolean isHidden) {
         this.isHidden = isHidden;
     }
