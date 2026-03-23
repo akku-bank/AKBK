@@ -1,12 +1,57 @@
-import React, { useState } from 'react';
-import { View, StyleSheet, TouchableOpacity, SafeAreaView, Image } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, StyleSheet, TouchableOpacity, SafeAreaView, Alert, ActivityIndicator } from 'react-native';
 import { scale, verticalScale } from 'react-native-size-matters';
 import CustomText from '../../../components/common/CustomText';
+import api from '../../../api/axios';
 
 const PaymentScreen = ({ navigation }) => {
     // 혜택 시뮬레이션: 보유 젤링 및결제 시 예상 적립 젤링
     const [currentJellings, setCurrentJellings] = useState(1500);
     const expectedCashback = 50;
+
+    const [myCardId, setMyCardId] = useState(null);
+    const [isPaying, setIsPaying] = useState(false);
+
+    useEffect(() => {
+        // 내 카드 조회 (결제할 카드 식별 목적)
+        const fetchMyCard = async () => {
+            try {
+                const res = await api.get('/bank/cards/my');
+                const cards = res.data?.data || [];
+                if (cards.length > 0) {
+                    setMyCardId(cards[0].id);
+                }
+            } catch (error) {
+                console.error('Card Fetch Error (PaymentScreen):', error);
+            }
+        };
+        fetchMyCard();
+    }, []);
+
+    const handleMockPayment = async () => {
+        if (!myCardId) {
+            Alert.alert('알림', '결제할 수 있는 카드가 존재하지 않습니다. 먼저 카드를 발급받아 주세요!');
+            return;
+        }
+
+        try {
+            setIsPaying(true);
+            // 가상 결제 데모 (가게ID 1번, 금액 1500원)
+            await api.post('/bank/cards/payment', {
+                cardId: myCardId,
+                merchantId: 1,
+                paymentBalance: 1500
+            });
+            Alert.alert('결제 성공', '1,500원 결제가 완료되었습니다!', [
+                { text: '확인', onPress: () => navigation.goBack() }
+            ]);
+        } catch (error) {
+            console.error('Payment Error:', error.response?.data || error.message);
+            Alert.alert('결제 실패', error.response?.data?.message || '잔액이 부족하거나 결제 서버 오류입니다.');
+        } finally {
+            setIsPaying(false);
+        }
+    };
 
     return (
         <SafeAreaView style={styles.safeArea}>
@@ -40,6 +85,15 @@ const PaymentScreen = ({ navigation }) => {
                     <View style={styles.qrBox}>
                         <View style={styles.dummyQr} />
                     </View>
+
+                    {/* 데모용 바코드 스캔 시뮬레이션 버튼 */}
+                    <TouchableOpacity
+                        style={[styles.mockPayBtn, isPaying && { opacity: 0.7 }]}
+                        onPress={handleMockPayment}
+                        disabled={isPaying}
+                    >
+                        {isPaying ? <ActivityIndicator color="#111" /> : <CustomText style={styles.mockPayBtnText}>결제 스캔 시뮬레이션 (1,500원)</CustomText>}
+                    </TouchableOpacity>
                 </View>
 
                 {/* 하단 혜택 안내 */}
@@ -205,6 +259,19 @@ const styles = StyleSheet.create({
     highlightText: {
         color: '#F9A8D4',
         fontWeight: 'bold',
+    },
+    mockPayBtn: {
+        marginTop: verticalScale(20),
+        width: '100%',
+        backgroundColor: '#A3E635',
+        paddingVertical: verticalScale(14),
+        borderRadius: scale(12),
+        alignItems: 'center',
+    },
+    mockPayBtnText: {
+        fontSize: scale(15),
+        fontWeight: 'bold',
+        color: '#111',
     }
 });
 

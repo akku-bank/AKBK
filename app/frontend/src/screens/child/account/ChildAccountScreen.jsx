@@ -1,12 +1,14 @@
 ﻿import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { View, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Alert, Switch } from 'react-native';
 import { RFValue } from 'react-native-responsive-fontsize';
 import CustomText from '../../../components/common/CustomText';
 import api from '../../../api/axios';
+import useTransactionStore from '../../../store/transactionStore';
 
 const ChildAccountScreen = ({ navigation }) => {
+    const hiddenTransactionIds = useTransactionStore(state => state.hiddenTransactionIds);
     // 임시 계좌 데이터 상태
-    const [balance, setBalance] = useState(15000);
+    const [balance, setBalance] = useState(0);
     const [transactions, setTransactions] = useState([
         { id: 1, title: '문구점', amount: -1500, date: '2023.10.25' },
         { id: 2, title: '용돈', amount: 5000, date: '2023.10.24' },
@@ -62,6 +64,9 @@ const ChildAccountScreen = ({ navigation }) => {
                         <TouchableOpacity style={styles.actionBtn} onPress={() => navigation.navigate('Transfer')}>
                             <CustomText style={styles.actionBtnText}>🤝 송금하기</CustomText>
                         </TouchableOpacity>
+                        <TouchableOpacity style={styles.actionBtn} onPress={() => navigation.navigate('CardListScreen')}>
+                            <CustomText style={styles.actionBtnText}>💳 내 카드</CustomText>
+                        </TouchableOpacity>
                     </View>
                 </View>
 
@@ -74,17 +79,22 @@ const ChildAccountScreen = ({ navigation }) => {
                         </TouchableOpacity>
                     </View>
 
-                    {transactions.map(item => (
-                        <TouchableOpacity key={item.id} style={styles.historyRow} onPress={() => navigation.navigate('TransactionDetail', { transaction: item })}>
-                            <View>
-                                <CustomText style={styles.historyTitle}>{item.title}</CustomText>
-                                <CustomText style={styles.historyDate}>{item.date}</CustomText>
-                            </View>
-                            <CustomText style={[styles.historyAmount, { color: item.amount < 0 ? '#111' : '#3B82F6' }]}>
-                                {item.amount > 0 ? '+' : ''}{item.amount.toLocaleString()}원
-                            </CustomText>
-                        </TouchableOpacity>
-                    ))}
+                    {transactions.map(item => {
+                        const isHidden = hiddenTransactionIds.includes(item.id);
+                        return (
+                            <TouchableOpacity key={item.id} style={styles.historyRow} onPress={() => navigation.navigate('TransactionDetail', { transaction: item })}>
+                                <View>
+                                    <CustomText style={[styles.historyTitle, isHidden && { color: '#9CA3AF', fontStyle: 'italic' }]}>
+                                        {isHidden ? '비공개 내역 🤫' : item.title}
+                                    </CustomText>
+                                    <CustomText style={styles.historyDate}>{item.date}</CustomText>
+                                </View>
+                                <CustomText style={[styles.historyAmount, { color: item.amount < 0 ? '#111' : '#3B82F6' }]}>
+                                    {item.amount > 0 ? '+' : ''}{item.amount.toLocaleString()}원
+                                </CustomText>
+                            </TouchableOpacity>
+                        );
+                    })}
                 </View>
 
             </ScrollView>
@@ -101,6 +111,8 @@ const styles = StyleSheet.create({
     actionRow: { flexDirection: 'row', gap: RFValue(12) },
     actionBtn: { flex: 1, backgroundColor: '#F3F4F6', padding: RFValue(14), borderRadius: RFValue(12), alignItems: 'center' },
     actionBtnText: { fontSize: RFValue(15), fontWeight: 'bold', color: '#111' },
+    hideHistoryCard: { flexDirection: 'row', backgroundColor: '#FFF', borderRadius: RFValue(16), padding: RFValue(20), marginBottom: RFValue(20), justifyContent: 'space-between', alignItems: 'center' },
+    hideHistoryLabel: { fontSize: RFValue(15), fontWeight: 'bold', color: '#111' },
     sectionTitle: { fontSize: RFValue(18), fontWeight: 'bold', color: '#111', marginBottom: 0 },
     historyCard: { backgroundColor: '#FFF', borderRadius: RFValue(16), padding: RFValue(20), marginBottom: RFValue(20) },
     historyRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: RFValue(12), borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },

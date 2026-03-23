@@ -97,7 +97,7 @@ const ChildMyPageScreen = ({ navigation }) => {
                         />
                     </View>
 
-                    <TouchableOpacity style={styles.menuItem}>
+                    <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('ChildChangePassword')}>
                         <View style={styles.menuItemLeft}>
                             <CustomText style={styles.menuIcon}>🔒</CustomText>
                             <CustomText style={styles.menuText}>비밀번호 변경</CustomText>
@@ -106,19 +106,7 @@ const ChildMyPageScreen = ({ navigation }) => {
                     </TouchableOpacity>
                 </View>
 
-                <View style={styles.menuGroup}>
-                    <TouchableOpacity style={styles.menuItem}>
-                        <View style={styles.menuItemLeft}>
-                        </View>
-                        <CustomText style={styles.chevron}>›</CustomText>
-                    </TouchableOpacity>
 
-                    <TouchableOpacity style={styles.menuItem}>
-                        <View style={styles.menuItemLeft}>
-                        </View>
-                        <CustomText style={styles.chevron}>›</CustomText>
-                    </TouchableOpacity>
-                </View>
 
                 {/* 하단 유틸리티 */}
                 <View style={styles.utilitySection}>

@@ -22,31 +22,22 @@ const ChallengeProposeScreen = ({ navigation }) => {
         // }
     }, [navigation]);
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => { // Added async here
         if (!goalAmount || isNaN(goalAmount)) {
             Alert.alert('알림', '목표 금액을 정확히 입력해주세요.');
             return;
         }
 
-        /* ==========================================
-           [진짜 용돈 미션 제안 API]
-           ========================================== 
         try {
-            // await api.post('/challenges/propose', {
-            //     category: selectedCategory,
-            //     goalAmount: parseInt(goalAmount),
-            //     memo: memo
-            // });
-            // Alert.alert('제안 완료', `부모님께 "${selectedCategory}" 지출 줄이기 챌린지를 제안했어요!`, [{ text: '확인', onPress: () => navigation.goBack() }]);
-            // return;
-        } catch(e) { console.error('Challenge Propose Error', e); }
-        ========================================== */
-
-        Alert.alert(
-            '제안 완료',
-            `부모님께 "${selectedCategory}" 지출 줄이기 챌린지를 제안했어요!\n목표 금액: ${parseInt(goalAmount).toLocaleString()}원`,
-            [{ text: '확인', onPress: () => navigation.goBack() }]
-        );
+            await api.post('/challenges/spending', {
+                subCategoryName: selectedCategory,
+                targetAmount: parseInt(goalAmount),
+            });
+            Alert.alert('제안 완료', `부모님께 "${selectedCategory}" 지출 줄이기 챌린지를 제안했어요!`, [{ text: '확인', onPress: () => navigation.goBack() }]);
+        } catch (e) {
+            console.error('Challenge Propose Error', e);
+            Alert.alert('오류', '챌린지 생성 중 문제가 발생했습니다.');
+        }
     };
 
     return (
