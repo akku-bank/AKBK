@@ -86,6 +86,17 @@ const ChallengeScreen = ({ navigation }) => {
         );
     };
 
+    const handleOpenQuizDifficulty = () => {
+        const parentNavigation = navigation.getParent?.();
+
+        if (parentNavigation) {
+            parentNavigation.navigate('QuizDifficultySelect');
+            return;
+        }
+
+        navigation.navigate('QuizDifficultySelect');
+    };
+
     const renderChallengeItem = ({ item }) => {
         let statusBadge = null;
         let showButtons = false;
@@ -186,7 +197,7 @@ const ChallengeScreen = ({ navigation }) => {
                 <View style={[styles.card, { marginTop: verticalScale(24), backgroundColor: '#F9FAFB' }]}>
                     <CustomText style={styles.menuTitle}>매일매일 미션</CustomText>
 
-                    <TouchableOpacity style={styles.menuBtn} onPress={() => navigation.navigate('QuizScreen')}>
+                    <TouchableOpacity style={styles.menuBtn} onPress={handleOpenQuizDifficulty}>
                         <CustomText style={styles.menuBtnIcon}>🎓</CustomText>
                         <View style={{ flex: 1 }}>
                             <CustomText style={styles.menuBtnTitle}>주간 금융 퀴즈</CustomText>
