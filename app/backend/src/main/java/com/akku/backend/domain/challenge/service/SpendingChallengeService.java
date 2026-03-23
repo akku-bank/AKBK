@@ -189,16 +189,16 @@ public class SpendingChallengeService {
         SpendingChallenge challenge = spendingChallengeRepository.findById(challengeId)
                 .orElseThrow(() -> new ApiException(ChallengeErrorCode.CHALLENGE_NOT_FOUND));
 
-        // 2. 부모 권한 검증 (User 엔티티의 Role 필드 확인 - 실제 필드명에 맞게 수정 필요)
-        // if (parent.getRole() != Role.PARENT) {
-        //     throw new ApiException(ChallengeErrorCode.ACCESS_DENIED);
-        // }
+        // 2. 부모 역할 검증
+        if (!"PARENT".equals(parent.getRole())) {
+            throw new ApiException(ChallengeErrorCode.ACCESS_DENIED);
+        }
 
-        // 3. 가족 관계 검증 (부모의 가족 ID와 챌린지 등록 자녀의 가족 ID 일치 여부 확인)
-        // User 엔티티에 Family 연관관계가 있다고 가정
-        // if (!parent.getFamily().getId().equals(challenge.getUser().getFamily().getId())) {
-        //     throw new ApiException(ChallengeErrorCode.ACCESS_DENIED);
-        // }
+        // 3. 가족 관계 검증 (부모와 챌린지 소유 자녀가 같은 familyId)
+        if (parent.getFamilyId() == null || challenge.getUser().getFamilyId() == null
+                || !parent.getFamilyId().equals(challenge.getUser().getFamilyId())) {
+            throw new ApiException(ChallengeErrorCode.ACCESS_DENIED);
+        }
 
         // 4. 요청된 상태값 유효성 검증 (APPROVED 또는 REJECTED만 허용)
         if (request.getStatus() != ChallengeStatus.APPROVED && request.getStatus() != ChallengeStatus.REJECTED) {
@@ -436,22 +436,27 @@ public class SpendingChallengeService {
 
         User child = challenge.getUser();
 
-        // 2. 가족 관계 검증 (부모와 챌린지 소유 자녀가 같은 familyId)
+        // 2. 부모 역할 검증
+        if (!"PARENT".equals(parent.getRole())) {
+            throw new ApiException(ChallengeErrorCode.ACCESS_DENIED);
+        }
+
+        // 3. 가족 관계 검증 (부모와 챌린지 소유 자녀가 같은 familyId)
         if (parent.getFamilyId() == null || child.getFamilyId() == null
                 || !parent.getFamilyId().equals(child.getFamilyId())) {
             throw new ApiException(ChallengeErrorCode.ACCESS_DENIED);
         }
 
-        // 3. 상태 검증 — 이중 출금 방지 핵심 가드 (REWARD_REQUESTED 상태에서만 진입 허용)
+        // 4. 상태 검증 — 이중 출금 방지 핵심 가드 (REWARD_REQUESTED 상태에서만 진입 허용)
         if (challenge.getStatus() != ChallengeStatus.REWARD_REQUESTED) {
             throw new ApiException(ChallengeErrorCode.INVALID_STATUS_UPDATE);
         }
 
-        // 4. 적요(메모) 구성
+        // 5. 적요(메모) 구성
         String depositMemo = String.format("주간 소비 챌린지 보상 (%s)", challenge.getSubCategoryName());
         String withdrawalMemo = String.format("챌린지 보상 송금 (%s)", challenge.getSubCategoryName());
 
-        // 5. 송금 실행 (AccountService 위임 — 잔액 부족 등 실패 시 예외 전파 → 트랜잭션 롤백)
+        // 6. 송금 실행 (AccountService 위임 — 잔액 부족 등 실패 시 예외 전파 → 트랜잭션 롤백)
         accountService.internalRewardTransfer(
                 parentId,
                 child.getId(),
@@ -462,10 +467,10 @@ public class SpendingChallengeService {
                 withdrawalMemo
         );
 
-        // 6. 챌린지 상태 REWARDED로 업데이트 (Dirty Checking)
+        // 7. 챌린지 상태 REWARDED로 업데이트 (Dirty Checking)
         challenge.updateStatus(ChallengeStatus.REWARDED);
 
-        // 7. 자녀 FCM 알림 이벤트 발행 (AFTER_COMMIT 이후 비동기 처리)
+        // 8. 자녀 FCM 알림 이벤트 발행 (AFTER_COMMIT 이후 비동기 처리)
         eventPublisher.publishEvent(new RewardTransferredEvent(
                 challenge.getId(),
                 child.getId(),
