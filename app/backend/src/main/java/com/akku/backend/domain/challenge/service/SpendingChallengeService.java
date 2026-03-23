@@ -14,6 +14,7 @@ import com.akku.backend.domain.user.exception.UserErrorCode;
 import com.akku.backend.global.error.ApiException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -71,7 +72,12 @@ public class SpendingChallengeService {
                 .endDate(nextSunday)
                 .build();
 
-        SpendingChallenge savedChallenge = spendingChallengeRepository.save(challenge);
+        SpendingChallenge savedChallenge;
+        try {
+            savedChallenge = spendingChallengeRepository.saveAndFlush(challenge);
+        } catch (DataIntegrityViolationException e) {
+            throw new ApiException(ChallengeErrorCode.DUPLICATE_CHALLENGE);
+        }
 
         return SpendingChallengeDto.CreateResponse.builder()
                 .challengeId(savedChallenge.getId())
@@ -126,6 +132,13 @@ public class SpendingChallengeService {
         if (challenge.getStatus() == ChallengeStatus.REJECTED) {
             challenge.updateStatus(ChallengeStatus.PENDING);
             challenge.clearParentMessage();
+        }
+
+        // 8. DB 제약 위반을 메서드 경계 안에서 잡기 위해 명시적 flush
+        try {
+            spendingChallengeRepository.saveAndFlush(challenge);
+        } catch (DataIntegrityViolationException e) {
+            throw new ApiException(ChallengeErrorCode.DUPLICATE_CHALLENGE);
         }
 
         return SpendingChallengeDto.UpdateResponse.builder()
