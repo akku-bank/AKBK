@@ -411,7 +411,8 @@ public class SpendingChallengeService {
         - 성공 시 REWARDED 상태로 변경 후 자녀 FCM 이벤트 발행
      */
     @Transactional
-    public SpendingChallengeDto.RewardTransferResponse processRewardTransfer(UUID parentId, UUID challengeId) {
+    public SpendingChallengeDto.RewardTransferResponse processRewardTransfer(UUID parentId, UUID challengeId,
+                                                                              SpendingChallengeDto.RewardTransferRequest request) {
 
         // 1. 부모 유저 및 챌린지 조회
         User parent = userRepository.findById(parentId)
@@ -441,6 +442,8 @@ public class SpendingChallengeService {
         accountService.internalRewardTransfer(
                 parentId,
                 child.getId(),
+                request.getParentAccountId(),
+                request.getChildAccountId(),
                 challenge.getRewardAmount(),
                 depositMemo,
                 withdrawalMemo

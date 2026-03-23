@@ -112,10 +112,11 @@ public class SpendingChallengeController {
     @PostMapping("/{challengeId}/reward-transfer")
     public ResponseEntity<ApiResponse<SpendingChallengeDto.RewardTransferResponse>> processRewardTransfer(
             @PathVariable UUID challengeId,
-            @RequestAttribute("userId") UUID parentId) {
+            @RequestAttribute("userId") UUID parentId,
+            @RequestBody SpendingChallengeDto.RewardTransferRequest request) {
 
         SpendingChallengeDto.RewardTransferResponse response =
-                spendingChallengeService.processRewardTransfer(parentId, challengeId);
+                spendingChallengeService.processRewardTransfer(parentId, challengeId, request);
 
         return ResponseEntity.ok(ApiResponse.success("보상 송금이 완료되었습니다.", response));
     }

@@ -109,6 +109,14 @@ public class SpendingChallengeDto {
         private String status; // REWARD_REQUESTED
     }
 
+    // --- 보상 송금 요청 (Reward Transfer - 부모 전용) ---
+    @Getter
+    @NoArgsConstructor
+    public static class RewardTransferRequest {
+        private UUID parentAccountId; // 부모가 선택한 출금 계좌 ID
+        private UUID childAccountId;  // 자녀의 입금 계좌 ID
+    }
+
     // --- 보상 송금 응답 (Reward Transfer - 부모 전용) ---
     @Getter
     @Builder
