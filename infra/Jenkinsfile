@@ -2,7 +2,8 @@ pipeline {
     agent any
 
     environment {
-        MM_WEBHOOK = credentials('mattermost-webhook-url')
+        MM_WEBHOOK  = credentials('mattermost-webhook-url')
+        DEPLOY_PATH = '/home/ubuntu/S14P21B101'
     }
 
     stages {
@@ -15,8 +16,9 @@ pipeline {
         stage('Prepare Metadata') {
             steps {
                 script {
-                    env.BUILT_BRANCH = env.gitlabBranch ?: env.BRANCH_NAME ?: "unknown"
-                    env.TRIGGER_USER = env.gitlabUserName ?: "unknown"
+                    env.BUILT_BRANCH  = env.gitlabBranch ?: env.BRANCH_NAME ?: "unknown"
+                    env.TRIGGER_USER  = env.gitlabUserName ?: "unknown"
+                    env.DEPLOY_STATUS = "배포: 대상 아님"
 
                     // 최신 커밋 메시지 읽기
                     def commitMessage = sh(
@@ -44,12 +46,11 @@ pipeline {
                     def teamCode = parts.size() >= 2 ? parts[1].toLowerCase() : "unknown"
 
                     def teamMap = [
-                        "ai": "AI",
-                        "de": "DATA",
-                        "be": "BACKEND",
-                        "fe": "FRONTEND",
-                        "in": "INFRA",
-                        "infra": "INFRA"
+                        "ai"   : "AI",
+                        "de"   : "DATA",
+                        "be"   : "BACKEND",
+                        "fe"   : "FRONTEND",
+                        "infra"   : "INFRA"
                     ]
 
                     env.TARGET_TEAM = teamMap.get(teamCode, "COMMON_OPS")
@@ -70,7 +71,7 @@ pipeline {
 
         stage('Infrastructure Check') {
             steps {
-                sh '[ -f infra/docker-compose.yml ] && echo "Docker config found" || echo "Skip check"'
+                sh '[ -f docker-compose.yml ] && echo "Docker config found" || echo "Skip check"'
             }
         }
 
@@ -82,6 +83,51 @@ pipeline {
                 }
             }
         }
+
+        stage('Deploy') {
+            when {
+                expression { env.BUILT_BRANCH == 'develop' }
+            }
+            steps {
+                script {
+                    echo "develop 브랜치 감지 — EC2 배포를 시작합니다."
+                }
+
+                withCredentials([usernamePassword(
+                    credentialsId: 'gitlab_auth',
+                    usernameVariable: 'GIT_USERNAME',
+                    passwordVariable: 'GIT_PASSWORD'
+                )]) {
+                    sh '''
+                        set -e
+                        echo "[Deploy] 프로젝트 디렉토리로 이동: ${DEPLOY_PATH}"
+                        cd "${DEPLOY_PATH}"
+
+                        echo "[Deploy] git safe.directory 설정"
+                        git config --global --add safe.directory "${DEPLOY_PATH}"
+
+                        echo "[Deploy] origin URL 설정"
+                        git remote set-url origin https://lab.ssafy.com/s14-fintech-finance-sub1/S14P21B101.git
+
+                        echo "[Deploy] develop 브랜치 최신화"
+                        git -c "credential.helper=!f() { echo username=${GIT_USERNAME}; echo password=${GIT_PASSWORD}; }; f" fetch origin develop
+                        git reset --hard origin/develop
+
+                        echo "[Deploy] docker compose 빌드 및 재기동"
+                        docker-compose -f docker-compose.yml up -d --build
+
+                        echo "[Deploy] 미사용 이미지 정리"
+                        docker image prune -f
+
+                        echo "[Deploy] 배포 완료"
+                    '''
+                }
+
+                script {
+                    env.DEPLOY_STATUS = "배포: EC2 develop 반영 완료"
+                }
+            }
+        }
     }
 
     post {
@@ -89,7 +135,7 @@ pipeline {
             sh """
             curl -X POST -H 'Content-Type: application/json' \
             -d '{
-              "text":"✅ **[${env.TARGET_TEAM}] Jenkins 빌드 성공**\\n- 프로젝트: ${env.JOB_NAME}\\n- 빌드 번호: #${env.BUILD_NUMBER}\\n- 브랜치: ${env.BRANCH_DISPLAY}\\n- 요청자: ${env.TRIGGER_USER}\\n- 확인: ${env.BUILD_URL}"
+              "text":"✅ **[${env.TARGET_TEAM}] Jenkins 빌드 성공**\\n- 프로젝트: ${env.JOB_NAME}\\n- 빌드 번호: #${env.BUILD_NUMBER}\\n- 브랜치: ${env.BRANCH_DISPLAY}\\n- 요청자: ${env.TRIGGER_USER}\\n- ${env.DEPLOY_STATUS}\\n- 확인: ${env.BUILD_URL}"
             }' \
             ${MM_WEBHOOK}
             """

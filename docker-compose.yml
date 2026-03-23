@@ -172,6 +172,24 @@
       - EXTERNAL_FASTAPI_BASE_URL=http://ai-server:8000 # localhost:8000 대신 ai_server 컨테이너 이름 사용
       - KAFKA_BOOTSTRAP_SERVERS=akkubangkku_kafka:29092
     restart: always
+  
+  frontend:
+    build:
+      context: ./app/frontend
+      dockerfile: Dockerfile
+    container_name: akku_frontend
+    command: npm start
+    depends_on:
+      backend:
+        condition: service_started
+    ports:
+      - "8081:8081"
+    volumes:
+      - ./app/frontend:/app # 코드 변경 시 컨테이너 내부의 /app 디렉토리에 자동 반영
+      - /app/node_modules # node_modules는 호스트와 공유하지 않음 (컨테이너 내부에서 설치)
+    env_file:
+      - .env # 최상단 .env 파일의 변수들(JWT, KAKAO 등)을 주입받음
+    restart: always
 
 volumes:
   postgres_data:

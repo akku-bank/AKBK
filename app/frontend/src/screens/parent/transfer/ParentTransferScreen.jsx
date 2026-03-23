@@ -6,8 +6,11 @@ import CustomTextInput from '../../../components/common/CustomTextInput';
 import api from '../../../api/axios';
 
 const ParentTransferScreen = ({ navigation, route }) => {
+    // 딥링크(푸시 알림)를 통해 진입 시 route.params에 금액(amount)과 자녀 정보(child)가 전달됨
     const child = route.params?.child || { name: '자녀', accountId: '' };
-    const [amount, setAmount] = useState('');
+    const initialAmount = route.params?.amount ? String(route.params.amount) : '';
+
+    const [amount, setAmount] = useState(initialAmount);
     const [pin, setPin] = useState('');
     const [myAccount, setMyAccount] = useState(null);
 

@@ -79,9 +79,10 @@ public class User {
         this.fcmToken = fcmToken;
     }
 
-    public void updateProfile(String name, String role) {
+    public void updateProfile(String name, String role, java.time.LocalDate birthDate) {
         this.name = name;
         this.role = role;
+        this.birthDate = birthDate;
     }
 
     public void updateName(String name) {
@@ -109,6 +110,11 @@ public class User {
     public void updatePinPassword(String encodedPin) {
         this.pinPassword = encodedPin;
     }
+
+    public void updateIsHidden(boolean isHidden) {
+        this.isHidden = isHidden;
+    }
 }
+
 
 
