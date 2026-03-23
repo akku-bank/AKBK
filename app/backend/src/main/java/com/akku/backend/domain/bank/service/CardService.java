@@ -198,11 +198,12 @@ public class CardService {
         );
 
         // 결제 완료 이벤트 발행 — AFTER_COMMIT 이후 challenge 도메인 리스너가 수신
+        LocalDate approvalDate = LocalDate.parse(result.transactionDate(), DateTimeFormatter.ofPattern("yyyyMMdd"));
         eventPublisher.publishEvent(new CardPaymentEvent(
                 userId,
                 result.categoryName(),
                 result.paymentBalance(),
-                java.time.LocalDate.now()
+                approvalDate
         ));
     }
 
