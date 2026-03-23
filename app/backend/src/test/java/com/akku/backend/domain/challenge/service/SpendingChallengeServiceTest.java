@@ -774,10 +774,12 @@ class SpendingChallengeServiceTest {
         @DisplayName("8-1. 성공 — REWARDED 전환 + internalRewardTransfer 호출(금액·적요) + 자녀 FCM 이벤트 페이로드 검증")
         void processRewardTransfer_Success() {
             // given
-            UUID parentId    = UUID.randomUUID();
-            UUID childId     = UUID.randomUUID();
-            UUID challengeId = UUID.randomUUID();
-            UUID familyId    = UUID.randomUUID();
+            UUID parentId        = UUID.randomUUID();
+            UUID childId         = UUID.randomUUID();
+            UUID challengeId     = UUID.randomUUID();
+            UUID familyId        = UUID.randomUUID();
+            UUID parentAccountId = UUID.randomUUID();
+            UUID childAccountId  = UUID.randomUUID();
 
             User parent = mockParent(parentId, familyId);
             given(userRepository.findById(parentId)).willReturn(Optional.of(parent));
@@ -790,22 +792,26 @@ class SpendingChallengeServiceTest {
                     .startDate(LocalDate.now().minusDays(6)).endDate(LocalDate.now())
                     .build();
             given(spendingChallengeRepository.findById(challengeId)).willReturn(Optional.of(challenge));
+
+            SpendingChallengeDto.RewardTransferRequest request = mock(SpendingChallengeDto.RewardTransferRequest.class);
+            given(request.getParentAccountId()).willReturn(parentAccountId);
+            given(request.getChildAccountId()).willReturn(childAccountId);
             // internalRewardTransfer = void → 기본 동작(do nothing)으로 성공 시뮬레이션
 
             // when
             SpendingChallengeDto.RewardTransferResponse response =
-                    spendingChallengeService.processRewardTransfer(parentId, challengeId);
+                    spendingChallengeService.processRewardTransfer(parentId, challengeId, request);
 
             // then — 응답 DTO + 엔티티 상태 변경 확인
             assertThat(response.getStatus()).isEqualTo(ChallengeStatus.REWARDED.name());
             assertThat(response.getRewardAmount()).isEqualTo(10_000L);
             assertThat(challenge.getStatus()).isEqualTo(ChallengeStatus.REWARDED);
 
-            // then — 송금 API 호출 검증 (parentId, childId, 금액 + 카테고리명 포함 적요)
+            // then — 송금 API 호출 검증 (parentId, childId, accountId, 금액 + 카테고리명 포함 적요)
             verify(accountService).internalRewardTransfer(
-                    eq(parentId), eq(childId), eq(10_000L),
+                    eq(parentId), eq(childId), eq(parentAccountId), eq(childAccountId), eq(10_000L),
                     contains("카페"),   // depositMemo: "주간 소비 챌린지 보상 (카페)"
-                    contains("카페"));  // withdrawalMemo: "챌린지 보상 송금 (카페)"
+                    contains("카페")); // withdrawalMemo: "챌린지 보상 송금 (카페)"
 
             // then — 자녀 FCM 이벤트 발행 + 페이로드 검증
             ArgumentCaptor<Object> captor = ArgumentCaptor.forClass(Object.class);
@@ -839,13 +845,17 @@ class SpendingChallengeServiceTest {
                     .build();
             given(spendingChallengeRepository.findById(challengeId)).willReturn(Optional.of(challenge));
 
+            SpendingChallengeDto.RewardTransferRequest request = mock(SpendingChallengeDto.RewardTransferRequest.class);
+            given(request.getParentAccountId()).willReturn(UUID.randomUUID());
+            given(request.getChildAccountId()).willReturn(UUID.randomUUID());
+
             // internalRewardTransfer가 잔액 부족 예외를 발생시키도록 설정
             willThrow(new ApiException(BankErrorCode.INSUFFICIENT_BALANCE))
                     .given(accountService)
-                    .internalRewardTransfer(any(), any(), any(), anyString(), anyString());
+                    .internalRewardTransfer(any(), any(), any(), any(), any(), anyString(), anyString());
 
             // when — 예외가 호출자에게 전파됨
-            assertThatThrownBy(() -> spendingChallengeService.processRewardTransfer(parentId, challengeId))
+            assertThatThrownBy(() -> spendingChallengeService.processRewardTransfer(parentId, challengeId, request))
                     .isInstanceOf(ApiException.class)
                     .extracting(e -> ((ApiException) e).getErrorCode())
                     .isEqualTo(BankErrorCode.INSUFFICIENT_BALANCE);
@@ -880,15 +890,17 @@ class SpendingChallengeServiceTest {
                     .build();
             given(spendingChallengeRepository.findById(challengeId)).willReturn(Optional.of(challenge));
 
+            SpendingChallengeDto.RewardTransferRequest request = mock(SpendingChallengeDto.RewardTransferRequest.class);
+
             // when & then
-            assertThatThrownBy(() -> spendingChallengeService.processRewardTransfer(parentId, challengeId))
+            assertThatThrownBy(() -> spendingChallengeService.processRewardTransfer(parentId, challengeId, request))
                     .isInstanceOf(ApiException.class)
                     .extracting(e -> ((ApiException) e).getErrorCode())
                     .isEqualTo(ChallengeErrorCode.ACCESS_DENIED);
 
             // then — 가족 검증 실패로 송금 API 절대 미호출
             verify(accountService, never())
-                    .internalRewardTransfer(any(), any(), any(), anyString(), anyString());
+                    .internalRewardTransfer(any(), any(), any(), any(), any(), anyString(), anyString());
         }
 
         @Test
@@ -912,15 +924,17 @@ class SpendingChallengeServiceTest {
                     .build();
             given(spendingChallengeRepository.findById(challengeId)).willReturn(Optional.of(challenge));
 
+            SpendingChallengeDto.RewardTransferRequest request = mock(SpendingChallengeDto.RewardTransferRequest.class);
+
             // when & then
-            assertThatThrownBy(() -> spendingChallengeService.processRewardTransfer(parentId, challengeId))
+            assertThatThrownBy(() -> spendingChallengeService.processRewardTransfer(parentId, challengeId, request))
                     .isInstanceOf(ApiException.class)
                     .extracting(e -> ((ApiException) e).getErrorCode())
                     .isEqualTo(ChallengeErrorCode.INVALID_STATUS_UPDATE);
 
             // then ★ 이중 출금 방지 가드: REWARDED 상태 검증에서 막혀 송금 API 절대 미호출
             verify(accountService, never())
-                    .internalRewardTransfer(any(), any(), any(), anyString(), anyString());
+                    .internalRewardTransfer(any(), any(), any(), any(), any(), anyString(), anyString());
         }
     }
 }
