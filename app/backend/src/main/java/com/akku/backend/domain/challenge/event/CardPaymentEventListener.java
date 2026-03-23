@@ -51,13 +51,13 @@ public class CardPaymentEventListener {
      */
     private void evaluateAndFail(SpendingChallenge challenge) {
         LocalDateTime startDateTime = challenge.getStartDate().atStartOfDay();
-        LocalDateTime endDateTime = challenge.getEndDate().atTime(23, 59, 59);
+        LocalDateTime endExclusive = challenge.getEndDate().plusDays(1).atStartOfDay();
 
         Long currentSpending = spendingChallengeRepository.calculateCurrentSpending(
                 challenge.getUser().getId(),
                 challenge.getSubCategoryName(),
                 startDateTime,
-                endDateTime
+                endExclusive
         );
 
         if (currentSpending > challenge.getTargetSpending()) {

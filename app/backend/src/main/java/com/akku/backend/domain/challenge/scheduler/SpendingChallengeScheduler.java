@@ -74,13 +74,13 @@ public class SpendingChallengeScheduler {
 
         for (SpendingChallenge challenge : challenges) {
             LocalDateTime startDateTime = lastMonday.atStartOfDay();
-            LocalDateTime endDateTime = lastSunday.atTime(23, 59, 59);
+            LocalDateTime endExclusive = lastSunday.plusDays(1).atStartOfDay();
 
             Long currentSpending = spendingChallengeRepository.calculateCurrentSpending(
                     challenge.getUser().getId(),
                     challenge.getSubCategoryName(),
                     startDateTime,
-                    endDateTime
+                    endExclusive
             );
 
             if (currentSpending <= challenge.getTargetSpending()) {

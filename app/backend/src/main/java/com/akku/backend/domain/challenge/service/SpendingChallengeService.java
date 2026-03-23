@@ -298,16 +298,16 @@ public class SpendingChallengeService {
             throw new ApiException(ChallengeErrorCode.ACCESS_DENIED);
         }
 
-        // 3. 실시간 소비 누적액 계산 (월요일 00:00:00 ~ 일요일 23:59:59)
+        // 3. 실시간 소비 누적액 계산 (월요일 00:00:00 ~ 다음 월요일 00:00:00, 반개방 구간)
         LocalDateTime startDateTime = challenge.getStartDate().atStartOfDay();
-        LocalDateTime endDateTime = challenge.getEndDate().atTime(23, 59, 59);
+        LocalDateTime endExclusive = challenge.getEndDate().plusDays(1).atStartOfDay();
 
         // 변경된 부분: transactionRepository 대신 spendingChallengeRepository의 Native Query 호출
         Long currentSpending = spendingChallengeRepository.calculateCurrentSpending(
                 challenge.getUser().getId(),
                 challenge.getSubCategoryName(),
                 startDateTime,
-                endDateTime
+                endExclusive
         );
 
         // 4. 응답 DTO 반환

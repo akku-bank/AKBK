@@ -32,13 +32,13 @@ public interface SpendingChallengeRepository extends JpaRepository<SpendingChall
             "AND t.sub_category_name = :category " +
             "AND t.transaction_type = '출금' " +
             "AND t.created_at >= :start " +
-            "AND t.created_at <= :end",
+            "AND t.created_at < :endExclusive",
             nativeQuery = true)
     Long calculateCurrentSpending(
             @Param("userId") UUID userId,
             @Param("category") String category,
             @Param("start") LocalDateTime start,
-            @Param("end") LocalDateTime end
+            @Param("endExclusive") LocalDateTime endExclusive
     );
 
     // 실시간 FAIL 판정용 — 결제 이벤트 수신 시 진행 중인 챌린지 조회
