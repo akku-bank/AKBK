@@ -13,6 +13,8 @@ import TransactionCalendarScreen from './src/screens/child/account/TransactionCa
 import TransactionDetailScreen from './src/screens/child/account/TransactionDetailScreen';
 import TransferScreen from './src/screens/child/account/TransferScreen';
 import PaymentScreen from './src/screens/child/account/PaymentScreen';
+import CardListScreen from './src/screens/child/account/CardListScreen';
+import CardProductScreen from './src/screens/child/account/CardProductScreen';
 import QuizScreen from './src/screens/child/challenge/QuizScreen';
 import ChallengeProposeScreen from './src/screens/child/challenge/ChallengeProposeScreen';
 import WeeklyReportScreen from './src/screens/child/report/WeeklyReportScreen';
@@ -36,6 +38,7 @@ import PinNumberLoginScreen from './src/screens/auth/PinNumberLoginScreen';
 import PinNumberSetupScreen from './src/screens/auth/PinNumberSetupScreen';
 import QRScanScreen from './src/screens/auth/QRScanScreen';
 import ChildFamilyJoinScreen from './src/screens/auth/ChildFamilyJoinScreen';
+import ParentFamilyJoinScreen from './src/screens/auth/ParentFamilyJoinScreen';
 
 import ParentBottomTabNavigator from './src/navigation/ParentBottomTabNavigator';
 import FamilyQrGeneratorScreen from './src/screens/parent/family/FamilyQrGeneratorScreen';
@@ -47,8 +50,14 @@ import ParentHistoryScreen from './src/screens/parent/account/ParentHistoryScree
 import GachaScreen from './src/screens/child/safeBox/GachaScreen';
 import FriendListScreen from './src/screens/child/social/FriendListScreen';
 import FriendTownScreen from './src/screens/child/social/FriendTownScreen';
+import FriendSuccessScreen from './src/screens/child/social/FriendSuccessScreen';
+import FriendAlreadyScreen from './src/screens/child/social/FriendAlreadyScreen';
 import AttendanceScreen from './src/screens/child/challenge/AttendanceScreen';
+import ESGChallengeScreen from './src/screens/child/challenge/ESGChallengeScreen';
 import BadgeMapScreen from './src/screens/child/safeBox/BadgeMapScreen';
+import ChildChangePasswordScreen from './src/screens/child/mypage/ChildChangePasswordScreen';
+import ParentChildEditScreen from './src/screens/parent/family/ParentChildEditScreen';
+import ParentChangePasswordScreen from './src/screens/parent/mypage/ParentChangePasswordScreen';
 
 SplashScreen.preventAutoHideAsync().catch(() => { });
 
@@ -86,7 +95,7 @@ export default function App() {
       <SafeAreaProvider style={{ flex: 1 }}>
         <AvatarProvider>
           <NavigationContainer>
-            <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="OnboardingTutorial">
+            <Stack.Navigator screenOptions={{ headerShown: false, freezeOnBlur: false, animationEnabled: false }} detachInactiveScreens={false} initialRouteName="OnboardingTutorial">
               <Stack.Screen name="OnboardingTutorial" component={OnboardingTutorialScreen} />
               <Stack.Screen name="FamilyInvitation" component={FamilyInvitationScreen} />
               <Stack.Screen name="SocialLogin" component={SocialLoginScreen} />
@@ -98,6 +107,7 @@ export default function App() {
               <Stack.Screen name="PinNumberSetup" component={PinNumberSetupScreen} />
               <Stack.Screen name="QRScan" component={QRScanScreen} />
               <Stack.Screen name="ChildFamilyJoin" component={ChildFamilyJoinScreen} />
+              <Stack.Screen name="ParentFamilyJoin" component={ParentFamilyJoinScreen} />
 
               <Stack.Screen name="ChildMain" component={ChildBottomTabNavigator} />
               <Stack.Screen name="ParentMain" component={ParentBottomTabNavigator} />
@@ -108,13 +118,18 @@ export default function App() {
               <Stack.Screen name="GachaScreen" component={GachaScreen} />
               <Stack.Screen name="FriendList" component={FriendListScreen} />
               <Stack.Screen name="FriendTown" component={FriendTownScreen} />
+              <Stack.Screen name="FriendSuccess" component={FriendSuccessScreen} />
+              <Stack.Screen name="FriendAlready" component={FriendAlreadyScreen} />
               <Stack.Screen name="AttendanceScreen" component={AttendanceScreen} />
+              <Stack.Screen name="ESGChallengeScreen" component={ESGChallengeScreen} />
               <Stack.Screen name="BadgeMap" component={BadgeMapScreen} />
 
               <Stack.Screen name="TransactionCalendar" component={TransactionCalendarScreen} />
               <Stack.Screen name="TransactionDetail" component={TransactionDetailScreen} />
               <Stack.Screen name="Transfer" component={TransferScreen} />
               <Stack.Screen name="Payment" component={PaymentScreen} />
+              <Stack.Screen name="CardListScreen" component={CardListScreen} />
+              <Stack.Screen name="CardProductScreen" component={CardProductScreen} />
 
               <Stack.Screen name="ParentHome" component={ParentHomeScreen} />
               <Stack.Screen name="ParentTransferScreen" component={ParentTransferScreen} />
@@ -132,6 +147,9 @@ export default function App() {
               <Stack.Screen name="ParentEditProfile" component={ParentEditProfileScreen} />
               <Stack.Screen name="ChildEditProfile" component={ChildEditProfileScreen} />
               <Stack.Screen name="ParentAccountCreate" component={ParentAccountCreateScreen} />
+              <Stack.Screen name="ChildChangePassword" component={ChildChangePasswordScreen} />
+              <Stack.Screen name="ParentChildEdit" component={ParentChildEditScreen} />
+              <Stack.Screen name="ParentChangePassword" component={ParentChangePasswordScreen} />
             </Stack.Navigator>
           </NavigationContainer>
         </AvatarProvider>
