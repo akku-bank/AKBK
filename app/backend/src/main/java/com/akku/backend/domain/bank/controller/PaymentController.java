@@ -4,7 +4,7 @@ import com.akku.backend.domain.bank.dto.OfflinePaymentTokenResponse;
 import com.akku.backend.domain.bank.dto.PaymentApprovalRequest;
 import com.akku.backend.domain.bank.dto.PaymentApprovalResponse;
 import com.akku.backend.domain.bank.service.PaymentService;
-import com.akku.backend.global.common.ApiResponse;
+import com.akku.backend.global.dto.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -25,7 +25,7 @@ public class PaymentController {
     @PostMapping("/token")
     @Operation(summary = "오프라인 결제용 1회용 토큰 발급", description = "자녀 계정인 경우 3분간 유효한 12자리 결제 토큰 발급")
     public ApiResponse<OfflinePaymentTokenResponse> issueOfflinePaymentToken(@AuthenticationPrincipal UUID userId) {
-        return ApiResponse.success(paymentService.issueOfflinePaymentToken(userId));
+        return ApiResponse.success("결제 토큰이 발급되었습니다.", paymentService.issueOfflinePaymentToken(userId));
     }
 
     @PostMapping
@@ -33,6 +33,6 @@ public class PaymentController {
     public ApiResponse<PaymentApprovalResponse> approvePayment(
             @RequestHeader("x-api-key") String apiKey,
             @Valid @RequestBody PaymentApprovalRequest request) {
-        return ApiResponse.success(paymentService.approvePayment(request, apiKey));
+        return ApiResponse.success("결제가 성공적으로 승인되었습니다.", paymentService.approvePayment(request, apiKey));
     }
 }

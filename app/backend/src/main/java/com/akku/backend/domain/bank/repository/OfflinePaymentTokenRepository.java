@@ -9,4 +9,5 @@ import java.util.UUID;
 
 public interface OfflinePaymentTokenRepository extends JpaRepository<OfflinePaymentToken, UUID> {
     Optional<OfflinePaymentToken> findByTokenAndExpiredAtAfter(String token, LocalDateTime now);
+    Optional<OfflinePaymentToken> findByToken(String token);
 }
