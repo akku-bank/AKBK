@@ -6,6 +6,7 @@ import com.akku.backend.global.dto.ApiResponse;
 import com.akku.backend.domain.challenge.entity.ChallengeStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -21,7 +22,7 @@ public class SpendingChallengeController {
     @PostMapping
     public ResponseEntity<ApiResponse<SpendingChallengeDto.CreateResponse>> createChallenge(
             @RequestBody SpendingChallengeDto.CreateRequest request,
-            @RequestAttribute("userId") UUID userId) { // 시큐리티/인터셉터에서 넘겨준다고 가정
+            @AuthenticationPrincipal UUID userId) {
 
         // 서비스 단으로 넘겨서 비즈니스 로직 처리
         SpendingChallengeDto.CreateResponse response = spendingChallengeService.createChallenge(userId, request);
@@ -34,7 +35,7 @@ public class SpendingChallengeController {
     public ResponseEntity<ApiResponse<SpendingChallengeDto.UpdateResponse>> updateChallenge(
             @PathVariable UUID challengeId,
             @RequestBody SpendingChallengeDto.UpdateRequest request,
-            @RequestAttribute("userId") UUID userId) {
+            @AuthenticationPrincipal UUID userId) {
 
         SpendingChallengeDto.UpdateResponse response = spendingChallengeService.updateChallenge(userId, challengeId, request);
 
@@ -45,7 +46,7 @@ public class SpendingChallengeController {
     @DeleteMapping("/{challengeId}")
     public ResponseEntity<ApiResponse<Void>> deleteChallenge(
             @PathVariable UUID challengeId,
-            @RequestAttribute("userId") UUID userId) {
+            @AuthenticationPrincipal UUID userId) {
 
         spendingChallengeService.deleteChallenge(userId, challengeId);
 
@@ -57,7 +58,7 @@ public class SpendingChallengeController {
     public ResponseEntity<ApiResponse<SpendingChallengeDto.StatusUpdateResponse>> updateChallengeStatus(
             @PathVariable UUID challengeId,
             @RequestBody SpendingChallengeDto.StatusUpdateRequest request,
-            @RequestAttribute("userId") UUID parentId) {
+            @AuthenticationPrincipal UUID parentId) {
 
         SpendingChallengeDto.StatusUpdateResponse response = spendingChallengeService.updateChallengeStatus(parentId, challengeId, request);
 
@@ -69,7 +70,7 @@ public class SpendingChallengeController {
     public ResponseEntity<ApiResponse<SpendingChallengeDto.ListResponse>> getNextWeekChallenges(
             @RequestParam(required = false) UUID childId,
             @RequestParam(required = false) ChallengeStatus status,
-            @RequestAttribute("userId") UUID requestUserId) {
+            @AuthenticationPrincipal UUID requestUserId) {
 
         SpendingChallengeDto.ListResponse response = spendingChallengeService.getNextWeekChallenges(requestUserId, childId, status);
 
@@ -80,7 +81,7 @@ public class SpendingChallengeController {
     @GetMapping("/{challengeId}")
     public ResponseEntity<ApiResponse<SpendingChallengeDto.DetailResponse>> getChallengeDetail(
             @PathVariable UUID challengeId,
-            @RequestAttribute("userId") UUID requestUserId) {
+            @AuthenticationPrincipal UUID requestUserId) {
 
         SpendingChallengeDto.DetailResponse response = spendingChallengeService.getChallengeDetail(requestUserId, challengeId);
 
@@ -90,7 +91,7 @@ public class SpendingChallengeController {
     // 7. 미수령 보상 목록 조회 (자녀 전용) — 지난주 SUCCESS 챌린지만 반환
     @GetMapping("/unclaimed")
     public ResponseEntity<ApiResponse<SpendingChallengeDto.UnclaimedListResponse>> getUnclaimedChallenges(
-            @RequestAttribute("userId") UUID userId) {
+            @AuthenticationPrincipal UUID userId) {
 
         SpendingChallengeDto.UnclaimedListResponse response = spendingChallengeService.getUnclaimedChallenges(userId);
 
@@ -101,7 +102,7 @@ public class SpendingChallengeController {
     @PostMapping("/{challengeId}/reward")
     public ResponseEntity<ApiResponse<SpendingChallengeDto.RewardRequestResponse>> requestReward(
             @PathVariable UUID challengeId,
-            @RequestAttribute("userId") UUID userId) {
+            @AuthenticationPrincipal UUID userId) {
 
         SpendingChallengeDto.RewardRequestResponse response = spendingChallengeService.requestReward(userId, challengeId);
 
@@ -112,7 +113,7 @@ public class SpendingChallengeController {
     @PostMapping("/{challengeId}/reward-transfer")
     public ResponseEntity<ApiResponse<SpendingChallengeDto.RewardTransferResponse>> processRewardTransfer(
             @PathVariable UUID challengeId,
-            @RequestAttribute("userId") UUID parentId,
+            @AuthenticationPrincipal UUID parentId,
             @RequestBody SpendingChallengeDto.RewardTransferRequest request) {
 
         SpendingChallengeDto.RewardTransferResponse response =
