@@ -24,15 +24,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-<<<<<<< HEAD
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-=======
-import java.util.*;
->>>>>>> 8c55485b64c2b396adb77a380256a88eb0b827c4
 import java.util.stream.Collectors;
 
 @Slf4j
