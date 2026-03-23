@@ -1,6 +1,9 @@
 package com.akku.backend.domain.challenge.dto;
 
 import com.akku.backend.domain.challenge.entity.ChallengeStatus;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -15,8 +18,11 @@ public class SpendingChallengeDto {
     @Getter
     @NoArgsConstructor
     public static class CreateRequest {
+        @NotBlank
         private String category;         // 카테고리 (sub_category_name에 매핑)
+        @NotNull @Positive
         private Long targetSpending;     // 목표 소비 금액
+        @NotNull @Positive
         private Long rewardAmount;       // 요청할 보상(용돈) 금액
     }
 

@@ -4,6 +4,7 @@ import com.akku.backend.domain.challenge.dto.SpendingChallengeDto;
 import com.akku.backend.domain.challenge.service.SpendingChallengeService;
 import com.akku.backend.global.dto.ApiResponse;
 import com.akku.backend.domain.challenge.entity.ChallengeStatus;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -21,7 +22,7 @@ public class SpendingChallengeController {
     // 1. 소비 목표 계획 등록 (자녀)
     @PostMapping
     public ResponseEntity<ApiResponse<SpendingChallengeDto.CreateResponse>> createChallenge(
-            @RequestBody SpendingChallengeDto.CreateRequest request,
+            @Valid @RequestBody SpendingChallengeDto.CreateRequest request,
             @AuthenticationPrincipal UUID userId) {
 
         // 서비스 단으로 넘겨서 비즈니스 로직 처리
