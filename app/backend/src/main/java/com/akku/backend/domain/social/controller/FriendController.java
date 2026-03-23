@@ -18,7 +18,7 @@ import java.util.UUID;
 
 @Tag(name = "Social", description = "소셜/친구 관련 API")
 @RestController
-@RequestMapping("/api/social/friends")
+@RequestMapping("/api/social")
 @RequiredArgsConstructor
 public class FriendController {
 
@@ -28,7 +28,7 @@ public class FriendController {
      * 친구 초대 링크 생성
      */
     @Operation(summary = "친구 초대 링크 생성", description = "본인의 고유 초대 코드를 생성하거나 기존 코드를 조회합니다.")
-    @PostMapping("/invites")
+    @PostMapping("/friends/invites")
     @PreAuthorize("hasRole('CHILD')")
     public ResponseEntity<ApiResponse<FriendInviteData>> createInviteCode(
             @AuthenticationPrincipal UUID userId
@@ -42,7 +42,7 @@ public class FriendController {
      * 초대받은 사람이 초대자의 정보를 확인하기 위해 사용
      */
     @Operation(summary = "초대 코드 정보 조회", description = "초대 코드에 해당하는 초대자 정보를 조회합니다.")
-    @GetMapping("/invites/{inviteCode}")
+    @GetMapping("/friends/invites/{inviteCode}")
     @PreAuthorize("hasRole('CHILD')")
     public ResponseEntity<ApiResponse<FriendInformationData>> getInviteInfo(
             @PathVariable String inviteCode
@@ -55,7 +55,7 @@ public class FriendController {
      * 친구 목록 조회
      */
     @Operation(summary = "친구 목록 조회", description = "나의 친구 목록을 조회합니다.")
-    @GetMapping
+    @GetMapping("/friends")
     @PreAuthorize("hasRole('CHILD')")
     public ResponseEntity<ApiResponse<FriendListResponse>> getFriends(
             @AuthenticationPrincipal UUID userId
@@ -68,7 +68,7 @@ public class FriendController {
      * 친구 삭제
      */
     @Operation(summary = "친구 삭제", description = "특정 친구를 삭제합니다.")
-    @DeleteMapping("/{friendId}")
+    @DeleteMapping("/friends/{friendId}")
     @PreAuthorize("hasRole('CHILD')")
     public ResponseEntity<ApiResponse<Void>> deleteFriend(
             @AuthenticationPrincipal UUID userId,
@@ -82,7 +82,7 @@ public class FriendController {
      * 친구 타운 정보 조회
      */
     @Operation(summary = "친구 타운 정보 조회", description = "친구의 타운 방문 시 필요한 정보를 조회합니다.")
-    @GetMapping("/api/social/town/{friendId}")
+    @GetMapping("/town/{friendId}")
     @PreAuthorize("hasRole('CHILD')")
     public ResponseEntity<ApiResponse<FriendTownResponse>> getFriendTown(
             @PathVariable UUID friendId
