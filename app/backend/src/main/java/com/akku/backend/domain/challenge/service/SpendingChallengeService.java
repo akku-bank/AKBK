@@ -42,9 +42,12 @@ public class SpendingChallengeService {
     @Transactional
     public SpendingChallengeDto.CreateResponse createChallenge(UUID userId, SpendingChallengeDto.CreateRequest request) {
 
-        // 1. 유저 정보 조회
+        // 1. 유저 정보 조회 및 자녀 역할 검증
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ApiException(UserErrorCode.USER_NOT_FOUND));
+        if (!"CHILD".equals(user.getRole())) {
+            throw new ApiException(ChallengeErrorCode.ACCESS_DENIED);
+        }
 
         LocalDate today = LocalDate.now();
 
@@ -95,6 +98,9 @@ public class SpendingChallengeService {
         // 1. 유저 및 챌린지 조회
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ApiException(UserErrorCode.USER_NOT_FOUND));
+        if (!"CHILD".equals(user.getRole())) {
+            throw new ApiException(ChallengeErrorCode.ACCESS_DENIED);
+        }
 
         SpendingChallenge challenge = spendingChallengeRepository.findById(challengeId)
                 .orElseThrow(() -> new ApiException(ChallengeErrorCode.CHALLENGE_NOT_FOUND));
@@ -157,6 +163,9 @@ public class SpendingChallengeService {
         // 1. 유저 및 챌린지 조회
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ApiException(UserErrorCode.USER_NOT_FOUND));
+        if (!"CHILD".equals(user.getRole())) {
+            throw new ApiException(ChallengeErrorCode.ACCESS_DENIED);
+        }
 
         SpendingChallenge challenge = spendingChallengeRepository.findById(challengeId)
                 .orElseThrow(() -> new ApiException(ChallengeErrorCode.CHALLENGE_NOT_FOUND));
@@ -346,6 +355,9 @@ public class SpendingChallengeService {
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ApiException(UserErrorCode.USER_NOT_FOUND));
+        if (!"CHILD".equals(user.getRole())) {
+            throw new ApiException(ChallengeErrorCode.ACCESS_DENIED);
+        }
 
         LocalDate lastSunday = resolveLastSunday();
 
@@ -379,6 +391,9 @@ public class SpendingChallengeService {
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ApiException(UserErrorCode.USER_NOT_FOUND));
+        if (!"CHILD".equals(user.getRole())) {
+            throw new ApiException(ChallengeErrorCode.ACCESS_DENIED);
+        }
 
         SpendingChallenge challenge = spendingChallengeRepository.findById(challengeId)
                 .orElseThrow(() -> new ApiException(ChallengeErrorCode.CHALLENGE_NOT_FOUND));
