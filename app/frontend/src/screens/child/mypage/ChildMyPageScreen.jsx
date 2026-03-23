@@ -1,0 +1,271 @@
+﻿import React from 'react';
+import { View, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView, Switch, Alert, Image } from 'react-native';
+import { scale, verticalScale } from 'react-native-size-matters';
+import CustomText from '../../../components/common/CustomText';
+import useAuthStore from '../../../store/useAuthStore';
+import api from '../../../api/axios';
+
+const ChildMyPageScreen = ({ navigation }) => {
+    const { user, logout } = useAuthStore();
+
+    const handleLogout = () => {
+        Alert.alert('로그아웃', '정말 로그아웃 하시겠습니까?', [
+            { text: '취소', style: 'cancel' },
+            {
+                text: '로그아웃',
+                style: 'destructive',
+                onPress: async () => {
+                    try {
+                        await api.post('/auth/logout');
+                    } catch (e) {
+                        console.error('Logout error', e);
+                    }
+                    logout();
+                    navigation.reset({ index: 0, routes: [{ name: 'SocialLogin' }] });
+                }
+            }
+        ]);
+    };
+
+    const handleWithdraw = () => {
+        Alert.alert('회원 탈퇴', '정말 탈퇴하시겠습니까? 데이터가 모두 삭제됩니다.', [
+            { text: '취소', style: 'cancel' },
+            {
+                text: '탈퇴하기',
+                style: 'destructive',
+                onPress: async () => {
+                    try {
+                        await api.delete('/users/me');
+                        logout();
+                        navigation.reset({ index: 0, routes: [{ name: 'SocialLogin' }] });
+                    } catch (e) {
+                        console.error('Withdraw error', e);
+                        Alert.alert('오류', '탈퇴 처리 중 문제가 발생했습니다.');
+                    }
+                }
+            }
+        ]);
+    };
+
+    return (
+        <SafeAreaView style={styles.safeArea}>
+            <View style={styles.header}>
+                <CustomText style={styles.headerTitle}>내 정보</CustomText>
+            </View>
+
+            <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+
+                {/* 프로필 요약 카드 */}
+                <View style={styles.profileCard}>
+                    <View style={styles.profileAvatarBox}>
+                        <Image source={require('../../../assets/croco/croco_face.png')} style={styles.profileAvatarImage} resizeMode="contain" />
+                    </View>
+                    <View style={styles.profileInfo}>
+                        <CustomText style={styles.profileName}>{user?.name || '...'}</CustomText>
+                        <CustomText style={styles.profileCode}>가족 아이디 연동 중</CustomText>
+                    </View>
+                    <TouchableOpacity style={styles.editButton} onPress={() => navigation.navigate('ChildEditProfile')}>
+                        <CustomText style={styles.editButtonText}>수정</CustomText>
+                    </TouchableOpacity>
+                </View>
+
+                <View style={styles.menuGroup}>
+                    <CustomText style={styles.menuGroupTitle}>데이터</CustomText>
+
+                    <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('WeeklyReport')}>
+                        <View style={styles.menuItemLeft}>
+                            <CustomText style={styles.menuIcon}>📊</CustomText>
+                            <CustomText style={styles.menuText}>주간 소비 리포트 보기</CustomText>
+                        </View>
+                        <CustomText style={styles.chevron}>›</CustomText>
+                    </TouchableOpacity>
+                </View>
+
+                {/* 메뉴 리스트 */}
+                <View style={styles.menuGroup}>
+                    <CustomText style={styles.menuGroupTitle}>설정</CustomText>
+
+                    <View style={styles.menuItem}>
+                        <View style={styles.menuItemLeft}>
+                            <CustomText style={styles.menuIcon}>🔔</CustomText>
+                            <CustomText style={styles.menuText}>푸시 알림</CustomText>
+                        </View>
+                        <Switch
+                            value={true}
+                            trackColor={{ false: '#D1D5DB', true: '#3B82F6' }}
+                            thumbColor={'#FFFFFF'}
+                        />
+                    </View>
+
+                    <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('ChildChangePassword')}>
+                        <View style={styles.menuItemLeft}>
+                            <CustomText style={styles.menuIcon}>🔒</CustomText>
+                            <CustomText style={styles.menuText}>비밀번호 변경</CustomText>
+                        </View>
+                        <CustomText style={styles.chevron}>›</CustomText>
+                    </TouchableOpacity>
+                </View>
+
+
+
+                {/* 하단 유틸리티 */}
+                <View style={styles.utilitySection}>
+                    <TouchableOpacity onPress={handleLogout}>
+                        <CustomText style={styles.logoutText}>로그아웃</CustomText>
+                    </TouchableOpacity>
+                    <View style={styles.divider} />
+                    <TouchableOpacity onPress={handleWithdraw}>
+                        <CustomText style={styles.withdrawalText}>회원 탈퇴</CustomText>
+                    </TouchableOpacity>
+                </View>
+            </ScrollView>
+
+
+        </SafeAreaView>
+    );
+};
+
+const styles = StyleSheet.create({
+    safeArea: {
+        flex: 1,
+        backgroundColor: '#F3F4F6',
+    },
+    header: {
+        paddingHorizontal: scale(20),
+        paddingVertical: verticalScale(16),
+        backgroundColor: '#F3F4F6',
+    },
+    headerTitle: {
+        fontSize: scale(20),
+        fontWeight: 'bold',
+        color: '#111',
+    },
+    container: {
+        flexGrow: 1,
+        paddingHorizontal: scale(16),
+        paddingBottom: verticalScale(100),
+    },
+    profileCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#FFFFFF',
+        padding: scale(20),
+        borderRadius: scale(20),
+        marginBottom: verticalScale(24),
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.03,
+        shadowRadius: 8,
+        elevation: 1,
+    },
+    profileAvatarBox: {
+        width: scale(56),
+        height: scale(56),
+        borderRadius: scale(28),
+        backgroundColor: '#E5E7EB',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: scale(16),
+        overflow: 'hidden'
+    },
+    profileAvatarImage: {
+        width: '80%',
+        height: '80%',
+    },
+    profileInfo: {
+        flex: 1,
+    },
+    profileName: {
+        fontSize: scale(18),
+        fontWeight: 'bold',
+        color: '#111',
+        marginBottom: verticalScale(4),
+    },
+    profileCode: {
+        fontSize: scale(13),
+        color: '#6B7280',
+    },
+    editButton: {
+        backgroundColor: '#F3F4F6',
+        paddingVertical: verticalScale(6),
+        paddingHorizontal: scale(12),
+        borderRadius: scale(8),
+    },
+    editButtonText: {
+        fontSize: scale(13),
+        fontWeight: '600',
+        color: '#4B5563',
+    },
+    menuGroup: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: scale(20),
+        paddingVertical: verticalScale(8),
+        paddingHorizontal: scale(16),
+        marginBottom: verticalScale(16),
+    },
+    menuGroupTitle: {
+        fontSize: scale(13),
+        fontWeight: 'bold',
+        color: '#9CA3AF',
+        marginTop: verticalScale(8),
+        marginBottom: verticalScale(4),
+        marginLeft: scale(4),
+    },
+    menuItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingVertical: verticalScale(14),
+        paddingHorizontal: scale(4),
+        borderBottomWidth: 1,
+        borderBottomColor: '#F3F4F6',
+    },
+    menuItemLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    menuIcon: {
+        fontSize: scale(18),
+        marginRight: scale(12),
+    },
+    menuText: {
+        fontSize: scale(15),
+        color: '#111',
+        fontWeight: '500',
+    },
+    chevron: {
+        fontSize: scale(20),
+        color: '#D1D5DB',
+    },
+    utilitySection: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginTop: verticalScale(24),
+        marginBottom: verticalScale(16),
+    },
+    logoutText: {
+        fontSize: scale(13),
+        color: '#6B7280',
+        fontWeight: '500',
+    },
+    divider: {
+        width: 1,
+        height: verticalScale(12),
+        backgroundColor: '#D1D5DB',
+        marginHorizontal: scale(12),
+    },
+    withdrawalText: {
+        fontSize: scale(13),
+        color: '#EF4444',
+        fontWeight: '500',
+    },
+    versionText: {
+        textAlign: 'center',
+        fontSize: scale(12),
+        color: '#D1D5DB',
+        marginBottom: verticalScale(24),
+    }
+});
+
+export default ChildMyPageScreen;

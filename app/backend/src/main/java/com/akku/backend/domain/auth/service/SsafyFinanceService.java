@@ -15,7 +15,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 
 @Slf4j
 @Service
@@ -43,7 +43,7 @@ public class SsafyFinanceService {
         String time = now.format(DateTimeFormatter.ofPattern("HHmmss"));
         
         // 기관 거래 고유 번호
-        String uniqueNo = date + time + String.format("%06d", new Random().nextInt(1000000));
+        String uniqueNo = date + time + String.format("%06d", ThreadLocalRandom.current().nextInt(1000000));
 
         return FinanceRequestHeader.builder()
                 .apiName(apiName)
@@ -112,7 +112,7 @@ public class SsafyFinanceService {
     }
 
     /**
-     * 계좌 생성 (SSAFY 금융 API 호출)
+     * 계좌 생성
      * @param userKey 금융망 사용자 키
      * @param accountTypeUniqueNo 상품 고유번호
      */
@@ -161,9 +161,199 @@ public class SsafyFinanceService {
     }
 
     /**
+     * 계좌 이체
+     */
+    public FinanceTransferResponse.Rec transfer(String userKey, String withdrawalBankCode, String withdrawalAccountNo, String depositBankCode, String depositAccountNo, Long amount) {
+        FinanceRequestHeader header = createHeader("createDemandDepositAccountTransfer", "createDemandDepositAccountTransfer", userKey);
+        
+        FinanceTransferRequest data = new FinanceTransferRequest(
+                depositBankCode, // 입금은행
+                depositAccountNo,
+                amount,
+                withdrawalBankCode, // 출금은행
+                withdrawalAccountNo,
+                "송금",
+                "이체"
+        );
+
+        FinanceRequest<FinanceTransferRequest> request = new FinanceRequest<>(header, data);
+
+        FinanceResponse<FinanceTransferResponse> response = restClient.post()
+                .uri("/edu/demandDeposit/updateDemandDepositAccountTransfer")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(request)
+                .retrieve()
+                .body(new ParameterizedTypeReference<>() {});
+
+        validateResponse(response);
+        if (response != null && response.data() != null && response.data().rec() != null && !response.data().rec().isEmpty()) {
+            return response.data().rec().get(0);
+        }
+
+        throw new RuntimeException("금융망 이체 처리 실패");
+    }
+
+    /**
+     * 계좌 거래 내역 조회
+     */
+    public List<FinanceTransactionHistoryResponse.TransactionDetails> getTransactionHistory(
+            String userKey, String accountNo, String startDate, String endDate) {
+        
+        FinanceRequestHeader header = createHeader("inquireTransactionHistoryList", "inquireTransactionHistoryList", userKey);
+        
+        FinanceTransactionHistoryRequest data = new FinanceTransactionHistoryRequest(
+                accountNo,
+                startDate,
+                endDate,
+                "A", // 전체
+                "DESC" // 최신순
+        );
+
+        FinanceRequest<FinanceTransactionHistoryRequest> request = new FinanceRequest<>(header, data);
+
+        FinanceResponse<FinanceTransactionHistoryResponse> response = restClient.post()
+                .uri("/edu/demandDeposit/inquireTransactionHistoryList")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(request)
+                .retrieve()
+                .body(new ParameterizedTypeReference<>() {});
+
+        validateResponse(response);
+        if (response != null && response.data() != null && response.data().rec() != null && response.data().rec().list() != null) {
+            return response.data().rec().list();
+        }
+
+        return Collections.emptyList();
+    }
+
+    /**
      * 타행 계좌 연동
      */
     public void linkAccount(String userKey, String bankCode, String accountNumber) {
+        throw new UnsupportedOperationException("아직 구현되지 않은 기능입니다: 타행 계좌 연동");
+    }
+
+    /**
+     * 카드 상품 목록 조회
+     */
+    public List<FinanceCardProductListResponse.CardProductDetails> getCardProducts(String userKey) {
+        FinanceRequestHeader header = createHeader("inquireCreditCardList", "inquireCreditCardList", userKey);
+        
+        FinanceRequest<Map<String, String>> request = new FinanceRequest<>(header, Map.of());
+
+        FinanceResponse<FinanceCardProductListResponse> response = restClient.post()
+                .uri("/edu/creditCard/inquireCreditCardList")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(request)
+                .retrieve()
+                .body(new ParameterizedTypeReference<>() {});
+
+        validateResponse(response);
+        if (response != null && response.data() != null && response.data().rec() != null) {
+            return response.data().rec();
+        }
+        
+        return Collections.emptyList();
+    }
+
+    /**
+     * 카드 생성
+     */
+    public FinanceCardCreateResponse.Rec createCard(String userKey, String cardUniqueNo, String withdrawalAccountNo, String withdrawalDate) {
+        FinanceRequestHeader header = createHeader("createCreditCard", "createCreditCard", userKey);
+        
+        FinanceCardCreateRequest data = new FinanceCardCreateRequest(
+                cardUniqueNo,
+                withdrawalAccountNo,
+                withdrawalDate
+        );
+
+        FinanceRequest<FinanceCardCreateRequest> request = new FinanceRequest<>(header, data);
+
+        FinanceResponse<FinanceCardCreateResponse> response = restClient.post()
+                .uri("/edu/creditCard/createCreditCard")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(request)
+                .retrieve()
+                .body(new ParameterizedTypeReference<>() {});
+
+        validateResponse(response);
+        if (response != null && response.data() != null && response.data().rec() != null) {
+            return response.data().rec();
+        }
+        
+        throw new RuntimeException("금융망 카드 생성 실패");
+    }
+
+    /**
+     * 내 카드 목록 조회
+     */
+    public List<FinanceUserCardListResponse.UserCardDetails> getUserCards(String userKey) {
+        FinanceRequestHeader header = createHeader("inquireSignUpCreditCardList", "inquireSignUpCreditCardList", userKey);
+        
+        FinanceRequest<Map<String, String>> request = new FinanceRequest<>(header, Map.of());
+
+        FinanceResponse<FinanceUserCardListResponse> response = restClient.post()
+                .uri("/edu/creditCard/inquireSignUpCreditCardList")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(request)
+                .retrieve()
+                .body(new ParameterizedTypeReference<>() {});
+
+        validateResponse(response);
+        if (response != null && response.data() != null && response.data().rec() != null) {
+            return response.data().rec();
+        }
+        
+        return Collections.emptyList();
+    }
+
+    /**
+     * 카드 결제
+     */
+    public FinanceCardPaymentResponse.Rec createCardTransaction(String userKey, String cardNo, String cvc, Long merchantId, Long paymentBalance) {
+        FinanceRequestHeader header = createHeader("createCreditCardTransaction", "createCreditCardTransaction", userKey);
+        
+        FinanceCardPaymentRequest data = new FinanceCardPaymentRequest(cardNo, cvc, merchantId, paymentBalance);
+        FinanceRequest<FinanceCardPaymentRequest> request = new FinanceRequest<>(header, data);
+
+        FinanceResponse<FinanceCardPaymentResponse> response = restClient.post()
+                .uri("/edu/creditCard/createCreditCardTransaction")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(request)
+                .retrieve()
+                .body(new ParameterizedTypeReference<>() {});
+
+        validateResponse(response);
+        if (response != null && response.data() != null && response.data().rec() != null) {
+            return response.data().rec();
+        }
+        
+        throw new RuntimeException("금융망 카드 결제 실패");
+    }
+
+    /**
+     * 카드 거래 내역 조회
+     */
+    public FinanceCardTransactionHistoryResponse.Rec getCardTransactionHistory(String userKey, String cardNo, String cvc, String startDate, String endDate) {
+        FinanceRequestHeader header = createHeader("inquireCreditCardTransactionHistoryList", "inquireCreditCardTransactionHistoryList", userKey);
+        
+        FinanceCardTransactionHistoryRequest data = new FinanceCardTransactionHistoryRequest(cardNo, cvc, startDate, endDate);
+        FinanceRequest<FinanceCardTransactionHistoryRequest> request = new FinanceRequest<>(header, data);
+
+        FinanceResponse<FinanceCardTransactionHistoryResponse> response = restClient.post()
+                .uri("/edu/creditCard/inquireCreditCardTransactionHistoryList")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(request)
+                .retrieve()
+                .body(new ParameterizedTypeReference<>() {});
+
+        validateResponse(response);
+        if (response != null && response.data() != null && response.data().rec() != null) {
+            return response.data().rec();
+        }
+        
+        throw new RuntimeException("금융망 카드 거래 내역 조회 실패");
     }
 
     private void validateResponse(FinanceResponse<?> response) {

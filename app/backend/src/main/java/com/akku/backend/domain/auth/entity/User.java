@@ -20,9 +20,6 @@ public class User {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(unique = true)
-    private String email;
-
     @Column(length = 20)
     private String provider;        // KAKAO, GOOGLE 등
 
@@ -54,6 +51,10 @@ public class User {
     @Builder.Default
     private Integer level = 1;
 
+    @Column(nullable = false)
+    @Builder.Default
+    private Integer score = 0;
+
     @Column(name = "is_hidden", nullable = false)
     @Builder.Default
     private Boolean isHidden = false;
@@ -78,9 +79,10 @@ public class User {
         this.fcmToken = fcmToken;
     }
 
-    public void updateProfile(String name, String role) {
+    public void updateProfile(String name, String role, java.time.LocalDate birthDate) {
         this.name = name;
         this.role = role;
+        this.birthDate = birthDate;
     }
 
     public void updateName(String name) {
@@ -100,6 +102,19 @@ public class User {
     public void updateFamilyId(UUID familyId) {
         this.familyId = familyId;
     }
+
+    public void updateScore(int amount) {
+        this.score += amount;
+    }
+
+    public void updatePinPassword(String encodedPin) {
+        this.pinPassword = encodedPin;
+    }
+
+    public void updateIsHidden(boolean isHidden) {
+        this.isHidden = isHidden;
+    }
 }
+
 
 
