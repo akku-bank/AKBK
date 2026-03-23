@@ -221,6 +221,14 @@ const WeeklyReportScreen = ({ navigation }) => {
                     </CustomText>
                 </View>
 
+                <View style={[styles.aiReviewCard, styles.aiQuizCard]}>
+                    <CustomText style={[styles.aiReviewTitle, styles.aiQuizTitle]}>AI 퀴즈 분석</CustomText>
+                    <CustomText style={[styles.aiReviewText, styles.aiQuizText, styles.bodyCopyText]}>
+                        이번 주 금융 퀴즈 정답률은 100%예요! 특히 '저축과 투자' 카테고리에 대한 이해도가 매우 높습니다.
+                        다음 주에는 조금 더 심화된 문제를 도전해보는 건 어떨까요?
+                    </CustomText>
+                </View>
+
                 <View style={styles.categoryCard}>
                     <View style={styles.cardHeaderRow}>
                         <CustomText style={styles.sectionTitle}>카테고리별 지출</CustomText>
@@ -507,6 +515,9 @@ const styles = StyleSheet.create({
     },
     aiReviewTitle: { fontSize: scale(16), fontWeight: 'bold', color: '#166534', marginBottom: verticalScale(8) },
     aiReviewText: { fontSize: scale(14), color: '#14532D', lineHeight: 22 },
+    aiQuizCard: { backgroundColor: '#EFF6FF' },
+    aiQuizTitle: { color: '#1E3A8A' },
+    aiQuizText: { color: '#1E40AF' },
     bodyCopyText: { fontFamily: bodyFontFamily, letterSpacing: 0 },
     categoryCard: {
         backgroundColor: '#FFFFFF',

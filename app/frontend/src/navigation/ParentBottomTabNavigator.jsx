@@ -9,7 +9,7 @@ const Tab = createBottomTabNavigator();
 
 const ParentBottomTabNavigator = () => {
     return (
-        <Tab.Navigator
+        <Tab.Navigator detachInactiveScreens={false}
             initialRouteName="Home"
             screenOptions={{
                 tabBarIcon: () => null,
@@ -18,7 +18,7 @@ const ParentBottomTabNavigator = () => {
                 tabBarStyle: {
                     backgroundColor: '#FFFFFF',
                     borderTopColor: '#E5E7EB',
-                    height: 80,
+                    height: 90,
                 },
                 tabBarItemStyle: {
                     justifyContent: 'center',
@@ -30,12 +30,12 @@ const ParentBottomTabNavigator = () => {
                     display: 'none',
                 },
                 tabBarLabelStyle: {
-                    fontFamily: 'Mulmaru',
-                    fontSize: 15,
-                    ...(Platform.OS === 'android' ? { fontWeight: 'normal', fontStyle: 'normal' } : { fontWeight: 'bold' }),
+                    fontFamily: 'Pretendard-Bold',
+                    fontSize: 16,
+                    ...(Platform.OS === 'android' ? { fontWeight: 'normal', fontStyle: 'normal' } : {}),
                     position: 'absolute',
                     top: '50%',
-                    transform: [{ translateY: -15 }],
+                    transform: [{ translateY: -12 }],
                 },
                 tabBarShowLabel: true,
                 headerShown: false,

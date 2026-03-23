@@ -1,31 +1,33 @@
 ﻿import React, { useState, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Platform, Image, FlatList, useWindowDimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Platform, Image, FlatList, useWindowDimensions } from 'react-native';
+import CustomText from '../../components/common/CustomText';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { RFValue } from 'react-native-responsive-fontsize';
 
 const TUTORIAL_DATA = [
     {
         id: '1',
-        title: '부모님을 위한\n스마트한 자녀 금융 관리',
-        subtitle: '아이의 용돈 목표를 승인하고\n주간 리포트로 소비 습관을 확인하세요!',
-        image: require('../../assets/croco/croco_parents.png'),
+        title: '부모님을 위한\n똑똑한 자녀 금융 관리',
+        subtitle: '아이의 용돈 목표를 승인하고\n주간 리포트로 소비 습관을 확인하세요.',
+        image: require('../../assets/croco/akku-parents_tuto.png'),
     },
     {
         id: '2',
-        title: '우리가족 전용\n안전한 금융 그룹',
+        title: '우리 가족만을 위한\n안전한 금융 그룹',
         subtitle: '가족 그룹을 만들고 아이를 초대해\n안전하고 재미있게 금융을 연습해요.',
-        image: require('../../assets/croco/logo.png'),
+        image: require('../../assets/croco/akku-family.png'),
     },
     {
         id: '3',
-        title: '아이를 위한 첫 지갑,\n쉽고 빠른 온/오프라인 결제',
-        subtitle: '편의점에서도 QR과 카드로 결제하고,\n스스로 소비 목표를 세워 실천해요!',
+        title: '아이를 위한 첫 지갑,\n쉽고 빠른 결제',
+        subtitle: '어디서나 아꾸뱅꾸를 통해 결제하고,\n스스로 소비 목표를 세워 실천해요.',
         image: require('../../assets/qr.png'),
     },
     {
         id: '4',
-        title: '매일 똑똑해지는 금융 퀴즈와\n나만의 메타버스 아바타',
-        subtitle: '스무고개 챗봇과 금융 퀴즈를 풀고,\n젤링을 모아 아바타를 꾸미고 기부까지!',
-        image: require('../../assets/croco/croco_face.png'),
+        title: '매일 똑똑해지는 퀴즈,\n나만의 아바타 꾸미기',
+        subtitle: '재밌게 금융 퀴즈 풀고,\n젤링을 모아 아바타 꾸미고 기부까지!',
+        image: require('../../assets/croco/akku-welcome.png'),
     }
 ];
 
@@ -63,8 +65,8 @@ const OnboardingTutorialScreen = ({ navigation }) => {
     const renderItem = ({ item }) => (
         <View style={[styles.slide, { width }]}>
             <View style={styles.textSection}>
-                <Text style={styles.title}>{item.title}</Text>
-                <Text style={styles.subtitle}>{item.subtitle}</Text>
+                <CustomText style={styles.title}>{item.title}</CustomText>
+                <CustomText style={styles.subtitle}>{item.subtitle}</CustomText>
             </View>
             <View style={styles.imageSection}>
                 <Image
@@ -83,7 +85,7 @@ const OnboardingTutorialScreen = ({ navigation }) => {
                 <View style={styles.headerRow}>
                     {currentIndex < TUTORIAL_DATA.length - 1 ? (
                         <TouchableOpacity style={styles.skipButton} onPress={handleSkip}>
-                            <Text style={styles.skipText}>건너뛰기</Text>
+                            <CustomText style={styles.skipText}>건너뛰기</CustomText>
                         </TouchableOpacity>
                     ) : (
                         <View style={styles.skipPlaceholder} />
@@ -103,7 +105,6 @@ const OnboardingTutorialScreen = ({ navigation }) => {
                         onScroll={handleScroll}
                         scrollEventThrottle={16}
                         renderItem={renderItem}
-                        contentContainerStyle={{ alignItems: 'center' }}
                         getItemLayout={(data, index) => ({
                             length: width,
                             offset: width * index,
@@ -127,13 +128,13 @@ const OnboardingTutorialScreen = ({ navigation }) => {
                     </View>
 
                     <TouchableOpacity
-                        style={[styles.actionButton, currentIndex === TUTORIAL_DATA.length - 1 && styles.kakaoButton]}
+                        style={styles.actionButton}
                         onPress={handleNext}
                         activeOpacity={0.8}
                     >
-                        <Text style={[styles.actionButtonText, currentIndex === TUTORIAL_DATA.length - 1 && styles.kakaoButtonText]}>
-                            {currentIndex === TUTORIAL_DATA.length - 1 ? '카카오로 시작하기' : '다음'}
-                        </Text>
+                        <CustomText style={styles.actionButtonText}>
+                            {currentIndex === TUTORIAL_DATA.length - 1 ? '아꾸뱅꾸 시작하기' : '다음'}
+                        </CustomText>
                     </TouchableOpacity>
                 </View>
             </View>
@@ -149,7 +150,6 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         paddingTop: Platform.OS === 'ios' ? RFValue(10) : RFValue(20),
-        // 사파리 테스트용 -> 하단에 여백 추가
         paddingBottom: Platform.OS === 'web' ? RFValue(120) : (Platform.OS === 'ios' ? RFValue(60) : RFValue(30)),
     },
     headerRow: {
@@ -200,18 +200,19 @@ const styles = StyleSheet.create({
         flex: 1,
         alignItems: 'center',
         justifyContent: 'center',
-        marginTop: RFValue(10),
+        marginTop: RFValue(40),
         marginBottom: RFValue(30),
     },
     heroImage: {
-        width: RFValue(200),
-        height: RFValue(200),
+        width: '80%',
+        height: '100%',
+        maxHeight: RFValue(240),
     },
     bottomSection: {
         width: '100%',
         paddingHorizontal: RFValue(24),
         marginTop: RFValue(10),
-        marginBottom: RFValue(40)
+        marginBottom: RFValue(0)
     },
     dotsContainer: {
         flexDirection: 'row',
