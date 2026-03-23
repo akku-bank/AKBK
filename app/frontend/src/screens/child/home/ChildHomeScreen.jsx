@@ -15,19 +15,36 @@ const ChildHomeScreen = ({ navigation }) => {
     const [isQrModalVisible, setQrModalVisible] = useState(false);
     const [isLevelUpModalVisible, setLevelUpModalVisible] = useState(false);
     const { equipState, setEquipState } = useContext(AvatarContext);
-    const { user } = useAuthStore(); // get name from store since it's not in response
+    const { user, cachedLevel, setCachedLevel } = useAuthStore();
     const [homeData, setHomeData] = useState(null);
+    const [realBalance, setRealBalance] = useState(null);
 
     useEffect(() => {
         const fetchHomeData = async () => {
             try {
-                const res = await api.get('/home');
+                const [res, accRes] = await Promise.all([
+                    api.get('/home'),
+                    api.get('/bank/accounts/me').catch(() => null) // fail gracefully
+                ]);
+
                 const homeDataResult = res.data?.data;
                 if (!homeDataResult) return;
 
                 setHomeData(homeDataResult);
-                if (homeDataResult.hasLevelChanged) {
+
+                // 프론트엔드 레벨업 감지 (Zustand 메모리 캐싱)
+                const currentLevel = homeDataResult.level || 1;
+
+                if (cachedLevel !== null && currentLevel > cachedLevel) {
                     setLevelUpModalVisible(true);
+                    setCachedLevel(currentLevel);
+                } else if (cachedLevel === null) {
+                    setCachedLevel(currentLevel);
+                }
+
+                // 실제 계좌 데이터 있으면 덮어쓰기
+                if (accRes && accRes.data?.data?.accounts && accRes.data.data.accounts.length > 0) {
+                    setRealBalance(accRes.data.data.accounts[0].balance);
                 }
 
                 // 백엔드 아바타 장착 상태 동기화
@@ -81,14 +98,11 @@ const ChildHomeScreen = ({ navigation }) => {
                     <View style={styles.balanceWrapper}>
                         <CustomText style={styles.balanceLabel}>잔액</CustomText>
                         <CustomText style={styles.balanceAmount}>
-                            {homeData ? homeData.cashBalance.toLocaleString() : '0'}
+                            {realBalance !== null ? realBalance.toLocaleString() : (homeData ? homeData.cashBalance.toLocaleString() : '0')}
                         </CustomText>
                         <CustomText style={styles.balanceCurrency}>원</CustomText>
                     </View>
                     <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
-                        <TouchableOpacity style={{ backgroundColor: '#A3E635', padding: 8, borderRadius: 8 }} onPress={() => setLevelUpModalVisible(true)}>
-                            <CustomText style={{ fontSize: 12, fontWeight: 'bold' }}>LvUP 테스트</CustomText>
-                        </TouchableOpacity>
                         <TouchableOpacity style={styles.qrButton} onPress={() => setQrModalVisible(true)}>
                             <Image source={require('../../../assets/qr.png')} style={styles.qrImage} />
                         </TouchableOpacity>
@@ -104,6 +118,7 @@ const ChildHomeScreen = ({ navigation }) => {
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.pillButton}>
                         <CustomText style={styles.pillButtonText}>알림</CustomText>
+                        {homeData?.hasUnreadNotification && <View style={styles.redDot} />}
                     </TouchableOpacity>
                 </View>
 
@@ -117,7 +132,7 @@ const ChildHomeScreen = ({ navigation }) => {
 
                 {/* 아바타 영역 */}
                 <View style={styles.avatarSection}>
-                    <CustomText style={styles.levelText}>LV.{homeData ? homeData.level : 1}</CustomText>
+                    <CustomText style={styles.levelText}>LV.{homeData ? homeData.level : 1} | 소비점수 {homeData ? homeData.score : 0}점</CustomText>
                     <CustomText style={styles.nameText}>{user ? user.name : '김싸피'}</CustomText>
 
                     <View style={styles.avatarActionRow}>
@@ -245,6 +260,15 @@ const styles = StyleSheet.create({
         fontSize: scale(15),
         fontWeight: '900',
         color: '#374151',
+    },
+    redDot: {
+        position: 'absolute',
+        top: scale(4),
+        right: scale(8),
+        width: scale(6),
+        height: scale(6),
+        borderRadius: scale(3),
+        backgroundColor: '#EF4444',
     },
     donationCard: {
         backgroundColor: '#E5E7EB',

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Platform, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Platform, ActivityIndicator, Alert, TextInput } from 'react-native';
+import CustomText from '../../components/common/CustomText';
 import { RFValue } from 'react-native-responsive-fontsize';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 
@@ -7,6 +8,7 @@ const QRScanScreen = ({ navigation, route }) => {
     const { tempToken, role } = route.params || {};
     const [scanned, setScanned] = useState(false);
     const [permission, requestPermission] = useCameraPermissions();
+    const [manualCode, setManualCode] = useState('');
 
     useEffect(() => {
         if (!permission?.granted && permission?.canAskAgain) {
@@ -16,24 +18,25 @@ const QRScanScreen = ({ navigation, route }) => {
 
     const handleBarCodeScanned = ({ type, data }) => {
         setScanned(true);
-        // 실제 API 연동 시 QR 정보 전송 필요
+        // 실제 API 연동 시 QR 정보 전송 필요 -> 여기 어떻게 테스트할까요 ..
         // (임시) 일단 다음 화면으로
-        navigation.replace('ChildFamilyJoin', {
-            tempToken,
-            role,
-            familyCode: data || "mock-family-code" // 인식된 데이터 전달
-        });
+        if (role === 'PARENT') {
+            navigation.replace('ParentFamilyJoin', { tempToken, role, familyCode: data || "mock-family-code" });
+        } else {
+            navigation.replace('ChildFamilyJoin', { tempToken, role, familyCode: data || "mock-family-code" });
+        }
     };
 
     const handleMockScan = () => {
+        const payloadCode = manualCode.trim() || 'mock-family-code';
         setScanned(true);
         setTimeout(() => {
-            navigation.replace('ChildFamilyJoin', {
-                tempToken,
-                role,
-                familyCode: "123-123-123"
-            });
-        }, 1500);
+            if (role === 'PARENT') {
+                navigation.replace('ParentFamilyJoin', { tempToken, role, familyCode: payloadCode });
+            } else {
+                navigation.replace('ChildFamilyJoin', { tempToken, role, familyCode: payloadCode });
+            }
+        }, 800);
     };
 
     if (!permission) {
@@ -50,24 +53,35 @@ const QRScanScreen = ({ navigation, route }) => {
         return (
             <SafeAreaView style={styles.safeArea}>
                 <View style={styles.centeredContainer}>
-                    <Text style={styles.title}>카메라 권한이 필요합니다.</Text>
+                    <CustomText style={styles.title}>카메라 권한이 필요합니다.</CustomText>
                     <TouchableOpacity style={styles.mockScanButton} onPress={requestPermission}>
-                        <Text style={styles.mockScanButtonText}>권한 요청하기</Text>
+                        <CustomText style={styles.mockScanButtonText}>권한 요청하기</CustomText>
                     </TouchableOpacity>
-                    <TouchableOpacity style={[styles.mockScanButton, { marginTop: RFValue(12), backgroundColor: '#4B5563' }]} onPress={handleMockScan}>
-                        <Text style={styles.mockScanButtonText}>건너뛰기(임시)</Text>
-                    </TouchableOpacity>
+
+                    <View style={{ width: '100%', marginTop: 40 }}>
+                        <TextInput
+                            style={styles.manualInput}
+                            placeholder="[에뮬레이터용] 여기에 부모 코드를 입력하세요"
+                            placeholderTextColor="#9CA3AF"
+                            value={manualCode}
+                            onChangeText={setManualCode}
+                        />
+                        <TouchableOpacity style={[styles.mockScanButton, { marginTop: 12, backgroundColor: '#4B5563' }]} onPress={handleMockScan}>
+                            <CustomText style={styles.mockScanButtonText}>코드 입력 완료 및 넘어가기</CustomText>
+                        </TouchableOpacity>
+                    </View>
                 </View>
             </SafeAreaView>
         );
     }
 
+    //부모용 QR 스캔은 다른 스크린에서 관리
     return (
         <SafeAreaView style={styles.safeArea}>
             <View style={styles.container}>
                 <View style={styles.headerSection}>
-                    <Text style={styles.title}>가족 QR 스캔</Text>
-                    <Text style={styles.subtitle}>부모님의 화면에 있는 QR코드를{'\n'}스캔해주세요.</Text>
+                    <CustomText style={styles.title}>가족 QR 스캔</CustomText>
+                    <CustomText style={styles.subtitle}>부모님의 화면에 있는 QR코드를{'\n'}스캔해주세요.</CustomText>
                 </View>
 
                 <View style={styles.cameraPlaceholder}>
@@ -88,15 +102,22 @@ const QRScanScreen = ({ navigation, route }) => {
                     </CameraView>
                 </View>
 
-                {/* 개발용 우회 버튼 */}
+                {/* 개발용 수동 입력 및 우회 버튼 */}
                 <View style={styles.buttonSection}>
+                    <TextInput
+                        style={styles.manualInput}
+                        placeholder="[개발용] 가족 코드 수동 입력"
+                        placeholderTextColor="#9CA3AF"
+                        value={manualCode}
+                        onChangeText={setManualCode}
+                    />
                     <TouchableOpacity
                         style={styles.mockScanButton}
                         onPress={handleMockScan}
                         disabled={scanned}
                         activeOpacity={0.8}
                     >
-                        <Text style={styles.mockScanButtonText}>가상 스캔 테스트 (임시)</Text>
+                        <CustomText style={styles.mockScanButtonText}>(임시) 스캔 완료</CustomText>
                     </TouchableOpacity>
                 </View>
             </View>
@@ -214,6 +235,17 @@ const styles = StyleSheet.create({
         fontSize: RFValue(16),
         fontWeight: 'bold',
         color: '#FFFFFF',
+    },
+    manualInput: {
+        width: '100%',
+        backgroundColor: '#FFFFFF',
+        height: RFValue(50),
+        borderRadius: RFValue(12),
+        paddingHorizontal: RFValue(16),
+        fontSize: RFValue(14),
+        fontWeight: 'bold',
+        color: '#111',
+        marginBottom: RFValue(4),
     }
 });
 
