@@ -40,6 +40,13 @@ pipeline {
                         targetBranch = matcher[0][2]
                     }
 
+                    // env에 저장해야 다음 stage에서 사용 가능
+                    env.SOURCE_BRANCH = sourceBranch ?: ""
+                    env.TARGET_BRANCH = targetBranch ?: "unknown"
+
+                    echo "SOURCE_BRANCH=${env.SOURCE_BRANCH}"
+                    echo "TARGET_BRANCH=${env.TARGET_BRANCH}"
+
                     // 팀 판별용 기준 브랜치
                     def branchForTeam = sourceBranch?.trim() ? sourceBranch : env.BUILT_BRANCH
                     def parts = branchForTeam.tokenize('/')
@@ -86,7 +93,7 @@ pipeline {
 
         stage('Deploy') {
             when {
-                expression { env.BUILT_BRANCH == 'develop' }
+                expression { env.BUILT_BRANCH == 'develop' || env.TARGET_BRANCH == 'develop' }
             }
             steps {
                 script {
