@@ -63,6 +63,9 @@ class CardServiceTest {
     private UserRepository userRepository;
 
     @Mock
+    private com.akku.backend.domain.bank.repository.MerchantRepository merchantRepository;
+
+    @Mock
     private ApplicationEventPublisher eventPublisher;
 
     @Test
@@ -81,6 +84,9 @@ class CardServiceTest {
         );
         given(ssafyFinanceService.createCardTransaction(anyString(), anyString(), anyString(), anyLong(), anyLong()))
                 .willReturn(mockResult);
+        com.akku.backend.domain.bank.entity.Merchant merchant = mock(com.akku.backend.domain.bank.entity.Merchant.class);
+        given(merchant.getIsGreen()).willReturn(false);
+        given(merchantRepository.findById(1L)).willReturn(Optional.of(merchant));
 
         // when
         TransactionSynchronizationManager.initSynchronization();
