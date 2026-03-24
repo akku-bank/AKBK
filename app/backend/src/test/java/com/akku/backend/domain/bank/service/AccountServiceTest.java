@@ -132,6 +132,52 @@ class AccountServiceTest {
             verify(accountRepository).save(any(Account.class));
         }
 
+
+        @Test
+        @DisplayName("4. 1원 송금 인증 요청 - 성공")
+        void request1WonVerification_Success() {
+            UUID userId = UUID.randomUUID();
+            AccountVerifyRequest request = new AccountVerifyRequest("088", "110-123-456789");
+            User user = User.builder().id(userId).userKey("user-key").build();
+            
+            given(userRepository.findById(userId)).willReturn(Optional.of(user));
+            given(accountRepository.existsByAccountNumberAndBankCode(anyString(), anyString())).willReturn(false);
+            
+            accountService.request1WonVerification(userId, request);
+            
+            verify(ssafyFinanceService).openAccountAuth(eq("user-key"), eq("110-123-456789"), contains("SSAFY"));
+        }
+
+        @Test
+        @DisplayName("5. 1원 송금 인증 확인 및 연동 - 성공")
+        void verifyAccountAndLink_Success() {
+            UUID userId = UUID.randomUUID();
+            AccountVerifyConfirmRequest request = new AccountVerifyConfirmRequest("088", "110-123-456789", "1234");
+            User user = User.builder().id(userId).userKey("user-key").build();
+            
+            given(userRepository.findById(userId)).willReturn(Optional.of(user));
+            
+            FinanceAccountAuthCheckResponse.Rec mockVerifyRec = new FinanceAccountAuthCheckResponse.Rec(
+                "SUCCESS", 12345L, "110-123-456789"
+            );
+            given(ssafyFinanceService.checkAuthCode(anyString(), anyString(), anyString(), anyString())).willReturn(mockVerifyRec);
+            
+            Account savedAccount = Account.builder()
+                .id(UUID.randomUUID())
+                .userId(userId)
+                .accountNumber("110-123-456789")
+                .bankCode("088")
+                .type("EXTERNAL")
+                .build();
+            given(accountRepository.save(any(Account.class))).willReturn(savedAccount);
+
+            AccountLinkResponse response = accountService.verifyAccountAndLink(userId, request);
+            
+            assertNotNull(response.accountId());
+            assertEquals("AK은행", response.bankName());
+            verify(accountRepository).save(any(Account.class));
+        }
+
         @Test
         @DisplayName("6. 1원 송금 인증 확인 - 실패 (코드 불일치)")
         void verifyAccountAndLink_Failure_InvalidCode() {
