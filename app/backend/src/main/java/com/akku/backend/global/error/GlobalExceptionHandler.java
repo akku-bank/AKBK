@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -48,6 +49,18 @@ public class GlobalExceptionHandler {
 
         ApiResponse<Void> response = ApiResponse.fail(errorCode.getDefaultMessage(), errorCode, traceId);
         return ResponseEntity.status(errorCode.getStatus()).body(response);
+    }
+
+    /**
+     * 낙관적 락(Optimistic Lock) 충돌 처리
+     */
+    @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
+    public ResponseEntity<ApiResponse<Void>> handleOptimisticLockingFailureException(ObjectOptimisticLockingFailureException e) {
+        String traceId = MDC.get(TRACE_ID_KEY);
+        log.warn("[OptimisticLockingFailure] TraceId: {}, Message: {}", traceId, "동시성 충돌로 인한 결제 요청 중단");
+
+        ApiResponse<Void> response = ApiResponse.fail("이미 처리 중이거나 사용된 결제 요청입니다. 다시 시도해 주세요.", null, traceId);
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
     }
 
     /**

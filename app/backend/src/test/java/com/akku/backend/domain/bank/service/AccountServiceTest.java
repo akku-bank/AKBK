@@ -6,9 +6,13 @@ import com.akku.backend.domain.auth.service.SsafyFinanceService;
 import com.akku.backend.domain.bank.dto.*;
 import com.akku.backend.domain.bank.entity.Account;
 import com.akku.backend.domain.bank.repository.AccountRepository;
+import com.akku.backend.global.finance.dto.FinanceAccountAuthCheckResponse;
+import com.akku.backend.global.finance.dto.FinanceAccountAuthResponse;
 import com.akku.backend.global.finance.dto.FinanceAccountCreateResponse;
 import com.akku.backend.global.finance.dto.FinanceAccountListResponse;
 import com.akku.backend.global.finance.dto.FinanceTransferResponse;
+import com.akku.backend.global.error.ApiException;
+import com.akku.backend.domain.bank.exception.BankErrorCode;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -72,25 +76,73 @@ class AccountServiceTest {
             verify(ssafyFinanceService).createAccount(eq("child-key"), eq("CASH"));
         }
 
+
         @Test
-        @DisplayName("3. 타행 계좌 연동 - 미구현 예외 발생 검증")
-        void linkExternalAccount_NotImplemented() {
+        @DisplayName("4. 1원 송금 인증 요청 - 성공")
+        void request1WonVerification_Success() {
             UUID userId = UUID.randomUUID();
-            AccountLinkRequest request = new AccountLinkRequest("004", "1234567890");
+            AccountVerifyRequest request = new AccountVerifyRequest("088", "110-123-456789");
+            User user = User.builder().id(userId).userKey("user-key").build();
+            
+            given(userRepository.findById(userId)).willReturn(Optional.of(user));
+            given(accountRepository.existsByAccountNumberAndBankCode(anyString(), anyString())).willReturn(false);
+            
+            accountService.request1WonVerification(userId, request);
+            
+            verify(ssafyFinanceService).openAccountAuth(eq("user-key"), eq("110-123-456789"), contains("SSAFY"));
+        }
+
+        @Test
+        @DisplayName("5. 1원 송금 인증 확인 및 연동 - 성공")
+        void verifyAccountAndLink_Success() {
+            UUID userId = UUID.randomUUID();
+            AccountVerifyConfirmRequest request = new AccountVerifyConfirmRequest("088", "110-123-456789", "1234");
             User user = User.builder().id(userId).userKey("user-key").build();
             
             given(userRepository.findById(userId)).willReturn(Optional.of(user));
             
-            // 아직 미구현 상태이므로 예외가 발생하는지 검증
-            doThrow(new UnsupportedOperationException("아직 구현되지 않은 기능입니다: 타행 계좌 연동"))
-                .when(ssafyFinanceService).linkAccount(anyString(), anyString(), anyString());
+            FinanceAccountAuthCheckResponse.Rec mockVerifyRec = new FinanceAccountAuthCheckResponse.Rec(
+                "SUCCESS", 12345L, "110-123-456789"
+            );
+            given(ssafyFinanceService.checkAuthCode(anyString(), anyString(), anyString(), anyString())).willReturn(mockVerifyRec);
+            
+            Account savedAccount = Account.builder()
+                .id(UUID.randomUUID())
+                .userId(userId)
+                .accountNumber("110-123-456789")
+                .bankCode("088")
+                .type("EXTERNAL")
+                .build();
+            given(accountRepository.save(any(Account.class))).willReturn(savedAccount);
 
-            assertThrows(UnsupportedOperationException.class, () -> {
-                accountService.linkExternalAccount(userId, request);
+            AccountLinkResponse response = accountService.verifyAccountAndLink(userId, request);
+            
+            assertNotNull(response.accountId());
+            assertEquals("AK은행", response.bankName());
+            verify(accountRepository).save(any(Account.class));
+        }
+
+        @Test
+        @DisplayName("6. 1원 송금 인증 확인 - 실패 (코드 불일치)")
+        void verifyAccountAndLink_Failure_InvalidCode() {
+            UUID userId = UUID.randomUUID();
+            AccountVerifyConfirmRequest request = new AccountVerifyConfirmRequest("088", "110-123-456789", "9999");
+            User user = User.builder().id(userId).userKey("user-key").build();
+            
+            given(userRepository.findById(userId)).willReturn(Optional.of(user));
+            
+            FinanceAccountAuthCheckResponse.Rec mockVerifyRec = new FinanceAccountAuthCheckResponse.Rec(
+                "FAIL", 12345L, "110-123-456789"
+            );
+            given(ssafyFinanceService.checkAuthCode(anyString(), anyString(), anyString(), anyString())).willReturn(mockVerifyRec);
+
+            ApiException exception = assertThrows(ApiException.class, () -> {
+                accountService.verifyAccountAndLink(userId, request);
             });
             
-            verify(ssafyFinanceService).linkAccount("user-key", "004", "1234567890");
+            assertEquals(BankErrorCode.INVALID_AUTH_CODE, exception.getErrorCode());
         }
+
     }
 
     @Nested

@@ -10,6 +10,7 @@ import com.akku.backend.domain.auth.service.SsafyFinanceService;
 import com.akku.backend.domain.bank.exception.BankErrorCode;
 import com.akku.backend.domain.bank.repository.CardProductRepository;
 import com.akku.backend.domain.bank.repository.CardRepository;
+import com.akku.backend.domain.bank.repository.MerchantRepository;
 import com.akku.backend.domain.user.exception.UserErrorCode;
 import com.akku.backend.global.error.ApiException;
 import com.akku.backend.global.finance.dto.FinanceCardCreateResponse;
@@ -21,6 +22,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -31,10 +35,12 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class CardService {
 
     private final CardProductRepository cardProductRepository;
     private final CardRepository cardRepository;
+    private final MerchantRepository merchantRepository;
     private final SsafyFinanceService ssafyFinanceService;
     private final UserRepository userRepository;
     private final ApplicationEventPublisher eventPublisher;
@@ -188,7 +194,7 @@ public class CardService {
             throw new ApiException(BankErrorCode.CARD_NOT_FOUND);
         }
 
-        // 금융망에 결제 요청 (반환값 캡처 — categoryName 추출용)
+        // 금융망에 결제 요청
         FinanceCardPaymentResponse.Rec result = ssafyFinanceService.createCardTransaction(
                 user.getUserKey(),
                 card.getCardNo(),
@@ -197,14 +203,32 @@ public class CardService {
                 request.paymentBalance()
         );
 
-        // 결제 완료 이벤트 발행 — AFTER_COMMIT 이후 challenge 도메인 리스너가 수신
-        LocalDate approvalDate = LocalDate.parse(result.transactionDate(), DateTimeFormatter.ofPattern("yyyyMMdd"));
-        eventPublisher.publishEvent(new CardPaymentEvent(
-                userId,
-                result.categoryName(),
-                result.paymentBalance(),
-                approvalDate
-        ));
+        // 결제 완료 이벤트 발행 (트랜잭션 커밋 후 실행되도록 분리)
+        // 외부 결제가 성공했으므로, 이후의 부가 로직(이벤트 발행 등) 실패가 결제를 롤백시키지 않도록 함
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                try {
+                    LocalDate approvalDate = LocalDate.parse(result.transactionDate(), DateTimeFormatter.ofPattern("yyyyMMdd"));
+                    
+                    // 가맹점의 친환경 여부(isGreen) 조회
+                    boolean isGreen = merchantRepository.findById(result.merchantId())
+                            .map(merchant -> Boolean.TRUE.equals(merchant.getIsGreen()))
+                            .orElse(false);
+
+                    eventPublisher.publishEvent(new CardPaymentEvent(
+                            userId,
+                            result.categoryName(),
+                            result.paymentBalance(),
+                            approvalDate,
+                            isGreen
+                    ));
+                } catch (Exception e) {
+                    // 이벤트 발행 중 오류가 발생해도 로그만 남기고 무시 (결제는 유지)
+                    log.error("카드 결제 완료 후 이벤트 발행 실패. userId: {}, result: {}", userId, result, e);
+                }
+            }
+        });
     }
 
     /**

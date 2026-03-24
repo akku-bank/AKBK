@@ -7,34 +7,81 @@ import api from '../../../api/axios';
 import useAuthStore from '../../../store/useAuthStore';
 import EventSource from 'react-native-sse';
 
-// 더미 형태의 질문들
-const MOCK_QUESTIONS = [
-    {
-        id: 1,
-        question: "용돈을 받았을 때 가장 먼저 해야 할 일은 무엇일까요?",
-        options: ["친구들과 모두 쓰기", "일부 저축하고 계획 세우기", "비싼 장난감 사기", "나중에 생각하기"],
-        answerIndex: 1,
-        explanation: "용돈을 받으면 먼저 저축할 금액을 떼어두고 계획을 세우는 것이 좋아요.",
-        hint: "무엇이든 '계획'을 세우는 것이 중요해요! 돈도 마찬가지랍니다."
-    },
-    {
-        id: 2,
-        question: "필요한 물건을 사기 위해 돈을 따로 모으는 것을 의미하는 단어는?",
-        options: ["소비", "기부", "저축", "투자"],
-        answerIndex: 2,
-        explanation: "미래를 위해 혹은 필요한 물건을 사기 위해 돈을 모으는 것을 저축이라고 합니다.",
-        hint: "은행에 이 단어가 들어가는 통장을 만들 수 있어요. '저'로 시작한답니다."
-    }
-];
+const parseProblemJson = (problemJson) => {
+    if (!problemJson) return null;
 
-const QuizScreen = ({ navigation }) => {
+    try {
+        const parsed = JSON.parse(problemJson);
+        return {
+            question: parsed.question || '문제를 불러오지 못했습니다.',
+            options: Array.isArray(parsed.options) ? parsed.options : ['...', '...', '...', '...'],
+            answerIndex: Number.isInteger(parsed.answer_index) ? parsed.answer_index : 0,
+            hint: parsed.hint || '힌트를 생성해드릴게요.',
+        };
+    } catch (error) {
+        console.error('Problem JSON Parse Error', error);
+        return null;
+    }
+};
+
+const normalizeQuizData = (qData) => {
+    const parsedProblem = parseProblemJson(qData?.problemJson);
+
+    return {
+        id: qData?.quizId ?? null,
+        question: qData?.question || parsedProblem?.question || '문제를 불러오지 못했습니다.',
+        options: parsedProblem?.options || ['...', '...', '...', '...'],
+        answerIndex: parsedProblem?.answerIndex ?? 0,
+        explanation: qData?.explanation || '',
+        hint: parsedProblem?.hint || '힌트를 생성해드릴게요.',
+        rewardAmount: qData?.rewardAmount ?? null,
+        remainingCredits: qData?.remainingCredits ?? 3,
+        chatHistory: parseChatHistory(qData?.chatJson),
+    };
+};
+
+const parseChatHistory = (chatJson) => {
+    if (!chatJson) return [];
+
+    try {
+        const parsed = JSON.parse(chatJson);
+        const source = Array.isArray(parsed)
+            ? parsed
+            : Array.isArray(parsed.messages)
+                ? parsed.messages
+                : Array.isArray(parsed.chat_history)
+                    ? parsed.chat_history
+                    : [];
+
+        return source
+            .map((item) => {
+                const sender = item.sender || item.role || item.type;
+                const text = item.text || item.message || item.content || item.reply;
+
+                if (!text) return null;
+
+                return {
+                    sender: sender === 'assistant' || sender === 'ai' || sender === 'bot' ? 'ai' : 'user',
+                    text,
+                };
+            })
+            .filter(Boolean);
+    } catch (error) {
+        console.error('Chat JSON Parse Error', error);
+        return [];
+    }
+};
+
+const QuizScreen = ({ navigation, route }) => {
+    const difficulty = route?.params?.difficulty || 'medium';
     const [quiz, setQuiz] = useState({
         id: null,
         question: "불러오는 중...",
         options: ["...", "...", "...", "..."],
         answerIndex: 0,
         explanation: "",
-        hint: ""
+        hint: "",
+        rewardAmount: null,
     });
     const [selectedOption, setSelectedOption] = useState(null);
     const [isAnswerRevealed, setIsAnswerRevealed] = useState(false);
@@ -55,30 +102,31 @@ const QuizScreen = ({ navigation }) => {
     useEffect(() => {
         const fetchQuiz = async () => {
             try {
-                // 난이도는 'NORMAL'로 임의 고정 또는 이전 화면에서 선택된 파라미터 활용
-                const res = await api.get('/challenges/quizzes?difficulty=NORMAL');
+                const res = await api.get(`/challenges/quizzes?difficulty=${difficulty}`);
                 const qData = res.data?.data;
 
-                if (!qData || !qData.problemJson) {
+                if (!qData) {
                     console.log('퀴즈 데이터가 없거나 인증 에러가 발생했습니다.');
-                    return; // 상태 업데이트 생략 (불러오는 중... 유지 및 fallback 데이터 사용)
+                    return;
                 }
 
-                const problem = JSON.parse(qData.problemJson);
+                const normalizedQuiz = normalizeQuizData(qData);
 
                 setQuiz({
-                    id: qData.quizId,
-                    question: problem.question,
-                    options: problem.options,
-                    answerIndex: problem.answer_index, // 클라이언트가 알 필요는 없지만 UI용 유지
-                    explanation: qData.explanation,
-                    hint: problem.hint || "힌트를 생성해드릴게요."
+                    id: normalizedQuiz.id,
+                    question: normalizedQuiz.question,
+                    options: normalizedQuiz.options,
+                    answerIndex: normalizedQuiz.answerIndex,
+                    explanation: normalizedQuiz.explanation,
+                    hint: normalizedQuiz.hint,
+                    rewardAmount: normalizedQuiz.rewardAmount,
                 });
-                setAiCredits(qData.remainingCredits);
+                setAiCredits(normalizedQuiz.remainingCredits);
+                setChatHistory(normalizedQuiz.chatHistory);
             } catch (e) { console.error('Quiz Fetch Error', e); }
         };
         fetchQuiz();
-    }, []);
+    }, [difficulty]);
 
     // 하드웨어 뒤로가기 및 스와이프 제스처 방어
     useEffect(() => {
@@ -145,7 +193,7 @@ const QuizScreen = ({ navigation }) => {
 
                                 // 2. SSE 연결 설정 및 응답 대기
                                 const token = useAuthStore.getState().token;
-                                const url = `${api.defaults.baseURL}/challenges/quizzes/chat/stream?quizId=${quiz.id}`;
+                                const url = `${api.defaults.baseURL}/challenges/quizzes/chat/stream`;
 
                                 const source = new EventSource(url, {
                                     headers: { Authorization: `Bearer ${token}` }
@@ -211,7 +259,7 @@ const QuizScreen = ({ navigation }) => {
         const submitTask = async () => {
             try {
                 if (!quiz.id) {
-                    Alert.alert('정답 확인 완료 (임시)', isCorrect ? '정답입니다!' : '틀렸습니다.');
+                    Alert.alert('안내', '퀴즈 정보가 없어 정답을 제출할 수 없습니다.');
                     return;
                 }
                 const res = await api.post('/challenges/quizzes/answer', { quizId: quiz.id, selectedAnswer: selectedOption });
@@ -229,9 +277,7 @@ const QuizScreen = ({ navigation }) => {
                 }
             } catch (e) {
                 console.error('Quiz Submit Error', e.response?.data || e.message);
-                // 에러 발생 시 임시 로직
-                if (isCorrect) Alert.alert('정답입니다! 🎉', '보상으로 10 젤링을 받았습니다! (임시)');
-                else Alert.alert('아쉬워요.', '다음 문제를 노려보세요! (임시)');
+                Alert.alert('오류', '정답 제출에 실패했습니다.');
             }
         };
         submitTask();

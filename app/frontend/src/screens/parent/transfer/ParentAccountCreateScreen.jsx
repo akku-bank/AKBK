@@ -36,15 +36,25 @@ const ParentAccountCreateScreen = ({ navigation }) => {
                                 return;
                             }
 
+                            if (!targetChild.childId) {
+                                Alert.alert('자녀 연동 필요', '자녀 계좌를 생성하려면 먼저 자녀 계정을 가족에 연동해주세요.');
+                                setIsLoading(false);
+                                return;
+                            }
+
                             await api.post('/bank/accounts', {
                                 childId: targetChild.childId,
-                                accountType: 'CHECKING'
+                                accountType: 'CASH'
                             });
 
                             Alert.alert('완료', '계좌가 성공적으로 개설되었습니다!', [{ text: '확인', onPress: () => navigation.goBack() }]);
                         } catch (error) {
                             console.error('Account Create Error', error);
-                            Alert.alert('오류', '계좌 개설 중 문제가 발생했습니다.');
+                            const message =
+                                error?.response?.data?.message ||
+                                error?.response?.data?.errorCode ||
+                                '계좌 개설 중 문제가 발생했습니다.';
+                            Alert.alert('오류', message);
                         } finally {
                             setIsLoading(false);
                         }
