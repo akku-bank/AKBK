@@ -100,8 +100,7 @@ class EsgCardPaymentEventListenerTest {
         void green_merchant_marks_in_progress_challenge_as_success() {
             // Given
             UUID userId = UUID.randomUUID();
-            User child = mock(User.class);
-            given(child.getId()).willReturn(userId);
+            User child = User.builder().id(userId).build();
 
             CardPaymentEvent event = buildEvent(userId, true);
             LocalDate expectedMonday = toMonday(event.transactionDate()); // 2025-01-06

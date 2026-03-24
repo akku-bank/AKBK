@@ -45,6 +45,9 @@ class AccountServiceTest {
     @Mock
     private SsafyFinanceService ssafyFinanceService;
 
+    @Mock
+    private com.akku.backend.domain.bank.repository.AccountVerificationRepository accountVerificationRepository;
+
     @Nested
     @DisplayName("계좌 생성 및 연동")
     class AccountRegistrationTests {
@@ -54,7 +57,7 @@ class AccountServiceTest {
             UUID parentId = UUID.randomUUID();
             UUID childId = UUID.randomUUID();
             UUID familyId = UUID.randomUUID();
-            AccountCreateRequest request = new AccountCreateRequest(childId, "CASH");
+            AccountCreateRequest request = new AccountCreateRequest(childId);
             User parent = User.builder().id(parentId).role("PARENT").familyId(familyId).build();
             User child = User.builder().id(childId).userKey("child-key").role("CHILD").familyId(familyId).build();
             given(userRepository.findById(parentId)).willReturn(Optional.of(parent));
@@ -73,7 +76,7 @@ class AccountServiceTest {
             AccountCreateResponse response = accountService.createAccount(parentId, request);
             assertNotNull(response.accountId());
             assertEquals(0, response.balance());
-            verify(ssafyFinanceService).createAccount(eq("child-key"), eq("CASH"));
+            verify(ssafyFinanceService).createAccount(eq("child-key"), eq("001-1-85a431ad30cd43"));
         }
 
 
@@ -101,6 +104,13 @@ class AccountServiceTest {
             
             given(userRepository.findById(userId)).willReturn(Optional.of(user));
             
+            com.akku.backend.domain.bank.entity.AccountVerification verification = com.akku.backend.domain.bank.entity.AccountVerification.builder()
+                 .authText("SSAFY")
+                 .expiresAt(java.time.LocalDateTime.now().plusMinutes(5))
+                 .build();
+            given(accountVerificationRepository.findTopByUserIdAndAccountNumberAndBankCodeOrderByCreatedAtDesc(any(), anyString(), anyString()))
+                 .willReturn(Optional.of(verification));
+
             FinanceAccountAuthCheckResponse.Rec mockVerifyRec = new FinanceAccountAuthCheckResponse.Rec(
                 "SUCCESS", 12345L, "110-123-456789"
             );
@@ -118,7 +128,7 @@ class AccountServiceTest {
             AccountLinkResponse response = accountService.verifyAccountAndLink(userId, request);
             
             assertNotNull(response.accountId());
-            assertEquals("AK은행", response.bankName());
+            assertEquals("신한은행", response.bankName());
             verify(accountRepository).save(any(Account.class));
         }
 
@@ -131,6 +141,13 @@ class AccountServiceTest {
             
             given(userRepository.findById(userId)).willReturn(Optional.of(user));
             
+            com.akku.backend.domain.bank.entity.AccountVerification verification = com.akku.backend.domain.bank.entity.AccountVerification.builder()
+                 .authText("SSAFY")
+                 .expiresAt(java.time.LocalDateTime.now().plusMinutes(5))
+                 .build();
+            given(accountVerificationRepository.findTopByUserIdAndAccountNumberAndBankCodeOrderByCreatedAtDesc(any(), anyString(), anyString()))
+                 .willReturn(Optional.of(verification));
+
             FinanceAccountAuthCheckResponse.Rec mockVerifyRec = new FinanceAccountAuthCheckResponse.Rec(
                 "FAIL", 12345L, "110-123-456789"
             );
