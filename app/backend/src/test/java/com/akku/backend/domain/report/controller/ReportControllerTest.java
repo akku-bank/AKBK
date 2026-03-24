@@ -119,4 +119,23 @@ class ReportControllerTest {
         // then
         verify(reportService).getWeeklyReport(userId, specificDate);
     }
+    
+    @Test
+    @DisplayName("날짜 미지정 시 자녀 리포트도 오늘(KST) 기준으로 조회한다")
+    void getChildWeeklyReport_DefaultDate_KST() {
+        // given: 한국 시간 월요일 새벽 1시로 시계 고정
+        Instant monday01AMKst = Instant.parse("2024-03-24T16:00:00Z"); 
+        Clock fixedClock = Clock.fixed(monday01AMKst, ZoneId.of("Asia/Seoul"));
+        reportController = new ReportController(reportService, fixedClock);
+
+        UUID parentId = UUID.randomUUID();
+        UUID childId = UUID.randomUUID();
+        given(reportService.getChildWeeklyReport(any(), any(), any())).willReturn(WeeklyReportResponse.builder().build());
+
+        // when: 날짜 파라미터 없이 호출
+        reportController.getChildWeeklyReport(parentId, childId, null);
+
+        // then: 주입된 Clock에 시각에 따라 '2024-03-25'가 전달되어야 함.
+        verify(reportService).getChildWeeklyReport(parentId, childId, LocalDate.of(2024, 3, 25));
+    }
 }
