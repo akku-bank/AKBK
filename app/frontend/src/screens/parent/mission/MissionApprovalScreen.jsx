@@ -16,10 +16,15 @@ const MissionApprovalScreen = ({ navigation }) => {
     });
 
     const [parentComment, setParentComment] = useState('');
+    const [rewardAmount, setRewardAmount] = useState('');
 
     const handleApprove = () => {
         if (!parentComment.trim()) {
             Alert.alert('알림', '승인 메시지를 작성해주세요. 아이가 검토 의견을 기다립니다!');
+            return;
+        }
+        if (!rewardAmount || isNaN(rewardAmount)) {
+            Alert.alert('알림', '성공 시 지급할 보상 금액을 입력해주세요!');
             return;
         }
 
@@ -27,13 +32,16 @@ const MissionApprovalScreen = ({ navigation }) => {
            [진짜 미션 승인 API]
            ========================================== 
         try {
-            // await api.post(`/challenges/${mission.id}/approve`, { comment: parentComment });
-            // Alert.alert('승인 완료', `${mission.childName}의 챌린지를 승인했습니다!`, [{ text: '확인', onPress: () => navigation.goBack() }]);
+            // await api.post(`/challenges/${mission.id}/approve`, { 
+            //     comment: parentComment,
+            //     rewardAmount: parseInt(rewardAmount)
+            // });
+            // Alert.alert('승인 완료', `${mission.childName}의 챌린지에 ${rewardAmount}원 보상을 걸고 승인했습니다!`, [{ text: '확인', onPress: () => navigation.goBack() }]);
             // return;
         } catch(e) { console.error('Mission Approve Error', e); }
         ========================================== */
 
-        Alert.alert('승인 완료', `${mission.childName}의 챌린지를 승인했습니다!`, [
+        Alert.alert('승인 완료', `${mission.childName}의 챌린지에 ${rewardAmount.toLocaleString()}원 보상을 걸고 승인했습니다!`, [
             { text: '확인', onPress: () => navigation.goBack() }
         ]);
     };
@@ -91,6 +99,21 @@ const MissionApprovalScreen = ({ navigation }) => {
                     </View>
                 </View>
 
+                <View style={styles.rewardInputContainer}>
+                    <CustomText style={styles.commentInputLabel}>챌린지 성공 보상금 (필수)</CustomText>
+                    <View style={styles.rewardInputWrapper}>
+                        <CustomTextInput
+                            style={styles.rewardInput}
+                            placeholder="예: 3000"
+                            placeholderTextColor="#9CA3AF"
+                            keyboardType="numeric"
+                            value={rewardAmount}
+                            onChangeText={setRewardAmount}
+                        />
+                        <CustomText style={styles.currencyText}>원</CustomText>
+                    </View>
+                </View>
+
                 <View style={styles.commentInputContainer}>
                     <CustomText style={styles.commentInputLabel}>부모님 검토 코멘트 (필수)</CustomText>
                     <CustomTextInput
@@ -137,6 +160,11 @@ const styles = StyleSheet.create({
     memoBox: { backgroundColor: '#F9FAFB', borderRadius: scale(12), padding: scale(16), marginTop: verticalScale(8) },
     memoLabel: { fontSize: scale(12), color: '#9CA3AF', marginBottom: verticalScale(8) },
     memoText: { fontSize: scale(14), color: '#111', fontStyle: 'italic', lineHeight: 20 },
+
+    rewardInputContainer: { marginBottom: verticalScale(20) },
+    rewardInputWrapper: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: scale(12), paddingHorizontal: scale(16) },
+    rewardInput: { flex: 1, fontSize: scale(16), fontWeight: 'bold', color: '#111', paddingVertical: verticalScale(14) },
+    currencyText: { fontSize: scale(16), fontWeight: 'bold', color: '#111' },
 
     commentInputContainer: { marginBottom: verticalScale(32) },
     commentInputLabel: { fontSize: scale(14), fontWeight: 'bold', color: '#4B5563', marginBottom: verticalScale(8) },

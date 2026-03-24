@@ -140,6 +140,18 @@ const QuizScreen = ({ navigation, route }) => {
         return unsubscribe;
     }, [navigation, aiCredits, isAnswerRevealed]);
 
+    // 하드웨어 뒤로가기 및 스와이프 제스처 방어
+    useEffect(() => {
+        const unsubscribe = navigation.addListener('beforeRemove', (e) => {
+            if (aiCredits < 3 && !isAnswerRevealed) {
+                // 화면 이동 차단
+                e.preventDefault();
+                Alert.alert('알림', '이미 힌트를 사용하여 난이도를 변경하거나 포기할 수 없어요!');
+            }
+        });
+        return unsubscribe;
+    }, [navigation, aiCredits, isAnswerRevealed]);
+
     const handleGoBack = () => {
         if (aiCredits < 3 && !isAnswerRevealed) {
             Alert.alert('알림', '이미 힌트를 사용하여 난이도를 변경하거나 포기할 수 없어요!');

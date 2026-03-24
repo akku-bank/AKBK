@@ -5,10 +5,12 @@ import { scale, verticalScale } from 'react-native-size-matters';
 import CustomText from '../../../components/common/CustomText';
 import useAuthStore from '../../../store/useAuthStore';
 import api from '../../../api/axios';
+import { Alert } from 'react-native';
 
 const ParentHomeScreen = ({ navigation }) => {
     const { user } = useAuthStore();
     const [childrenData, setChildrenData] = useState([]);
+    const [parentBalance, setParentBalance] = useState(0);
     const [parentBalance, setParentBalance] = useState(0);
 
     useFocusEffect(
@@ -60,6 +62,7 @@ const ParentHomeScreen = ({ navigation }) => {
                         .filter(Boolean);
 
                     setChildrenData(mappedChildren);
+                    setParentBalance(pBalance);
                     setParentBalance(pBalance);
                 } catch (e) {
                     console.error('Parent Home Fetch Error', e);
@@ -130,6 +133,12 @@ const ParentHomeScreen = ({ navigation }) => {
                         <View style={styles.actionRow}>
                             <TouchableOpacity style={styles.actionBtn} onPress={() => navigation.navigate('ParentTransferScreen', { child })}>
                                 <CustomText style={styles.actionBtnText}>용돈 송금</CustomText>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.actionBtnOutline} onPress={() => navigation.navigate('ParentChildEdit', { child })}>
+                                <CustomText style={styles.actionBtnOutlineText}>정보 수정</CustomText>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.actionBtnDanger} onPress={() => handleDeleteMember(child)}>
+                                <CustomText style={styles.actionBtnDangerText}>가족 분리</CustomText>
                             </TouchableOpacity>
                             <TouchableOpacity style={styles.actionBtnOutline} onPress={() => navigation.navigate('ParentChildEdit', { child })}>
                                 <CustomText style={styles.actionBtnOutlineText}>정보 수정</CustomText>

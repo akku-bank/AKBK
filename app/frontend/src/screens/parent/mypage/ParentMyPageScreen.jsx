@@ -114,6 +114,14 @@ const ParentMyPageScreen = ({ navigation }) => {
                             thumbColor={'#FFFFFF'}
                         />
                     </View>
+
+                    <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('ParentChangePassword')}>
+                        <View style={styles.menuItemLeft}>
+                            <CustomText style={styles.menuIcon}>🔒</CustomText>
+                            <CustomText style={styles.menuText}>비밀번호 변경</CustomText>
+                        </View>
+                        <CustomText style={styles.chevron}>›</CustomText>
+                    </TouchableOpacity>
                 </View>
 
                 {/* 기타 추가 메뉴용 예비 공간 */}

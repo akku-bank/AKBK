@@ -97,6 +97,8 @@ const FamilyQrGeneratorScreen = ({ navigation }) => {
             <View style={styles.container}>
                 <CustomText style={styles.title}>QR 코드를 스캔해주세요!</CustomText>
                 <CustomText style={styles.subtitle}>스캔 시 자동으로 가족 등록이 완료됩니다.</CustomText>
+                <CustomText style={styles.title}>QR 코드를 스캔해주세요!</CustomText>
+                <CustomText style={styles.subtitle}>스캔 시 자동으로 가족 등록이 완료됩니다.</CustomText>
 
                 <View style={styles.qrCard}>
                     <View style={styles.qrImageBox}>
@@ -107,6 +109,11 @@ const FamilyQrGeneratorScreen = ({ navigation }) => {
                         )}
                     </View>
                     <CustomText style={styles.timerText}>인증 유효시간 {formatTime(timeLeft)}</CustomText>
+                    {qrData && (
+                        <CustomText style={{ marginTop: 12, color: '#6B7280', fontSize: scale(14), fontWeight: 'bold' }}>
+                            [개발용 우회] {qrData}
+                        </CustomText>
+                    )}
                     {qrData && (
                         <CustomText style={{ marginTop: 12, color: '#6B7280', fontSize: scale(14), fontWeight: 'bold' }}>
                             [개발용 우회] {qrData}
@@ -126,7 +133,45 @@ const FamilyQrGeneratorScreen = ({ navigation }) => {
                 <TouchableOpacity style={[styles.refreshBtn, { backgroundColor: '#3B82F6', marginTop: verticalScale(16), paddingHorizontal: scale(20) }]} onPress={() => setModalVisible(true)}>
                     <CustomText style={[styles.refreshBtnText, { color: '#FFFFFF' }]}>+ 초대받을 사람(자녀) 사전 추가하기</CustomText>
                 </TouchableOpacity>
+
+                <TouchableOpacity style={[styles.refreshBtn, { backgroundColor: '#3B82F6', marginTop: verticalScale(16), paddingHorizontal: scale(20) }]} onPress={() => setModalVisible(true)}>
+                    <CustomText style={[styles.refreshBtnText, { color: '#FFFFFF' }]}>+ 초대받을 사람(자녀) 사전 추가하기</CustomText>
+                </TouchableOpacity>
             </View>
+
+            {/* 자녀 사전 등록 모달 */}
+            <Modal visible={isModalVisible} transparent={true} animationType="fade">
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        <CustomText style={styles.modalTitle}>자녀 사전 등록</CustomText>
+                        <CustomText style={styles.modalSubtitle}>초대할 자녀의 정보를 등록해주세요.</CustomText>
+
+                        <TextInput
+                            style={styles.input}
+                            placeholder="이름 (예: 김싸피)"
+                            placeholderTextColor="#9CA3AF"
+                            value={memberName}
+                            onChangeText={setMemberName}
+                        />
+                        <TextInput
+                            style={styles.input}
+                            placeholder="생년월일 (예: 2015-05-05)"
+                            placeholderTextColor="#9CA3AF"
+                            value={memberBirth}
+                            onChangeText={setMemberBirth}
+                        />
+
+                        <View style={styles.modalBtnRow}>
+                            <TouchableOpacity style={[styles.modalBtn, { backgroundColor: '#F3F4F6' }]} onPress={() => setModalVisible(false)}>
+                                <CustomText style={{ color: '#4B5563', fontWeight: 'bold' }}>취소</CustomText>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={[styles.modalBtn, { backgroundColor: '#3B82F6' }]} onPress={handleAddMember}>
+                                <CustomText style={{ color: '#FFFFFF', fontWeight: 'bold' }}>명단에 등록하기</CustomText>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
 
             {/* 자녀 사전 등록 모달 */}
             <Modal visible={isModalVisible} transparent={true} animationType="fade">
@@ -186,6 +231,15 @@ const styles = StyleSheet.create({
     timerText: { fontSize: scale(16), fontWeight: 'bold', color: '#EF4444' },
 
     refreshBtn: { marginTop: verticalScale(32), padding: scale(12), borderRadius: scale(12), backgroundColor: '#F3F4F6' },
+    refreshBtnText: { fontSize: scale(14), fontWeight: 'bold', color: '#4B5563' },
+
+    modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
+    modalContent: { width: '85%', backgroundColor: '#FFF', borderRadius: scale(20), padding: scale(24), alignItems: 'center' },
+    modalTitle: { fontSize: scale(18), fontWeight: 'bold', color: '#111', marginBottom: verticalScale(8) },
+    modalSubtitle: { fontSize: scale(14), color: '#6B7280', marginBottom: verticalScale(20), textAlign: 'center' },
+    input: { width: '100%', backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: scale(12), padding: scale(14), fontSize: scale(14), marginBottom: verticalScale(12), color: '#111' },
+    modalBtnRow: { flexDirection: 'row', justifyContent: 'space-between', width: '100%', marginTop: verticalScale(16) },
+    modalBtn: { flex: 1, paddingVertical: verticalScale(14), borderRadius: scale(12), alignItems: 'center', marginHorizontal: scale(4) }
     refreshBtnText: { fontSize: scale(14), fontWeight: 'bold', color: '#4B5563' },
 
     modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },

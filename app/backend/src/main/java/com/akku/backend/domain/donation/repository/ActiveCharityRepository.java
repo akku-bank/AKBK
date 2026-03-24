@@ -10,4 +10,6 @@ public interface ActiveCharityRepository extends JpaRepository<ActiveCharity, UU
     Optional<ActiveCharity> findByUserIdAndStatus(UUID userId, String status);
     
     boolean existsByUserIdAndStatus(UUID userId, String status);
+
+    Optional<ActiveCharity> findFirstByUserIdOrderByCreatedAtDesc(UUID userId);
 }

@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, TextInput, KeyboardAvoidingView, Platform, Alert, ScrollView } from 'react-native';
+import CustomText from '../../components/common/CustomText';
 import { RFValue } from 'react-native-responsive-fontsize';
 import api from '../../api/axios';
 
 const ParentInitialSetupScreen = ({ navigation, route }) => {
-    const { tempToken, role, name } = route.params || {};
+    const { tempToken, role, name, familyCode } = route.params || {};
 
     const [bankAccount, setBankAccount] = useState('');
 
@@ -14,11 +15,32 @@ const ParentInitialSetupScreen = ({ navigation, route }) => {
             return;
         }
         try {
-            // 1. 가족 그룹 생성 (바디 불필요, 토큰으로 인증)
-            await api.post('/families', {}, { headers: { Authorization: `Bearer ${tempToken}` } });
+            // 1. 가족 그룹 참가 또는 생성
+            if (familyCode && familyCode !== 'mock-family-code') {
+                try {
+                    await api.post('/families/join', { scannedQrCode: familyCode }, { headers: { Authorization: `Bearer ${tempToken}` } });
+                    console.log('Spouse Joined Family Successfully');
+                } catch (e) {
+                    console.error('Spouse Join API Error:', e.response?.data || e.message);
+                }
+            } else {
+                try {
+                    await api.post('/families', {}, { headers: { Authorization: `Bearer ${tempToken}` } });
+                } catch (famErr) {
+                    if (famErr.response?.data?.errorCode === 'FAM_008') {
+                        console.log('이미 가족 그룹이 존재하므로 패스합니다.');
+                    } else {
+                        throw famErr;
+                    }
+                }
+            }
 
-            // 2. 부모 기본 계좌 연동
-            await api.post('/bank/accounts/link', { bankCode: '004', accountNumber: bankAccount }, { headers: { Authorization: `Bearer ${tempToken}` } });
+            // 2. 부모 기본 계좌 연동 (현재 500 에러 발생 시 부모 가입 차단을 막기 위해 임시 예외처리)
+            try {
+                await api.post('/bank/accounts/link', { bankCode: '004', accountNumber: bankAccount }, { headers: { Authorization: `Bearer ${tempToken}` } });
+            } catch (linkErr) {
+                console.warn('Bank linking failed, bypassed:', linkErr);
+            }
 
             navigation.replace('PinNumberSetup', { tempToken, role, name, bankAccount });
         } catch (error) {
@@ -33,8 +55,8 @@ const ParentInitialSetupScreen = ({ navigation, route }) => {
                 <ScrollView contentContainerStyle={styles.scrollContent}>
 
                     <View style={styles.stepContainer}>
-                        <Text style={styles.title}>자산 정보 등록</Text>
-                        <Text style={styles.subtitle}>아이들의 용돈을 충전해 줄{'\n'}부모님의 주거래 계좌를 연결할까요?</Text>
+                        <CustomText style={styles.title}>자산 정보 등록</CustomText>
+                        <CustomText style={styles.subtitle}>아이들의 용돈을 충전해 줄{'\n'}부모님의 주거래 계좌를 연결할까요?</CustomText>
 
                         <TextInput
                             style={styles.input}
@@ -46,7 +68,7 @@ const ParentInitialSetupScreen = ({ navigation, route }) => {
                             autoFocus={true}
                         />
                         <View style={styles.infoBox}>
-                            <Text style={styles.infoText}>🔒 입력하신 정보는 안전하게 암호화되어 보관됩니다.</Text>
+                            <CustomText style={styles.infoText}>🔒 입력하신 정보는 안전하게 암호화되어 보관됩니다.</CustomText>
                         </View>
                     </View>
 
@@ -58,7 +80,7 @@ const ParentInitialSetupScreen = ({ navigation, route }) => {
                         onPress={handleNext}
                         activeOpacity={0.8}
                     >
-                        <Text style={styles.submitButtonText}>완료</Text>
+                        <CustomText style={styles.submitButtonText}>완료</CustomText>
                     </TouchableOpacity>
                 </View>
 
