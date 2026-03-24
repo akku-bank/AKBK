@@ -5,7 +5,6 @@ import { scale, verticalScale } from 'react-native-size-matters';
 import CustomText from '../../../components/common/CustomText';
 import useAuthStore from '../../../store/useAuthStore';
 import api from '../../../api/axios';
-import { Alert } from 'react-native';
 
 const ParentHomeScreen = ({ navigation }) => {
     const { user } = useAuthStore();
