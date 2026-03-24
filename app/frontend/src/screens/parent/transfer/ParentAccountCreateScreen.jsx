@@ -3,10 +3,12 @@ import { View, StyleSheet, SafeAreaView, TouchableOpacity, Alert, ScrollView } f
 import { scale, verticalScale } from 'react-native-size-matters';
 import CustomText from '../../../components/common/CustomText';
 import CustomTextInput from '../../../components/common/CustomTextInput';
+import api from '../../../api/axios';
 
 const ParentAccountCreateScreen = ({ navigation }) => {
     const [childName, setChildName] = useState('');
     const [childPhone, setChildPhone] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
 
     const handleCreate = () => {
         if (!childName) {
@@ -21,8 +23,41 @@ const ParentAccountCreateScreen = ({ navigation }) => {
                 { text: '취소', style: 'cancel' },
                 {
                     text: '개설하기',
-                    onPress: () => {
-                        Alert.alert('완료', '계좌가 성공적으로 개설되었습니다!', [{ text: '확인', onPress: () => navigation.goBack() }]);
+                    onPress: async () => {
+                        setIsLoading(true);
+                        try {
+                            const res = await api.get('/home/parent');
+                            const children = res.data?.data?.children || [];
+
+                            const targetChild = children.find(c => c.name === childName);
+                            if (!targetChild) {
+                                Alert.alert('오류', '가족 목록에 해당 이름의 자녀가 없습니다. 먼저 QR 등록을 진행해주세요.');
+                                setIsLoading(false);
+                                return;
+                            }
+
+                            if (!targetChild.childId) {
+                                Alert.alert('자녀 연동 필요', '자녀 계좌를 생성하려면 먼저 자녀 계정을 가족에 연동해주세요.');
+                                setIsLoading(false);
+                                return;
+                            }
+
+                            await api.post('/bank/accounts', {
+                                childId: targetChild.childId,
+                                accountType: 'CASH'
+                            });
+
+                            Alert.alert('완료', '계좌가 성공적으로 개설되었습니다!', [{ text: '확인', onPress: () => navigation.goBack() }]);
+                        } catch (error) {
+                            console.error('Account Create Error', error);
+                            const message =
+                                error?.response?.data?.message ||
+                                error?.response?.data?.errorCode ||
+                                '계좌 개설 중 문제가 발생했습니다.';
+                            Alert.alert('오류', message);
+                        } finally {
+                            setIsLoading(false);
+                        }
                     }
                 }
             ]
@@ -70,8 +105,12 @@ const ParentAccountCreateScreen = ({ navigation }) => {
             </ScrollView>
 
             <View style={styles.footer}>
-                <TouchableOpacity style={[styles.mainButton, !childName && styles.disabledButton]} onPress={handleCreate}>
-                    <CustomText style={styles.mainButtonText}>다음 단계로</CustomText>
+                <TouchableOpacity
+                    style={[styles.mainButton, (!childName || isLoading) && styles.disabledButton]}
+                    onPress={handleCreate}
+                    disabled={!childName || isLoading}
+                >
+                    <CustomText style={styles.mainButtonText}>{isLoading ? '개설 중...' : '다음 단계로'}</CustomText>
                 </TouchableOpacity>
             </View>
         </SafeAreaView>

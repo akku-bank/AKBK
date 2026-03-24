@@ -34,6 +34,9 @@ public class Jelling {
     private LocalDateTime updatedAt;
 
     public void deductBalance(long amount) {
+        if (amount <= 0) {
+            throw new IllegalArgumentException("Amount must be positive");
+        }
         if (this.balance < amount) {
             throw new IllegalArgumentException("Insufficient jelling balance");
         }
@@ -41,6 +44,9 @@ public class Jelling {
     }
 
     public void addBalance(long amount) {
+        if (amount <= 0) {
+            throw new IllegalArgumentException("Amount must be positive");
+        }
         this.balance += amount;
     }
 }

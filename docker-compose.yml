@@ -92,7 +92,8 @@
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
     volumes:
-      - zookeeper_data:/var/lib/zookeeper/data
+      - ./data/zookeeper/data:/var/lib/zookeeper/data
+      - ./data/zookeeper/log:/var/lib/zookeeper/log
 
   # Kafka 메시지 브로커
   kafka:
@@ -150,7 +151,7 @@
   # 백엔드 컨테이너
   backend:
     build:
-      context: ./app/backend  # 백엔드 코드가 있는 경로
+      context: ./app/backend # 백엔드 코드가 있는 경로
       dockerfile: Dockerfile
     container_name: akku_backend
     depends_on:
@@ -171,8 +172,9 @@
       - DB_PASSWORD=${DB_PASSWORD}
       - EXTERNAL_FASTAPI_BASE_URL=http://ai-server:8000 # localhost:8000 대신 ai_server 컨테이너 이름 사용
       - KAFKA_BOOTSTRAP_SERVERS=akkubangkku_kafka:29092
+      - OFFLINE_PAYMENT_SYSTEM_KEY=${OFFLINE_PAYMENT_SYSTEM_KEY}
     restart: always
-  
+
   frontend:
     build:
       context: ./app/frontend
@@ -191,8 +193,75 @@
       - .env # 최상단 .env 파일의 변수들(JWT, KAKAO 등)을 주입받음
     restart: always
 
+  # Spark Master: 클러스터 매니저 역할
+  spark-master:
+    image: apache/spark:3.5.1-python3
+    container_name: akkubangkku_spark_master
+    user: root
+    env_file:
+      - .env
+    depends_on:
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    environment:
+      - SPARK_MODE=master
+    ports:
+      - "18080:8080"
+      - "7077:7077"
+    volumes:
+      - ./data/spark:/opt/spark/work-dir
+    command: >
+      /bin/bash -c "
+      pip install --no-cache-dir redis psycopg2-binary &&
+      /opt/spark/bin/spark-class org.apache.spark.deploy.master.Master & 
+      echo 'Waiting for Master to start...';
+      sleep 20;
+      /opt/spark/bin/spark-submit 
+      --master spark://spark-master:7077 
+      --conf spark.sql.streaming.checkpointLocation=/opt/spark/work-dir/checkpoints/realtime-report
+      --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.1 
+      /opt/spark/work-dir/realtime_report.py"
+
+  spark-worker:
+    image: apache/spark:3.5.1-python3
+    container_name: akkubangkku_spark_worker
+    user: root
+    env_file:
+      - .env
+    depends_on:
+      - spark-master
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - SPARK_WORKER_CORES=2
+      - SPARK_WORKER_MEMORY=2G
+    volumes:
+      - ./data/spark:/opt/spark/work-dir
+    command: >
+      /bin/bash -c "pip install redis psycopg2-binary && 
+      /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077"
+
+  # Redis: 실시간 리포트용 Hot-Data 저장소
+  redis:
+    image: redis:latest
+    container_name: akkubangkku_redis
+    command: redis-server --appendonly yes  # [중요] AOF 기능 활성화
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: always
+    healthcheck: # 명령 받을 준비 되었는지 확인
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
 volumes:
   postgres_data:
   zookeeper_data:
   kafka_data:
+  redis_data:
   

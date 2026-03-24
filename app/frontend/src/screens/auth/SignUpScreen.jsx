@@ -1,12 +1,14 @@
 ﻿import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, SafeAreaView, KeyboardAvoidingView, Platform, Alert, ActivityIndicator } from 'react-native';
+import CustomText from '../../components/common/CustomText';
 import { RFValue } from 'react-native-responsive-fontsize';
 import api from '../../api/axios';
 import useAuthStore from '../../store/useAuthStore';
 
 const SignUpScreen = ({ navigation, route }) => {
-    const { tempToken, role } = route.params || {};
+    const { tempToken, role, familyCode } = route.params || {};
     const [name, setName] = useState('');
+    const [birthDate, setBirthDate] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const { setAuthInfo } = useAuthStore();
 
@@ -16,45 +18,31 @@ const SignUpScreen = ({ navigation, route }) => {
             return;
         }
 
+        const birthDateRegex = /^\d{4}-\d{2}-\d{2}$/;
+        if (!birthDateRegex.test(birthDate.trim())) {
+            Alert.alert('알림', '생년월일은 YYYY-MM-DD 형식으로 입력해주세요.');
+            return;
+        }
+
         setIsLoading(true);
         try {
-            /* ==========================================
-               [진짜 회원가입 API 연동 코드]
-               ========================================== 
+            const reqPayload = { role, name, birthDate: birthDate.trim() };
+            console.log('가입 페이로드:', reqPayload);
+
             const response = await api.post('/auth/signup',
-                { role, name },
+                reqPayload,
                 { headers: { Authorization: `Bearer ${tempToken}` } }
             );
-            
-            // 발급된 실제 토큰
-            const resolvedToken = response.data?.accessToken; // 백엔드 응답 구조에 맞게 수정
+
+            // 발급된 실제 토큰 추출 (백엔드에서 signupToken으로 응답)
+            const payload = response.data?.data || response.data || {};
+            const resolvedToken = payload.signupToken || payload.accessToken || payload.token || tempToken;
 
             if (role === 'PARENT') {
-                navigation.replace('ParentInitialSetup', { tempToken: resolvedToken, role, name });
+                navigation.replace('ParentInitialSetup', { tempToken: resolvedToken, role, name, familyCode });
             } else {
                 navigation.replace('PinNumberSetup', { tempToken: resolvedToken, role, name });
             }
-            ========================================== */
-
-            // --- 실제 연동 시 아래 블록 전체 삭제 ---
-            if (tempToken?.includes("dev-bypass")) {
-                if (role === 'PARENT') {
-                    navigation.replace('ParentInitialSetup', { tempToken, role, name });
-                } else {
-                    navigation.replace('PinNumberSetup', { tempToken, role, name });
-                }
-                return;
-            }
-
-            const resolvedToken = tempToken;
-
-            if (role === 'PARENT') {
-                navigation.replace('ParentInitialSetup', { tempToken: resolvedToken, role, name });
-            } else {
-                navigation.replace('PinNumberSetup', { tempToken: resolvedToken, role, name });
-            }
-            // ------------------------------------
-
         } catch (error) {
             console.error('Signup Error:', error);
             Alert.alert('오류', '회원가입 처리 중 문제가 발생했습니다.');
@@ -71,11 +59,12 @@ const SignUpScreen = ({ navigation, route }) => {
             >
                 <View style={styles.content}>
                     <View style={styles.titleSection}>
-                        <Text style={styles.title}>이름을 알려주세요!</Text>
-                        <Text style={styles.subtitle}>앱에서 사용할 닉네임이나 실명을 적어주세요.</Text>
+                        <CustomText style={styles.title}>이름을 알려주세요!</CustomText>
+                        <CustomText style={styles.subtitle}>앱에서 사용할 닉네임이나 실명을 적어주세요.</CustomText>
                     </View>
 
                     <View style={styles.inputSection}>
+                        <CustomText style={styles.inputLabel}>이름 (닉네임)</CustomText>
                         <TextInput
                             style={styles.input}
                             placeholder="이름 입력 (예: 사스케)"
@@ -85,6 +74,20 @@ const SignUpScreen = ({ navigation, route }) => {
                             autoFocus={true}
                             maxLength={10}
                         />
+
+                        <View style={{ height: RFValue(20) }} />
+
+                        <CustomText style={styles.inputLabel}>생년월일 (YYYY-MM-DD)</CustomText>
+                        <TextInput
+                            style={styles.input}
+                            placeholder="예: 2015-05-05"
+                            placeholderTextColor="#9CA3AF"
+                            value={birthDate}
+                            onChangeText={setBirthDate}
+                            keyboardType="number-pad"
+                            maxLength={10}
+                        />
+                        <CustomText style={styles.helperText}>* 자녀-부모 연동 시 입력한 생일과 일치해야 합니다.</CustomText>
                     </View>
                 </View>
 
@@ -98,7 +101,7 @@ const SignUpScreen = ({ navigation, route }) => {
                         {isLoading ? (
                             <ActivityIndicator color="#FFFFFF" />
                         ) : (
-                            <Text style={styles.submitButtonText}>시작하기</Text>
+                            <CustomText style={styles.submitButtonText}>시작하기</CustomText>
                         )}
                     </TouchableOpacity>
                 </View>
@@ -137,13 +140,24 @@ const styles = StyleSheet.create({
     inputSection: {
         width: '100%',
     },
+    inputLabel: {
+        fontSize: RFValue(13),
+        fontWeight: 'bold',
+        color: '#4B5563',
+        marginBottom: RFValue(4),
+    },
     input: {
-        fontSize: RFValue(22),
+        fontSize: RFValue(20),
         color: '#111',
         fontWeight: 'bold',
         borderBottomWidth: 2,
         borderBottomColor: '#111',
-        paddingVertical: RFValue(10),
+        paddingVertical: RFValue(8),
+    },
+    helperText: {
+        fontSize: RFValue(11),
+        color: '#3B82F6',
+        marginTop: RFValue(8),
     },
     buttonSection: {
         paddingHorizontal: RFValue(24),

@@ -3,10 +3,16 @@ package com.akku.backend.domain.social.service;
 import com.akku.backend.domain.auth.entity.User;
 import com.akku.backend.domain.auth.repository.UserRepository;
 import com.akku.backend.domain.avatar.repository.UserItemRepository;
-import com.akku.backend.domain.social.dto.FriendInviteData;
-import com.akku.backend.domain.social.dto.FriendInformationData;
+import com.akku.backend.domain.donation.entity.ActiveCharity;
+import com.akku.backend.domain.donation.repository.ActiveCharityRepository;
+import com.akku.backend.domain.social.dto.*;
+import com.akku.backend.domain.social.entity.FriendId;
 import com.akku.backend.domain.social.entity.FriendInvite;
+import com.akku.backend.domain.social.exception.SocialErrorCode;
 import com.akku.backend.domain.social.repository.FriendInviteRepository;
+import com.akku.backend.domain.social.repository.FriendRepository;
+import com.akku.backend.domain.user.exception.UserErrorCode;
+import com.akku.backend.global.error.ApiException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -15,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -22,8 +29,10 @@ import java.util.UUID;
 public class FriendService {
 
     private final FriendInviteRepository friendInviteRepository;
+    private final FriendRepository friendRepository;
     private final UserRepository userRepository;
     private final UserItemRepository userItemRepository;
+    private final ActiveCharityRepository activeCharityRepository;
 
     /**
      * 친구 초대 코드 생성 (이미 있으면 기존 코드 반환)
@@ -74,5 +83,70 @@ public class FriendService {
                     return new FriendInformationData(inviter.getId(), inviter.getName(), avatarUrls, true);
                 })
                 .orElse(new FriendInformationData(null, null, List.of(), false));
+    }
+
+    /**
+     * 친구 목록 조회
+     */
+    public FriendListResponse getFriendList(UUID userId) {
+        List<FriendDto> friends = friendRepository.findAllByIdUserId(userId).stream()
+                .map(friend -> {
+                    UUID friendId = friend.getId().getFriendId();
+                    User friendUser = userRepository.findById(friendId).orElse(null);
+                    if (friendUser == null) return null;
+
+                    // 아바타 정보 조회
+                    String avatarImage = userItemRepository.findEquippedItemsByUserId(friendId).stream()
+                            .map(ui -> ui.getItem().getResourceUrl())
+                            .collect(Collectors.joining(","));
+
+                    return FriendDto.builder()
+                            .friendId(friendId)
+                            .name(friendUser.getName())
+                            .avatarImage(avatarImage)
+                            .build();
+                })
+                .filter(java.util.Objects::nonNull)
+                .toList();
+
+        return new FriendListResponse(friends);
+    }
+
+    /**
+     * 친구 삭제
+     */
+    @Transactional
+    public void deleteFriend(UUID userId, UUID friendId) {
+        FriendId id = new FriendId(userId, friendId);
+        friendRepository.deleteById(id);
+    }
+
+    /**
+     * 친구 타운 정보 조회
+     */
+    public FriendTownResponse getFriendTown(UUID userId, UUID friendId) {
+        // 친구 관계 확인
+        if (!friendRepository.existsById(new FriendId(userId, friendId))) {
+            throw new ApiException(SocialErrorCode.SOC_004);
+        }
+
+        User friend = userRepository.findById(friendId)
+                .orElseThrow(() -> new ApiException(UserErrorCode.USER_NOT_FOUND));
+
+        // 아바타 정보 조회
+        List<String> equippedItems = userItemRepository.findEquippedItemsByUserId(friendId).stream()
+                .map(ui -> ui.getItem().getResourceUrl())
+                .toList();
+
+        // 최근 기부처 조회
+        String recentCharityName = activeCharityRepository.findFirstByUserIdOrderByCreatedAtDesc(friendId)
+                .map(ac -> ac.getCharity().getName())
+                .orElse(null);
+
+        return new FriendTownResponse(
+                friend.getName(),
+                new FriendTownResponse.AvatarDto("BASIC", "BASIC", equippedItems),
+                recentCharityName
+        );
     }
 }

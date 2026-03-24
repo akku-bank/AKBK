@@ -32,14 +32,14 @@ const FriendListScreen = ({ navigation, route }) => {
     useEffect(() => {
         if (route?.params?.inviteStatus) {
             if (route.params.inviteStatus === 'success') {
-                Alert.alert('친구 추가 완료', '성공적으로 친구가 추가되었습니다! 🎉');
+                navigation.navigate('FriendSuccess'); // 가입 폭죽 화면으로 라우팅 분기
             } else if (route.params.inviteStatus === 'already_exists') {
-                Alert.alert('알림', '이미 등록된 친구입니다.');
+                navigation.navigate('FriendAlready'); // 전용 프론트 페이지로 분기
             } else {
                 Alert.alert('오류', '유효하지 않은 초대 링크입니다.');
             }
         }
-    }, [route?.params?.inviteStatus]);
+    }, [route?.params?.inviteStatus, navigation]);
 
     // UI/UX 테스트용 임시 딥링크 트리거 함수
     const handleMockInvite = () => {
