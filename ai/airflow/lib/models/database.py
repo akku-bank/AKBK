@@ -13,7 +13,7 @@ class Quiz(Base):
     topic = Column(String(50), nullable=False)
     difficulty = Column(String(10), nullable=False)
     problem_json = Column(JSON, nullable=False)
-    correct_choice_no = Column(Integer, nullable=False)
+    correct_answer = Column(Integer, nullable=False)
     explanation = Column(Text, nullable=False)
     created_at = Column(TIMESTAMP, nullable=False, server_default=func.now())
 
