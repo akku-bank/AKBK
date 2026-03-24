@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
@@ -27,6 +28,18 @@ public interface UserQuizRepository extends JpaRepository<UserQuiz, UserQuizId> 
      */
     Optional<UserQuiz> findTopByUserIdAndCreatedAtBetweenOrderByCreatedAtDesc(
             UUID userId, LocalDateTime from, LocalDateTime to);
+
+    /**
+     * 이번 주(월~일) solved_date 가 설정된 레코드 수 집계.
+     * GreaterThanEqual(>=) + LessThanEqual(<=) 로 월요일·일요일 양쪽 경계값을 모두 포함한다.
+     */
+    long countByUserIdAndSolvedDateGreaterThanEqualAndSolvedDateLessThanEqual(
+            UUID userId, LocalDate from, LocalDate to);
+
+    /**
+     * 특정 날짜에 solved_date 가 설정된 레코드 존재 여부 (오늘 퀴즈 완료 여부 판단용).
+     */
+    boolean existsByUserIdAndSolvedDate(UUID userId, LocalDate solvedDate);
 
     /**
      * 정답 제출 시 중복 보상 방지를 위한 비관적 잠금 조회
