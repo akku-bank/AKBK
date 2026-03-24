@@ -18,14 +18,15 @@ const SignUpScreen = ({ navigation, route }) => {
             return;
         }
 
-        // 간단한 생년월일 형식 검증 (YYYY-MM-DD)
         const birthDateRegex = /^\d{4}-\d{2}-\d{2}$/;
-        const finalBirthDate = birthDateRegex.test(birthDate) ? birthDate : '2015-05-05';
-        // 폼을 강제하지 않기 위해 기본값(개발용) 할당해둡니다.
+        if (!birthDateRegex.test(birthDate.trim())) {
+            Alert.alert('알림', '생년월일은 YYYY-MM-DD 형식으로 입력해주세요.');
+            return;
+        }
 
         setIsLoading(true);
         try {
-            const reqPayload = { role, name, birthDate: finalBirthDate };
+            const reqPayload = { role, name, birthDate: birthDate.trim() };
             console.log('가입 페이로드:', reqPayload);
 
             const response = await api.post('/auth/signup',
