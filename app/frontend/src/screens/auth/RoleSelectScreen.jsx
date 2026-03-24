@@ -1,5 +1,6 @@
 ﻿import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Platform, Image } from 'react-native';
+import CustomText from '../../components/common/CustomText';
 import { RFValue } from 'react-native-responsive-fontsize';
 
 const RoleSelectScreen = ({ navigation, route }) => {
@@ -13,8 +14,8 @@ const RoleSelectScreen = ({ navigation, route }) => {
         <SafeAreaView style={styles.safeArea}>
             <View style={styles.container}>
                 <View style={styles.titleSection}>
-                    <Text style={styles.title}>처음 오셨군요!</Text>
-                    <Text style={styles.subtitle}>어떤 역할로 서비스를 시작할까요?</Text>
+                    <CustomText style={styles.title}>처음 오셨군요!</CustomText>
+                    <CustomText style={styles.subtitle}>어떤 역할로 서비스를 시작할까요?</CustomText>
                 </View>
 
                 <View style={styles.cardSection}>
@@ -28,8 +29,8 @@ const RoleSelectScreen = ({ navigation, route }) => {
                             <Image source={require('../../assets/croco/croco_parents.png')} style={styles.cardImageParent} />
                         </View>
                         <View style={styles.cardTextContainer}>
-                            <Text style={styles.cardTitle}>부모</Text>
-                            <Text style={styles.cardDesc}>아이 용돈과 소비 습관을 관리하고 싶어요.</Text>
+                            <CustomText style={styles.cardTitle}>부모</CustomText>
+                            <CustomText style={styles.cardDesc}>아이 용돈과 소비 습관을 관리하고 싶어요.</CustomText>
                         </View>
                     </TouchableOpacity>
 
@@ -43,8 +44,8 @@ const RoleSelectScreen = ({ navigation, route }) => {
                             <Image source={require('../../assets/croco/croco_face.png')} style={styles.cardImageChild} />
                         </View>
                         <View style={styles.cardTextContainer}>
-                            <Text style={styles.cardTitle}>아이</Text>
-                            <Text style={styles.cardDesc}>용돈을 받고 모으는 재미를 알고 싶어요.</Text>
+                            <CustomText style={styles.cardTitle}>아이</CustomText>
+                            <CustomText style={styles.cardDesc}>용돈을 받고 모으는 재미를 알고 싶어요.</CustomText>
                         </View>
                     </TouchableOpacity>
                 </View>

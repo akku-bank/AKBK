@@ -5,8 +5,12 @@ import com.akku.backend.domain.auth.repository.UserRepository;
 import com.akku.backend.domain.avatar.repository.UserItemRepository;
 import com.akku.backend.domain.social.dto.FriendInviteData;
 import com.akku.backend.domain.social.dto.FriendInformationData;
+import com.akku.backend.domain.social.dto.FriendDto;
+import com.akku.backend.domain.social.dto.FriendListResponse;
+import com.akku.backend.domain.social.entity.FriendId;
 import com.akku.backend.domain.social.entity.FriendInvite;
 import com.akku.backend.domain.social.repository.FriendInviteRepository;
+import com.akku.backend.domain.social.repository.FriendRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -15,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -22,6 +27,7 @@ import java.util.UUID;
 public class FriendService {
 
     private final FriendInviteRepository friendInviteRepository;
+    private final FriendRepository friendRepository;
     private final UserRepository userRepository;
     private final UserItemRepository userItemRepository;
 
@@ -74,5 +80,41 @@ public class FriendService {
                     return new FriendInformationData(inviter.getId(), inviter.getName(), avatarUrls, true);
                 })
                 .orElse(new FriendInformationData(null, null, List.of(), false));
+    }
+
+    /**
+     * 친구 목록 조회
+     */
+    public FriendListResponse getFriendList(UUID userId) {
+        List<FriendDto> friends = friendRepository.findAllByIdUserId(userId).stream()
+                .map(friend -> {
+                    UUID friendId = friend.getId().getFriendId();
+                    User friendUser = userRepository.findById(friendId).orElse(null);
+                    if (friendUser == null) return null;
+
+                    // 아바타 정보 조회
+                    String avatarImage = userItemRepository.findEquippedItemsByUserId(friendId).stream()
+                            .map(ui -> ui.getItem().getResourceUrl())
+                            .collect(Collectors.joining(","));
+
+                    return FriendDto.builder()
+                            .friendId(friendId)
+                            .name(friendUser.getName())
+                            .avatarImage(avatarImage)
+                            .build();
+                })
+                .filter(java.util.Objects::nonNull)
+                .toList();
+
+        return new FriendListResponse(friends);
+    }
+
+    /**
+     * 친구 삭제
+     */
+    @Transactional
+    public void deleteFriend(UUID userId, UUID friendId) {
+        FriendId id = new FriendId(userId, friendId);
+        friendRepository.deleteById(id);
     }
 }
