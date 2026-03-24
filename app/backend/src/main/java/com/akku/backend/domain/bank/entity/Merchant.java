@@ -1,14 +1,14 @@
 package com.akku.backend.domain.bank.entity;
 
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "merchant")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
-@Builder
 public class Merchant {
 
     @Id
@@ -19,7 +19,7 @@ public class Merchant {
     private String merchantName;
 
     @Column(name = "is_green")
-    private Boolean isGreen;
+    private Boolean isGreen = false;
 
     @Column(name = "category_id")
     private Integer categoryId;
