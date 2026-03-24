@@ -10,6 +10,7 @@ import com.akku.backend.domain.auth.service.SsafyFinanceService;
 import com.akku.backend.domain.bank.exception.BankErrorCode;
 import com.akku.backend.domain.bank.repository.CardProductRepository;
 import com.akku.backend.domain.bank.repository.CardRepository;
+import com.akku.backend.domain.bank.repository.MerchantRepository;
 import com.akku.backend.domain.user.exception.UserErrorCode;
 import com.akku.backend.global.error.ApiException;
 import com.akku.backend.global.finance.dto.FinanceCardCreateResponse;
@@ -35,6 +36,7 @@ public class CardService {
 
     private final CardProductRepository cardProductRepository;
     private final CardRepository cardRepository;
+    private final MerchantRepository merchantRepository;
     private final SsafyFinanceService ssafyFinanceService;
     private final UserRepository userRepository;
     private final ApplicationEventPublisher eventPublisher;
@@ -199,11 +201,15 @@ public class CardService {
 
         // 결제 완료 이벤트 발행 — AFTER_COMMIT 이후 challenge 도메인 리스너가 수신
         LocalDate approvalDate = LocalDate.parse(result.transactionDate(), DateTimeFormatter.ofPattern("yyyyMMdd"));
+        boolean isGreen = merchantRepository.findById(result.merchantId())
+                .map(merchant -> Boolean.TRUE.equals(merchant.getIsGreen()))
+                .orElse(false);
         eventPublisher.publishEvent(new CardPaymentEvent(
                 userId,
                 result.categoryName(),
                 result.paymentBalance(),
-                approvalDate
+                approvalDate,
+                isGreen
         ));
     }
 
