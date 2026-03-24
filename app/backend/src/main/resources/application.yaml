@@ -56,6 +56,7 @@ ssafy:
   api:
     base-url: https://finopenapi.ssafy.io/ssafy/api/v1
     key: ${SSAFY_API_KEY:}
+    system-key: ${OFFLINE_PAYMENT_SYSTEM_KEY:}
 
 # Swagger / SpringDoc
 springdoc:
