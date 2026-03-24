@@ -213,7 +213,16 @@
     volumes:
       - ./data/spark:/opt/spark/work-dir
     command: >
-      /bin/bash -c " pip install --no-cache-dir redis psycopg2-binary && /opt/spark/bin/spark-class org.apache.spark.deploy.master.Master &  echo 'Waiting for Master to start...'; sleep 20; /opt/spark/bin/spark-submit  --master spark://spark-master:7077  --conf spark.sql.streaming.checkpointLocation=/opt/spark/work-dir/checkpoints/realtime-report --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.1  /opt/spark/work-dir/realtime_report.py"
+      /bin/bash -c "
+      pip install --no-cache-dir redis psycopg2-binary &&
+      /opt/spark/bin/spark-class org.apache.spark.deploy.master.Master & 
+      echo 'Waiting for Master to start...';
+      sleep 20;
+      /opt/spark/bin/spark-submit 
+      --master spark://spark-master:7077 
+      --conf spark.sql.streaming.checkpointLocation=/opt/spark/work-dir/checkpoints/realtime-report
+      --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.1 
+      /opt/spark/work-dir/realtime_report.py"
 
   spark-worker:
     image: apache/spark:3.5.1-python3
@@ -231,21 +240,21 @@
     volumes:
       - ./data/spark:/opt/spark/work-dir
     command: >
-      /bin/bash -c "pip install redis psycopg2-binary &&  /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077"
+      /bin/bash -c "pip install redis psycopg2-binary && 
+      /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077"
 
   # Redis: 실시간 리포트용 Hot-Data 저장소
   redis:
     image: redis:latest
     container_name: akkubangkku_redis
-    command: redis-server --appendonly yes # [중요] AOF 기능 활성화
+    command: redis-server --appendonly yes  # [중요] AOF 기능 활성화
     ports:
       - "6379:6379"
     volumes:
       - redis_data:/data
     restart: always
-    healthcheck:
-      # 명령 받을 준비 되었는지 확인
-      test: [ "CMD", "redis-cli", "ping" ]
+    healthcheck: # 명령 받을 준비 되었는지 확인
+      test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 3s
       retries: 5
@@ -255,5 +264,4 @@ volumes:
   zookeeper_data:
   kafka_data:
   redis_data:
-
-
+  

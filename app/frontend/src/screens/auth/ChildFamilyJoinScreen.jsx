@@ -16,6 +16,12 @@ const ChildFamilyJoinScreen = ({ navigation, route }) => {
             return;
         }
 
+        const birthDateRegex = /^\d{4}-\d{2}-\d{2}$/;
+        if (!birthDateRegex.test(childBirth.trim())) {
+            Alert.alert('알림', '생년월일은 YYYY-MM-DD 형식으로 입력해주세요.');
+            return;
+        }
+
         try {
             setIsLoading(true);
 
