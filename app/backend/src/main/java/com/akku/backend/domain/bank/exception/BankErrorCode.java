@@ -17,7 +17,8 @@ public enum BankErrorCode implements ErrorCode {
     CARD_NOT_FOUND("BANK_007", HttpStatus.NOT_FOUND, "카드 정보를 찾을 수 없습니다"),
     INVALID_PAYMENT_TOKEN("BANK_008", HttpStatus.UNAUTHORIZED, "유효하지 않거나 이미 사용된 결제 토큰입니다"),
     EXPIRED_PAYMENT_TOKEN("BANK_009", HttpStatus.GONE, "만료된 결제 토큰입니다"),
-    PRIMARY_ACCOUNT_NOT_SET("BANK_010", HttpStatus.BAD_REQUEST, "주계좌가 설정되지 않았습니다");
+    PRIMARY_ACCOUNT_NOT_SET("BANK_010", HttpStatus.BAD_REQUEST, "주계좌가 설정되지 않았습니다"),
+    INVALID_AUTH_CODE("BANK_011", HttpStatus.BAD_REQUEST, "인증 코드가 일치하지 않습니다.");
 
     private final String code;
     private final HttpStatus status;

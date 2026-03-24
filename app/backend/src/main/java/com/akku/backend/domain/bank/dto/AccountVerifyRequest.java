@@ -4,7 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
-public record AccountLinkRequest(
+public record AccountVerifyRequest(
     @NotBlank(message = "은행 코드는 필수입니다.")
     @Size(min = 3, max = 3, message = "은행 코드는 3자리여야 합니다.")
     String bankCode,
