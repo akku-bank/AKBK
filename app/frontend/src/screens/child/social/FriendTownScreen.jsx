@@ -1,34 +1,79 @@
-﻿import React from 'react';
-import { View, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { scale, verticalScale } from 'react-native-size-matters';
 import ChildAvatar from '../../../components/child/avatar/ChildAvatar';
 import CustomText from '../../../components/common/CustomText';
 import api from '../../../api/axios';
 
+const DEFAULT_EQUIP_STATE = {
+    hair: 'hair_boy',
+    face: 'base_boy',
+    upper: 'upper_base',
+    lower: 'lower_base',
+    shoe: 'none',
+    hat: 'none',
+    wing: 'none'
+};
+
+const ASSET_KEY_BY_FILE = {
+    'hair2.png': { category: 'hair', value: 'hair2' },
+    'hair_boy.png': { category: 'hair', value: 'hair_boy' },
+    'hair_girl.png': { category: 'hair', value: 'hair_girl' },
+    'upper_1.png': { category: 'upper', value: 'upper_1' },
+    'upper_base.png': { category: 'upper', value: 'upper_base' },
+    'lower_1.png': { category: 'lower', value: 'lower_1' },
+    'lower_base.png': { category: 'lower', value: 'lower_base' },
+    'hat.png': { category: 'hat', value: 'hat' },
+    'shoe.png': { category: 'shoe', value: 'shoe' },
+    'wing.png': { category: 'wing', value: 'wing' },
+};
+
+const mapAvatarUrlsToEquipState = (equippedItems = []) => {
+    const nextState = { ...DEFAULT_EQUIP_STATE };
+
+    equippedItems.forEach(url => {
+        const fileName = url?.split('/').pop();
+        const mapped = ASSET_KEY_BY_FILE[fileName];
+        if (mapped) {
+            nextState[mapped.category] = mapped.value;
+        }
+    });
+
+    return nextState;
+};
+
 const FriendTownScreen = ({ route, navigation }) => {
-    // 파라미터 방어 코드
-    const friendName = route?.params?.friendName || '친구';
+    const friendId = route?.params?.friendId;
+    const fallbackFriendName = route?.params?.friendName || '친구';
 
-    /* ==========================================
-       [진짜 친구 타운(프로필/뱃지) 조회 API]
-       ========================================== 
-    // const [friendTownInfo, setFriendTownInfo] = useState({});
-    // useEffect(() => {
-    //     const fetchFriendTown = async () => {
-    //         try {
-    //             const res = await api.get(`/friends/${route?.params?.friendId}/town`);
-    //             setFriendTownInfo(res.data.data);
-    //         } catch(e) { console.error('Friend Town Fetch Error', e); }
-    //     };
-    //     if(route?.params?.friendId) fetchFriendTown();
-    // }, [route?.params?.friendId]);
-    ========================================== */
+    const [isLoading, setIsLoading] = useState(false);
+    const [friendTownInfo, setFriendTownInfo] = useState(null);
+    const [equipState, setEquipState] = useState(DEFAULT_EQUIP_STATE);
 
-    // 임시 뱃지 데이터
-    const MOCK_BADGES = [
-        { id: 1, name: '지구 수호자', icon: '🌍' },
-        { id: 2, name: '동물 사랑', icon: '🐶' }
-    ];
+    useEffect(() => {
+        const fetchFriendTown = async () => {
+            if (!friendId) return;
+
+            try {
+                setIsLoading(true);
+                const res = await api.get(`/social/town/${friendId}`);
+                const data = res?.data?.data;
+
+                setFriendTownInfo(data);
+                setEquipState(mapAvatarUrlsToEquipState(data?.avatar?.equippedItems || []));
+            } catch (e) {
+                console.error('Friend Town Fetch Error', e);
+                Alert.alert('오류', e.response?.data?.message || '친구 타운 정보를 불러오지 못했습니다.');
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchFriendTown();
+    }, [friendId]);
+
+    const friendName = friendTownInfo?.friendName || fallbackFriendName;
+    const recentCharity = friendTownInfo?.recentCharity;
 
     return (
         <SafeAreaView style={styles.safeArea}>
@@ -41,67 +86,50 @@ const FriendTownScreen = ({ route, navigation }) => {
             </View>
 
             <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
-
                 <View style={styles.townScene}>
                     <CustomText style={styles.townGreeting}>"안녕! 내 타운에 온 걸 환영해!"</CustomText>
-                    <ChildAvatar
-                        size={200}
-                        equipState={{
-                            hair: 'none',
-                            face: 'base_smile',
-                            upper: 'none',
-                            lower: 'none',
-                            shoe: 'none',
-                            hat: 'none',
-                            wing: 'none'
-                        }}
-                    />
+                    {isLoading ? (
+                        <View style={styles.loadingBox}>
+                            <ActivityIndicator color="#4D7C0F" />
+                        </View>
+                    ) : (
+                        <ChildAvatar size={200} equipState={equipState} />
+                    )}
                     <View style={styles.platform} />
                 </View>
 
                 <View style={styles.infoCard}>
-                    <CustomText style={styles.infoTitle}>자랑스러운 뱃지 컬렉션</CustomText>
-                    <CustomText style={styles.infoSubtitle}>{friendName}가 세상을 따뜻하게 만든 기록이에요.</CustomText>
+                    <CustomText style={styles.infoTitle}>최근 기부 활동</CustomText>
+                    <CustomText style={styles.infoSubtitle}>
+                        {recentCharity
+                            ? `${friendName}의 최근 관심 기부처예요.`
+                            : `${friendName}의 최근 기부 정보가 아직 없어요.`}
+                    </CustomText>
 
-                    <View style={styles.badgeRow}>
-                        {MOCK_BADGES.map(badge => (
-                            <View key={badge.id} style={styles.badgeItem}>
-                                <View style={styles.badgeIconBox}>
-                                    <CustomText style={styles.badgeIcon}>{badge.icon}</CustomText>
-                                </View>
-                                <CustomText style={styles.badgeName}>{badge.name}</CustomText>
-                            </View>
-                        ))}
+                    <View style={styles.recentCard}>
+                        <CustomText style={styles.recentLabel}>최근 기부처</CustomText>
+                        <CustomText style={styles.recentValue}>
+                            {recentCharity || '표시할 기부 정보가 없어요'}
+                        </CustomText>
                     </View>
                 </View>
 
                 <View style={styles.actionRow}>
-                    <TouchableOpacity style={[styles.actionButton, styles.giftButton]} activeOpacity={0.8} onPress={() => {
-                        /* ==========================================
-                           [진짜 선물 보내기 API]
-                           ========================================== 
-                        try {
-                            // await api.post(`/friends/${route?.params?.friendId}/gift`, { itemId: 1 });
-                            // Alert.alert('성공', '선물을 보냈어요!');
-                        } catch(e) { console.error('Gift Send Error', e); }
-                        ========================================== */
-                    }}>
+                    <TouchableOpacity
+                        style={[styles.actionButton, styles.giftButton]}
+                        activeOpacity={0.8}
+                        onPress={() => Alert.alert('안내', '선물 보내기 API는 아직 연결되지 않았습니다.')}
+                    >
                         <CustomText style={styles.actionButtonText}>선물 보내기 🎁</CustomText>
                     </TouchableOpacity>
-                    <TouchableOpacity style={[styles.actionButton, styles.pokeButton]} activeOpacity={0.8} onPress={() => {
-                        /* ==========================================
-                           [진짜 콕 찌르기 API]
-                           ========================================== 
-                        try {
-                            // await api.post(`/friends/${route?.params?.friendId}/poke`);
-                            // Alert.alert('성공', '친구를 콕 찔렀어요!');
-                        } catch(e) { console.error('Poke Send Error', e); }
-                        ========================================== */
-                    }}>
+                    <TouchableOpacity
+                        style={[styles.actionButton, styles.pokeButton]}
+                        activeOpacity={0.8}
+                        onPress={() => Alert.alert('안내', '콕 찌르기 API는 아직 연결되지 않았습니다.')}
+                    >
                         <CustomText style={[styles.actionButtonText, { color: '#A3E635' }]}>콕 찌르기 👉</CustomText>
                     </TouchableOpacity>
                 </View>
-
             </ScrollView>
         </SafeAreaView>
     );
@@ -141,7 +169,7 @@ const styles = StyleSheet.create({
         paddingBottom: verticalScale(40),
     },
     townScene: {
-        backgroundColor: '#ECFCCB', // 라임 배경색
+        backgroundColor: '#ECFCCB',
         borderRadius: scale(24),
         height: verticalScale(350),
         alignItems: 'center',
@@ -160,10 +188,14 @@ const styles = StyleSheet.create({
         borderRadius: scale(20),
         fontSize: scale(14),
         fontWeight: 'bold',
-        color: '#4D7C0F', // 진한 라임 텍스트
+        color: '#4D7C0F',
         overflow: 'hidden',
     },
-    avatarWrapper: {
+    loadingBox: {
+        width: scale(200),
+        height: scale(200),
+        alignItems: 'center',
+        justifyContent: 'center',
         zIndex: 2,
     },
     platform: {
@@ -171,7 +203,7 @@ const styles = StyleSheet.create({
         bottom: verticalScale(-40),
         width: scale(300),
         height: verticalScale(120),
-        backgroundColor: '#D9F99D', // 라임 배경
+        backgroundColor: '#D9F99D',
         borderRadius: scale(150),
         transform: [{ scaleY: 0.5 }],
         zIndex: 1,
@@ -198,29 +230,21 @@ const styles = StyleSheet.create({
         color: '#6B7280',
         marginBottom: verticalScale(16),
     },
-    badgeRow: {
-        flexDirection: 'row',
-        gap: scale(16),
+    recentCard: {
+        backgroundColor: '#F8FAFC',
+        borderRadius: scale(16),
+        paddingHorizontal: scale(16),
+        paddingVertical: verticalScale(14),
     },
-    badgeItem: {
-        alignItems: 'center',
-    },
-    badgeIconBox: {
-        width: scale(56),
-        height: scale(56),
-        borderRadius: scale(28),
-        backgroundColor: '#FEF3C7', // 노란색 배경
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: verticalScale(8),
-    },
-    badgeIcon: {
-        fontSize: scale(28),
-    },
-    badgeName: {
+    recentLabel: {
         fontSize: scale(12),
-        fontWeight: '600',
-        color: '#4B5563',
+        color: '#6B7280',
+        marginBottom: verticalScale(6),
+    },
+    recentValue: {
+        fontSize: scale(15),
+        fontWeight: 'bold',
+        color: '#111',
     },
     actionRow: {
         flexDirection: 'row',
