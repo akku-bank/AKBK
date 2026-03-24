@@ -3,6 +3,7 @@ package com.akku.backend.domain.bank.service;
 import com.akku.backend.domain.auth.entity.User;
 import com.akku.backend.domain.auth.repository.UserRepository;
 import com.akku.backend.domain.auth.service.SsafyFinanceService;
+import com.akku.backend.domain.bank.event.CardPaymentEvent;
 import com.akku.backend.domain.bank.dto.CardCreateRequest;
 import com.akku.backend.domain.bank.dto.CardHistoryRequest;
 import com.akku.backend.domain.bank.dto.CardHistoryResponse;
@@ -18,6 +19,9 @@ import com.akku.backend.global.finance.dto.FinanceCardPaymentResponse;
 import com.akku.backend.global.finance.dto.FinanceCardProductListResponse;
 import com.akku.backend.global.finance.dto.FinanceCardTransactionHistoryResponse;
 import com.akku.backend.global.finance.dto.FinanceUserCardListResponse;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -58,6 +62,12 @@ class CardServiceTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private com.akku.backend.domain.bank.repository.MerchantRepository merchantRepository;
+
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
+
     @Test
     @DisplayName("카드 결제 처리 테스트")
     void processPaymentTest() {
@@ -67,15 +77,33 @@ class CardServiceTest {
         User user = User.builder().id(userId).userKey("user-key").build();
         Card card = Card.builder().id(cardId).userId(userId).cardNo("1234").cvc("123").build();
         CardPaymentRequest request = new CardPaymentRequest(cardId, 1L, 10000L);
-
         given(userRepository.findById(userId)).willReturn(Optional.of(user));
         given(cardRepository.findById(cardId)).willReturn(Optional.of(card));
+        FinanceCardPaymentResponse.Rec mockResult = new FinanceCardPaymentResponse.Rec(
+                1L, "CAT-1", "편의점", 1L, "CU", "20240324", "123456", 10000L
+        );
+        given(ssafyFinanceService.createCardTransaction(anyString(), anyString(), anyString(), anyLong(), anyLong()))
+                .willReturn(mockResult);
+        com.akku.backend.domain.bank.entity.Merchant merchant = mock(com.akku.backend.domain.bank.entity.Merchant.class);
+        given(merchant.getIsGreen()).willReturn(false);
+        given(merchantRepository.findById(1L)).willReturn(Optional.of(merchant));
 
         // when
-        cardService.processPayment(userId, request);
+        TransactionSynchronizationManager.initSynchronization();
+        try {
+            cardService.processPayment(userId, request);
+
+            // 트랜잭션 동기화 리스트에서 afterCommit을 강제로 실행하여 이벤트 발행 확인
+            for (TransactionSynchronization sync : TransactionSynchronizationManager.getSynchronizations()) {
+                sync.afterCommit();
+            }
+        } finally {
+            TransactionSynchronizationManager.clearSynchronization();
+        }
 
         // then
         verify(ssafyFinanceService).createCardTransaction(eq("user-key"), eq("1234"), eq("123"), eq(1L), eq(10000L));
+        verify(eventPublisher, times(1)).publishEvent(any(CardPaymentEvent.class));
     }
 
     @Test

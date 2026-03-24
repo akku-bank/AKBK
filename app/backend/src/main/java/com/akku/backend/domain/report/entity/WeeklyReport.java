@@ -54,4 +54,11 @@ public class WeeklyReport {
 
     @Column(name = "spending_ai_summary", columnDefinition = "TEXT")
     private String spendingAiSummary;
+
+    @Column(name = "start_balance")
+    private Long startBalance;
+
+    public void updateStartBalance(Long startBalance) {
+        this.startBalance = startBalance;
+    }
 }

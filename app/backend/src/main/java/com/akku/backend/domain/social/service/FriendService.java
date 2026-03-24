@@ -6,6 +6,7 @@ import com.akku.backend.domain.avatar.repository.UserItemRepository;
 import com.akku.backend.domain.donation.entity.ActiveCharity;
 import com.akku.backend.domain.donation.repository.ActiveCharityRepository;
 import com.akku.backend.domain.social.dto.*;
+import com.akku.backend.domain.social.entity.Friend;
 import com.akku.backend.domain.social.entity.FriendId;
 import com.akku.backend.domain.social.entity.FriendInvite;
 import com.akku.backend.domain.social.exception.SocialErrorCode;
@@ -83,6 +84,32 @@ public class FriendService {
                     return new FriendInformationData(inviter.getId(), inviter.getName(), avatarUrls, true);
                 })
                 .orElse(new FriendInformationData(null, null, List.of(), false));
+    }
+
+    /**
+     * 친구 코드 입력으로 친구 맺기
+     * 초대 코드를 입력하면 양방향 친구 관계를 즉시 생성한다.
+     */
+    @Transactional
+    public void acceptFriendInvite(UUID userId, String inviteCode) {
+        FriendInvite invite = friendInviteRepository.findById(inviteCode)
+                .orElseThrow(() -> new ApiException(SocialErrorCode.SOC_001));
+
+        UUID inviterId = invite.getUserId();
+
+        // 자기 자신에게 친구 요청 방지
+        if (inviterId.equals(userId)) {
+            throw new ApiException(SocialErrorCode.SOC_003);
+        }
+
+        // 이미 친구인지 확인
+        if (friendRepository.existsById(new FriendId(userId, inviterId))) {
+            throw new ApiException(SocialErrorCode.SOC_002);
+        }
+
+        // 양방향 친구 관계 생성
+        friendRepository.save(Friend.builder().id(new FriendId(userId, inviterId)).build());
+        friendRepository.save(Friend.builder().id(new FriendId(inviterId, userId)).build());
     }
 
     /**
