@@ -23,6 +23,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
@@ -37,6 +38,8 @@ public class AccountService {
     private final AccountRepository accountRepository;
     private final AccountVerificationRepository accountVerificationRepository;
     private final SsafyFinanceService ssafyFinanceService;
+ 
+    private static final String DEFAULT_ACCOUNT_TYPE_UNIQUE_NO = "001-1-85a431ad30cd43";
 
     /**
      * 계좌 생성 (부모가 자녀의 계좌를 생성)
@@ -64,15 +67,15 @@ public class AccountService {
             throw new ApiException(BankErrorCode.ALREADY_EXISTS_ACCOUNT);
         }
 
-        // 금융망 API 호출하여 계좌 생성
-        FinanceAccountCreateResponse.Rec rec = ssafyFinanceService.createAccount(child.getUserKey(), request.accountType());
+        // 금융망 API 호출하여 계좌 생성 (고정 상품 번호 사용)
+        FinanceAccountCreateResponse.Rec rec = ssafyFinanceService.createAccount(child.getUserKey(), DEFAULT_ACCOUNT_TYPE_UNIQUE_NO);
 
         // 우리 DB에 계좌 정보 저장
         Account account = Account.builder()
                 .userId(child.getId())
                 .accountNumber(rec.accountNo())
                 .bankCode(rec.bankCode())
-                .type(request.accountType())
+                .type("CASH")
                 .balance(0L)
                 .build();
         
@@ -91,13 +94,20 @@ public class AccountService {
         List<FinanceAccountListResponse.AccountDetails> finAccounts = ssafyFinanceService.getAccounts(user.getUserKey());
         
         List<AccountInfo> accounts = finAccounts.stream()
-                .map(acc -> new AccountInfo(
+                .map(acc -> {
+                    String bankName = acc.bankName();
+                    // 은행 코드가 001인 경우 싸피은행으로 표시
+                    if ("001".equals(acc.bankCode())) {
+                        bankName = "싸피은행";
+                    }
+                    return new AccountInfo(
                         acc.bankCode(),
-                        acc.bankName(),
+                        bankName,
                         acc.accountNo(),
                         acc.accountName(),
                         acc.accountBalance()
-                ))
+                    );
+                })
                 .collect(Collectors.toList());
         
         return new AccountListResponse(accounts);

@@ -52,6 +52,20 @@ public class FriendController {
     }
 
     /**
+     * 친구 코드 입력으로 친구 맺기
+     */
+    @Operation(summary = "친구 코드로 친구 맺기", description = "친구 초대 코드를 입력하여 친구를 맺습니다.")
+    @PostMapping("/friends/invites/{inviteCode}/accept")
+    @PreAuthorize("hasRole('CHILD')")
+    public ResponseEntity<ApiResponse<Void>> acceptFriendInvite(
+            @AuthenticationPrincipal UUID userId,
+            @PathVariable String inviteCode
+    ) {
+        friendService.acceptFriendInvite(userId, inviteCode);
+        return ResponseEntity.ok(ApiResponse.success("친구가 되었습니다."));
+    }
+
+    /**
      * 친구 목록 조회
      */
     @Operation(summary = "친구 목록 조회", description = "나의 친구 목록을 조회합니다.")
