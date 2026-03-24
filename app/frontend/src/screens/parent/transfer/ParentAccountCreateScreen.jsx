@@ -43,8 +43,7 @@ const ParentAccountCreateScreen = ({ navigation }) => {
                             }
 
                             await api.post('/bank/accounts', {
-                                childId: targetChild.childId,
-                                accountType: 'CASH'
+                                childId: targetChild.childId
                             });
 
                             Alert.alert('완료', '계좌가 성공적으로 개설되었습니다!', [{ text: '확인', onPress: () => navigation.goBack() }]);

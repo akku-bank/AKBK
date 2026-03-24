@@ -13,6 +13,7 @@ desktop.ini
 
 ### Environment Variables ###
 .env
+local.properties
 
 ### Java & Build Tools ###
 # Compiled class file

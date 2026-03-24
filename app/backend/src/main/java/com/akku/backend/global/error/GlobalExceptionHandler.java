@@ -64,6 +64,19 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * 외부 API 호출 오류 처리
+     */
+    @ExceptionHandler(org.springframework.web.client.RestClientResponseException.class)
+    public ResponseEntity<ApiResponse<Void>> handleRestClientException(org.springframework.web.client.RestClientResponseException e) {
+        String traceId = MDC.get(TRACE_ID_KEY);
+        String responseBody = e.getResponseBodyAsString();
+        log.error("[External API Error] TraceId: {}, Status: {}, Body: {}", traceId, e.getStatusCode(), responseBody, e);
+        
+        ApiResponse<Void> response = ApiResponse.fail("외부 API 호출 중 오류가 발생했습니다: " + responseBody, null, traceId);
+        return ResponseEntity.status(e.getStatusCode()).body(response);
+    }
+
+    /**
      * 서버 내부 오류 처리 (Unhandled Exception)
      */
     @ExceptionHandler(Exception.class)
@@ -72,7 +85,7 @@ public class GlobalExceptionHandler {
 
         log.error("[Unexpected Error] TraceId: {}", traceId, e);
 
-        ApiResponse<Void> response = ApiResponse.fail("서버 내부 오류가 발생했습니다.", null, traceId);
+        ApiResponse<Void> response = ApiResponse.fail("서버 내부 오류가 발생했습니다: " + e.getMessage(), null, traceId);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
     }
 }
