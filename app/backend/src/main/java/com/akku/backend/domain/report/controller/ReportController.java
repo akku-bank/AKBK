@@ -48,7 +48,7 @@ public class ReportController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
     ) {
         if (date == null) {
-            date = LocalDate.now();
+            date = LocalDate.now(clock);
         }
         WeeklyReportResponse response = reportService.getChildWeeklyReport(parentId, childId, date);
         return ResponseEntity.ok(ApiResponse.success("자녀 주간 리포트 조회 성공", response));
