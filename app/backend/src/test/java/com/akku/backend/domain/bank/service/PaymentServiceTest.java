@@ -139,7 +139,7 @@ class PaymentServiceTest {
 
             given(offlinePaymentTokenRepository.findByToken(qrToken)).willReturn(Optional.of(token));
             given(userRepository.findById(childId)).willReturn(Optional.of(child));
-            given(accountRepository.findByUserIdAndType(childId, "CASH")).willReturn(Optional.of(account));
+            given(accountRepository.findByUserIdAndTypeWithLock(childId, "CASH")).willReturn(Optional.of(account));
             given(merchantRepository.findByMerchantName(anyString())).willReturn(Optional.of(merchant));
             given(transactionRepository.save(any(Transaction.class))).willReturn(transaction);
             given(jellingRepository.findById(childId)).willReturn(Optional.of(jelling));
@@ -206,7 +206,7 @@ class PaymentServiceTest {
 
             given(offlinePaymentTokenRepository.findByToken(qrToken)).willReturn(Optional.of(token));
             given(userRepository.findById(childId)).willReturn(Optional.of(child));
-            given(accountRepository.findByUserIdAndType(childId, "CASH")).willReturn(Optional.of(account));
+            given(accountRepository.findByUserIdAndTypeWithLock(childId, "CASH")).willReturn(Optional.of(account));
 
             ApiException exception = assertThrows(ApiException.class, () -> paymentService.approvePayment(request, SYSTEM_API_KEY));
             assertEquals(BankErrorCode.INSUFFICIENT_BALANCE, exception.getErrorCode());

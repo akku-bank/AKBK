@@ -45,6 +45,13 @@ public class PaymentService {
     @Value("${ssafy.api.system-key}")
     private String systemApiKey;
 
+    @jakarta.annotation.PostConstruct
+    public void validateConfig() {
+        if (systemApiKey == null || systemApiKey.trim().isEmpty()) {
+            throw new IllegalStateException("필수 설정값 'ssafy.api.system-key'가 누락되었습니다. 환경 변수 'OFFLINE_PAYMENT_SYSTEM_KEY'를 확인해 주세요.");
+        }
+    }
+
     @Transactional
     public OfflinePaymentTokenResponse issueOfflinePaymentToken(UUID userId) {
         // 사용자 확인 및 권한 검증
@@ -100,7 +107,7 @@ public class PaymentService {
         User child = userRepository.findById(token.getUserId())
                 .orElseThrow(() -> new ApiException(AuthErrorCode.ACCESS_DENIED));
 
-        Account account = accountRepository.findByUserIdAndType(child.getId(), "CASH")
+        Account account = accountRepository.findByUserIdAndTypeWithLock(child.getId(), "CASH")
                 .orElseThrow(() -> new ApiException(BankErrorCode.ACCOUNT_NOT_FOUND));
 
         // 잔액 확인
@@ -111,10 +118,8 @@ public class PaymentService {
         // 가맹점 정보 조회 또는 생성
         Merchant merchant = merchantRepository.findByMerchantName(request.getMerchantName())
                 .orElseGet(() -> {
-                    // 가입되지 않은 가맹점의 경우 임시 생성 (ID는 랜덤 또는 해시)
-                    long merchantId = Math.abs(request.getMerchantName().hashCode());
+                    // 가입되지 않은 가맹점의 경우 임시 생성
                     return merchantRepository.save(Merchant.builder()
-                            .merchantId(merchantId)
                             .merchantName(request.getMerchantName())
                             .subCategoryName(request.getCategory())
                             .build());

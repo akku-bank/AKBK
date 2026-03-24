@@ -4,7 +4,9 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "merchant")
+@Table(name = "merchant", uniqueConstraints = {
+    @UniqueConstraint(name = "uk_merchant_name", columnNames = {"merchant_name"})
+})
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
@@ -12,10 +14,11 @@ import lombok.*;
 public class Merchant {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "merchant_id")
     private Long merchantId;
 
-    @Column(name = "merchant_name", nullable = false)
+    @Column(name = "merchant_name", nullable = false, unique = true)
     private String merchantName;
 
     @Column(name = "is_green")

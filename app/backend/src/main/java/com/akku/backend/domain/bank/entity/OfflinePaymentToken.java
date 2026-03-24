@@ -36,6 +36,9 @@ public class OfflinePaymentToken {
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
+    @Version
+    private Long version;
+
     public boolean isExpired() {
         return LocalDateTime.now().isAfter(expiredAt);
     }

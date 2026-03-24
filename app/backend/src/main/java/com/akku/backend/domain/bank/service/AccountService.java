@@ -148,26 +148,26 @@ public class AccountService {
         User parent = userRepository.findById(parentId)
                 .orElseThrow(() -> new ApiException(UserErrorCode.USER_NOT_FOUND));
 
-        // 2. 부모 계좌 조회 및 소유권 검증
-        Account parentAccount = accountRepository.findById(parentAccountId)
+        // 2. 부모/자녀 계좌 조회 및 비관적 락 획득 (데드락 방지를 위해 ID 순서로 락 획득 고려할 수 있으나, 여기서는 비즈니스 흐름상 부모->자녀 고정)
+        // 먼저 부모 계좌 획득
+        Account parentAccount = accountRepository.findByIdWithLock(parentAccountId)
                 .orElseThrow(() -> new ApiException(BankErrorCode.ACCOUNT_NOT_FOUND));
         if (!parentAccount.getUserId().equals(parentId)) {
             throw new ApiException(BankErrorCode.ACCOUNT_NOT_FOUND);
         }
 
-        // 3. 자녀 계좌 조회 및 소유권 검증
-        Account childAccount = accountRepository.findById(childAccountId)
+        // 자녀 계좌 획득
+        Account childAccount = accountRepository.findByIdWithLock(childAccountId)
                 .orElseThrow(() -> new ApiException(BankErrorCode.ACCOUNT_NOT_FOUND));
         if (!childAccount.getUserId().equals(childId)) {
             throw new ApiException(BankErrorCode.ACCOUNT_NOT_FOUND);
         }
 
-        // 4. 잔액 검증
-        if (parentAccount.getBalance() < amount) {
-            throw new ApiException(BankErrorCode.INSUFFICIENT_BALANCE);
-        }
+        // 3. 로컬 잔액 검증 및 차감/증가 (동기화)
+        parentAccount.deductBalance(amount);
+        childAccount.addBalance(amount);
 
-        // 5. 금융망 이체 API 호출 (실패 시 RuntimeException → @Transactional 롤백)
+        // 4. 금융망 이체 API 호출 (실패 시 RuntimeException → @Transactional 롤백됨)
         ssafyFinanceService.transfer(
                 parent.getUserKey(),
                 parentAccount.getBankCode(),
