@@ -3,15 +3,17 @@ package com.akku.backend.domain.social.service;
 import com.akku.backend.domain.auth.entity.User;
 import com.akku.backend.domain.auth.repository.UserRepository;
 import com.akku.backend.domain.avatar.repository.UserItemRepository;
-import com.akku.backend.domain.social.dto.FriendDto;
-import com.akku.backend.domain.social.dto.FriendInviteData;
-import com.akku.backend.domain.social.dto.FriendInformationData;
-import com.akku.backend.domain.social.dto.FriendListResponse;
+import com.akku.backend.domain.donation.entity.ActiveCharity;
+import com.akku.backend.domain.donation.entity.Charity;
+import com.akku.backend.domain.donation.repository.ActiveCharityRepository;
+import com.akku.backend.domain.social.dto.*;
 import com.akku.backend.domain.social.entity.Friend;
 import com.akku.backend.domain.social.entity.FriendId;
 import com.akku.backend.domain.social.entity.FriendInvite;
 import com.akku.backend.domain.social.repository.FriendInviteRepository;
 import com.akku.backend.domain.social.repository.FriendRepository;
+import com.akku.backend.domain.social.exception.SocialErrorCode;
+import com.akku.backend.global.error.ApiException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -47,6 +49,9 @@ class FriendServiceTest {
 
     @Mock
     private UserItemRepository userItemRepository;
+
+    @Mock
+    private ActiveCharityRepository activeCharityRepository;
 
     @Test
     @DisplayName("초대 코드 생성 - 기존 코드가 없으면 새로 생성한다")
@@ -192,5 +197,52 @@ class FriendServiceTest {
 
         // then
         verify(friendRepository, times(1)).deleteById(id);
+    }
+
+    @Test
+    @DisplayName("친구 타운 정보 조회 - 성공적으로 정보를 반환한다")
+    void getFriendTown_Success() {
+        // given
+        UUID userId = UUID.randomUUID();
+        UUID friendId = UUID.randomUUID();
+        User friendUser = User.builder()
+                .id(friendId)
+                .name("친구")
+                .build();
+
+        Charity charity = Charity.builder()
+                .name("유니세프")
+                .build();
+        ActiveCharity activeCharity = ActiveCharity.builder()
+                .charity(charity)
+                .build();
+
+        given(friendRepository.existsById(new FriendId(userId, friendId))).willReturn(true);
+        given(userRepository.findById(friendId)).willReturn(Optional.of(friendUser));
+        given(userItemRepository.findEquippedItemsByUserId(friendId)).willReturn(List.of());
+        given(activeCharityRepository.findFirstByUserIdOrderByCreatedAtDesc(friendId)).willReturn(Optional.of(activeCharity));
+
+        // when
+        FriendTownResponse result = friendService.getFriendTown(userId, friendId);
+
+        // then
+        assertThat(result.friendName()).isEqualTo("친구");
+        assertThat(result.recentCharity()).isEqualTo("유니세프");
+        assertThat(result.avatar().eyeType()).isEqualTo("BASIC");
+    }
+
+    @Test
+    @DisplayName("친구 타운 정보 조회 - 친구 관계가 아니면 예외를 던진다")
+    void getFriendTown_NotFriends_ThrowsException() {
+        // given
+        UUID userId = UUID.randomUUID();
+        UUID friendId = UUID.randomUUID();
+
+        given(friendRepository.existsById(new FriendId(userId, friendId))).willReturn(false);
+
+        // when & then
+        ApiException exception = org.junit.jupiter.api.Assertions.assertThrows(ApiException.class, () -> 
+                friendService.getFriendTown(userId, friendId));
+        assertThat(exception.getErrorCode()).isEqualTo(SocialErrorCode.SOC_004);
     }
 }
