@@ -40,12 +40,13 @@ public class Account {
     @Builder.Default
     private Boolean isPrimary = false;
 
-    public void deductBalance(long amount) {
-        if (this.balance < amount) {
-            throw new IllegalArgumentException("Insufficient balance");
-        }
-        this.balance -= amount;
-    }
+    @CreationTimestamp
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
+
+    @UpdateTimestamp
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
 
     public void designateAsPrimary() {
         this.isPrimary = true;
@@ -55,11 +56,10 @@ public class Account {
         this.isPrimary = false;
     }
 
-    @CreationTimestamp
-    @Column(name = "created_at", updatable = false)
-    private LocalDateTime createdAt;
-
-    @UpdateTimestamp
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
+    public void deductBalance(long amount) {
+        if (this.balance < amount) {
+            throw new IllegalArgumentException("Insufficient balance");
+        }
+        this.balance -= amount;
+    }
 }
