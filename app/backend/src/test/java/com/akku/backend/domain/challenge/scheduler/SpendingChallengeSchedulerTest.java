@@ -23,12 +23,13 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.verify;
 
 /**
- * SpendingChallengeScheduler 단위 테스트.
+ * SpendingChallengeScheduler / SpendingChallengeStepService 단위 테스트.
  *
  * 날짜 격리 전략:
  *  LocalDate.now() 는 MockedStatic<LocalDate> 으로 교체한다.
@@ -41,6 +42,11 @@ import static org.mockito.Mockito.verify;
  *  → lastSunday = 2025-01-05
  *  → lastMonday = 2024-12-30
  *  → thisMonday = 2025-01-06
+ *
+ * 리팩토링 반영:
+ *  settleLastWeek / activateThisWeek 는 SpendingChallengeStepService 로 분리됨.
+ *  해당 STEP 테스트는 stepService 를 InjectMocks 대상으로 사용하고,
+ *  독립성 테스트는 SpendingChallengeScheduler + mocked stepService 로 검증한다.
  */
 @ExtendWith(MockitoExtension.class)
 @DisplayName("SpendingChallengeScheduler")
@@ -49,8 +55,9 @@ class SpendingChallengeSchedulerTest {
     @Mock
     private SpendingChallengeRepository spendingChallengeRepository;
 
+    // STEP 메서드(settleLastWeek, activateThisWeek)는 StepService 에 위치
     @InjectMocks
-    private SpendingChallengeScheduler scheduler;
+    private SpendingChallengeStepService stepService;
 
     // 고정 기준일 — 월요일 00:00 실행 시점 시뮬레이션
     private static final LocalDate FIXED_MONDAY      = LocalDate.of(2025, 1, 6);
@@ -86,7 +93,6 @@ class SpendingChallengeSchedulerTest {
         @Test
         @DisplayName("정산 대상 없음 → calculateCurrentSpending 호출 없음")
         void no_challenges_to_settle() {
-            // Given
             try (MockedStatic<LocalDate> mockedDate = mockStatic(LocalDate.class, Answers.CALLS_REAL_METHODS)) {
                 mockedDate.when(LocalDate::now).thenReturn(FIXED_MONDAY);
 
@@ -94,18 +100,16 @@ class SpendingChallengeSchedulerTest {
                         .willReturn(List.of());
 
                 // When
-                scheduler.settleLastWeek();
+                stepService.settleLastWeek();
 
                 // Then
                 verify(spendingChallengeRepository).findAllByStatusAndEndDate(ChallengeStatus.IN_PROGRESS, FIXED_LAST_SUNDAY);
-                // calculateCurrentSpending 은 호출되지 않음 — Mockito strict stubbing 으로 검증됨
             }
         }
 
         @Test
         @DisplayName("누적 소비 < 목표 → SUCCESS 판정")
         void under_target_spending_results_in_success() {
-            // Given
             try (MockedStatic<LocalDate> mockedDate = mockStatic(LocalDate.class, Answers.CALLS_REAL_METHODS)) {
                 mockedDate.when(LocalDate::now).thenReturn(FIXED_MONDAY);
 
@@ -120,7 +124,7 @@ class SpendingChallengeSchedulerTest {
                         .willReturn(8_000L); // 8000 <= 10000
 
                 // When
-                scheduler.settleLastWeek();
+                stepService.settleLastWeek();
 
                 // Then
                 assertThat(challenge.getStatus()).isEqualTo(ChallengeStatus.SUCCESS);
@@ -130,7 +134,6 @@ class SpendingChallengeSchedulerTest {
         @Test
         @DisplayName("누적 소비 == 목표 → SUCCESS 판정 (경계값: 초과 아님)")
         void exactly_at_target_spending_results_in_success() {
-            // Given
             try (MockedStatic<LocalDate> mockedDate = mockStatic(LocalDate.class, Answers.CALLS_REAL_METHODS)) {
                 mockedDate.when(LocalDate::now).thenReturn(FIXED_MONDAY);
 
@@ -142,10 +145,10 @@ class SpendingChallengeSchedulerTest {
                 given(spendingChallengeRepository.findAllByStatusAndEndDate(ChallengeStatus.IN_PROGRESS, FIXED_LAST_SUNDAY))
                         .willReturn(List.of(challenge));
                 given(spendingChallengeRepository.calculateCurrentSpending(any(), anyString(), any(), any()))
-                        .willReturn(10_000L); // 10000 <= 10000 → SUCCESS (조건: > 일 때만 FAIL)
+                        .willReturn(10_000L); // 10000 <= 10000 → SUCCESS
 
                 // When
-                scheduler.settleLastWeek();
+                stepService.settleLastWeek();
 
                 // Then
                 assertThat(challenge.getStatus()).isEqualTo(ChallengeStatus.SUCCESS);
@@ -155,7 +158,6 @@ class SpendingChallengeSchedulerTest {
         @Test
         @DisplayName("누적 소비 > 목표 → FAIL 판정 (실시간 이벤트 누락 방어 로직)")
         void over_target_spending_results_in_fail() {
-            // Given
             try (MockedStatic<LocalDate> mockedDate = mockStatic(LocalDate.class, Answers.CALLS_REAL_METHODS)) {
                 mockedDate.when(LocalDate::now).thenReturn(FIXED_MONDAY);
 
@@ -170,7 +172,7 @@ class SpendingChallengeSchedulerTest {
                         .willReturn(12_000L); // 12000 > 10000
 
                 // When
-                scheduler.settleLastWeek();
+                stepService.settleLastWeek();
 
                 // Then
                 assertThat(challenge.getStatus()).isEqualTo(ChallengeStatus.FAIL);
@@ -180,7 +182,6 @@ class SpendingChallengeSchedulerTest {
         @Test
         @DisplayName("복수 챌린지 → SUCCESS/FAIL 각각 독립 판정")
         void multiple_challenges_judged_independently() {
-            // Given
             try (MockedStatic<LocalDate> mockedDate = mockStatic(LocalDate.class, Answers.CALLS_REAL_METHODS)) {
                 mockedDate.when(LocalDate::now).thenReturn(FIXED_MONDAY);
 
@@ -202,7 +203,7 @@ class SpendingChallengeSchedulerTest {
                         .willReturn(15_000L); // FAIL
 
                 // When
-                scheduler.settleLastWeek();
+                stepService.settleLastWeek();
 
                 // Then
                 assertThat(successChallenge.getStatus()).isEqualTo(ChallengeStatus.SUCCESS);
@@ -218,7 +219,6 @@ class SpendingChallengeSchedulerTest {
         @Test
         @DisplayName("활성화 대상 없음 → 아무 처리 없이 종료")
         void no_challenges_to_activate() {
-            // Given
             try (MockedStatic<LocalDate> mockedDate = mockStatic(LocalDate.class, Answers.CALLS_REAL_METHODS)) {
                 mockedDate.when(LocalDate::now).thenReturn(FIXED_MONDAY);
 
@@ -226,7 +226,7 @@ class SpendingChallengeSchedulerTest {
                         .willReturn(List.of());
 
                 // When
-                scheduler.activateThisWeek();
+                stepService.activateThisWeek();
 
                 // Then
                 verify(spendingChallengeRepository).findAllByStatusAndStartDate(ChallengeStatus.APPROVED, FIXED_MONDAY);
@@ -236,7 +236,6 @@ class SpendingChallengeSchedulerTest {
         @Test
         @DisplayName("APPROVED 챌린지 → IN_PROGRESS 전환")
         void approved_challenges_become_in_progress() {
-            // Given
             try (MockedStatic<LocalDate> mockedDate = mockStatic(LocalDate.class, Answers.CALLS_REAL_METHODS)) {
                 mockedDate.when(LocalDate::now).thenReturn(FIXED_MONDAY);
 
@@ -256,7 +255,7 @@ class SpendingChallengeSchedulerTest {
                         .willReturn(List.of(challenge));
 
                 // When
-                scheduler.activateThisWeek();
+                stepService.activateThisWeek();
 
                 // Then
                 assertThat(challenge.getStatus()).isEqualTo(ChallengeStatus.IN_PROGRESS);
@@ -266,7 +265,6 @@ class SpendingChallengeSchedulerTest {
         @Test
         @DisplayName("복수 APPROVED 챌린지 → 모두 IN_PROGRESS 전환")
         void multiple_approved_challenges_all_become_in_progress() {
-            // Given
             try (MockedStatic<LocalDate> mockedDate = mockStatic(LocalDate.class, Answers.CALLS_REAL_METHODS)) {
                 mockedDate.when(LocalDate::now).thenReturn(FIXED_MONDAY);
 
@@ -290,7 +288,7 @@ class SpendingChallengeSchedulerTest {
                         .willReturn(List.of(challenge1, challenge2));
 
                 // When
-                scheduler.activateThisWeek();
+                stepService.activateThisWeek();
 
                 // Then
                 assertThat(challenge1.getStatus()).isEqualTo(ChallengeStatus.IN_PROGRESS);
@@ -306,41 +304,35 @@ class SpendingChallengeSchedulerTest {
         @Test
         @DisplayName("STEP 1 예외 발생 시에도 STEP 2(챌린지 활성화)가 반드시 실행됨")
         void step1_failure_does_not_prevent_step2() {
-            // Given
+            // 독립성 테스트는 SpendingChallengeScheduler + mocked StepService 로 검증
+            SpendingChallengeStepService mockStepService = mock(SpendingChallengeStepService.class);
+            SpendingChallengeScheduler scheduler = new SpendingChallengeScheduler(mockStepService);
+
             try (MockedStatic<LocalDate> mockedDate = mockStatic(LocalDate.class, Answers.CALLS_REAL_METHODS)) {
                 mockedDate.when(LocalDate::now).thenReturn(FIXED_MONDAY);
 
-                // STEP 1: DB 오류 시뮬레이션
-                given(spendingChallengeRepository.findAllByStatusAndEndDate(any(), any()))
-                        .willThrow(new RuntimeException("DB 오류 시뮬레이션"));
+                // STEP 1: 예외 시뮬레이션 (void 메서드는 willThrow().given() 패턴 사용)
+                willThrow(new RuntimeException("DB 오류 시뮬레이션")).given(mockStepService).settleLastWeek();
 
-                // STEP 2: 빈 목록 반환 (정상 동작)
-                given(spendingChallengeRepository.findAllByStatusAndStartDate(any(), any()))
-                        .willReturn(List.of());
-
-                // When — settleWeeklyChallenges 는 STEP 1 예외를 catch 하므로 여기까지 전파되지 않아야 함
+                // When
                 scheduler.settleWeeklyChallenges();
 
-                // Then — STEP 2 의 findAllByStatusAndStartDate 가 실제로 호출되었는지 확인
-                verify(spendingChallengeRepository)
-                        .findAllByStatusAndStartDate(ChallengeStatus.APPROVED, FIXED_MONDAY);
+                // Then — STEP 2 가 실제로 호출되었는지 확인
+                verify(mockStepService).activateThisWeek();
             }
         }
 
         @Test
         @DisplayName("STEP 2 예외 발생 시에도 settleWeeklyChallenges 가 정상 종료됨")
         void step2_failure_does_not_propagate() {
-            // Given
+            SpendingChallengeStepService mockStepService = mock(SpendingChallengeStepService.class);
+            SpendingChallengeScheduler scheduler = new SpendingChallengeScheduler(mockStepService);
+
             try (MockedStatic<LocalDate> mockedDate = mockStatic(LocalDate.class, Answers.CALLS_REAL_METHODS)) {
                 mockedDate.when(LocalDate::now).thenReturn(FIXED_MONDAY);
 
-                // STEP 1: 정상 (빈 목록)
-                given(spendingChallengeRepository.findAllByStatusAndEndDate(any(), any()))
-                        .willReturn(List.of());
-
-                // STEP 2: DB 오류 시뮬레이션
-                given(spendingChallengeRepository.findAllByStatusAndStartDate(any(), any()))
-                        .willThrow(new RuntimeException("STEP 2 DB 오류"));
+                // STEP 2: 예외 시뮬레이션 (void 메서드는 willThrow().given() 패턴 사용)
+                willThrow(new RuntimeException("STEP 2 DB 오류")).given(mockStepService).activateThisWeek();
 
                 // When / Then — 예외가 전파되지 않아야 함
                 org.junit.jupiter.api.Assertions.assertDoesNotThrow(
