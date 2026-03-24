@@ -127,7 +127,8 @@ class SpendingChallengeServiceTest {
             UUID userId   = UUID.randomUUID();
             UUID savedId  = UUID.randomUUID();
 
-            given(userRepository.findById(userId)).willReturn(Optional.of(mock(User.class)));
+            User child = mockChild(userId, UUID.randomUUID());
+            given(userRepository.findById(userId)).willReturn(Optional.of(child));
             given(spendingChallengeRepository.existsByUserAndSubCategoryNameAndStartDate(
                     any(User.class), anyString(), any(LocalDate.class)))
                     .willReturn(false);
@@ -135,7 +136,7 @@ class SpendingChallengeServiceTest {
             SpendingChallenge saved = mock(SpendingChallenge.class);
             given(saved.getId()).willReturn(savedId);
             given(saved.getStatus()).willReturn(ChallengeStatus.PENDING);
-            given(spendingChallengeRepository.save(any(SpendingChallenge.class))).willReturn(saved);
+            given(spendingChallengeRepository.saveAndFlush(any(SpendingChallenge.class))).willReturn(saved);
 
             SpendingChallengeDto.CreateRequest request = mock(SpendingChallengeDto.CreateRequest.class);
             given(request.getCategory()).willReturn("카페");
@@ -149,7 +150,7 @@ class SpendingChallengeServiceTest {
             // then
             assertThat(response.getChallengeId()).isEqualTo(savedId);
             assertThat(response.getStatus()).isEqualTo(ChallengeStatus.PENDING.name());
-            verify(spendingChallengeRepository).save(any(SpendingChallenge.class));
+            verify(spendingChallengeRepository).saveAndFlush(any(SpendingChallenge.class));
         }
 
         @Test
@@ -158,7 +159,8 @@ class SpendingChallengeServiceTest {
             // given
             UUID userId = UUID.randomUUID();
 
-            given(userRepository.findById(userId)).willReturn(Optional.of(mock(User.class)));
+            User child = mockChild(userId, UUID.randomUUID());
+            given(userRepository.findById(userId)).willReturn(Optional.of(child));
             given(spendingChallengeRepository.existsByUserAndSubCategoryNameAndStartDate(
                     any(User.class), anyString(), any(LocalDate.class)))
                     .willReturn(true);
@@ -172,7 +174,7 @@ class SpendingChallengeServiceTest {
                     .extracting(e -> ((ApiException) e).getErrorCode())
                     .isEqualTo(ChallengeErrorCode.DUPLICATE_CHALLENGE);
 
-            verify(spendingChallengeRepository, never()).save(any());
+            verify(spendingChallengeRepository, never()).saveAndFlush(any());
         }
     }
 
@@ -791,7 +793,7 @@ class SpendingChallengeServiceTest {
                     .status(ChallengeStatus.REWARD_REQUESTED)
                     .startDate(LocalDate.now().minusDays(6)).endDate(LocalDate.now())
                     .build();
-            given(spendingChallengeRepository.findById(challengeId)).willReturn(Optional.of(challenge));
+            given(spendingChallengeRepository.findByIdForUpdate(challengeId)).willReturn(Optional.of(challenge));
 
             SpendingChallengeDto.RewardTransferRequest request = mock(SpendingChallengeDto.RewardTransferRequest.class);
             given(request.getParentAccountId()).willReturn(parentAccountId);
@@ -843,7 +845,7 @@ class SpendingChallengeServiceTest {
                     .status(ChallengeStatus.REWARD_REQUESTED)
                     .startDate(LocalDate.now().minusDays(6)).endDate(LocalDate.now())
                     .build();
-            given(spendingChallengeRepository.findById(challengeId)).willReturn(Optional.of(challenge));
+            given(spendingChallengeRepository.findByIdForUpdate(challengeId)).willReturn(Optional.of(challenge));
 
             SpendingChallengeDto.RewardTransferRequest request = mock(SpendingChallengeDto.RewardTransferRequest.class);
             given(request.getParentAccountId()).willReturn(UUID.randomUUID());
@@ -888,7 +890,7 @@ class SpendingChallengeServiceTest {
                     .status(ChallengeStatus.REWARD_REQUESTED)
                     .startDate(LocalDate.now().minusDays(6)).endDate(LocalDate.now())
                     .build();
-            given(spendingChallengeRepository.findById(challengeId)).willReturn(Optional.of(challenge));
+            given(spendingChallengeRepository.findByIdForUpdate(challengeId)).willReturn(Optional.of(challenge));
 
             SpendingChallengeDto.RewardTransferRequest request = mock(SpendingChallengeDto.RewardTransferRequest.class);
 
@@ -922,7 +924,7 @@ class SpendingChallengeServiceTest {
                     .status(ChallengeStatus.REWARDED)  // 이미 보상 완료
                     .startDate(LocalDate.now().minusDays(6)).endDate(LocalDate.now())
                     .build();
-            given(spendingChallengeRepository.findById(challengeId)).willReturn(Optional.of(challenge));
+            given(spendingChallengeRepository.findByIdForUpdate(challengeId)).willReturn(Optional.of(challenge));
 
             SpendingChallengeDto.RewardTransferRequest request = mock(SpendingChallengeDto.RewardTransferRequest.class);
 
