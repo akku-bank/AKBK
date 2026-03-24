@@ -5,6 +5,7 @@ import jakarta.persistence.EntityManagerFactory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
+import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
 import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
@@ -19,6 +20,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 /**
  * 자녀 소비 레벨 및 점수를 업데이트하는 Spring Batch 설정
  */
+@EnableBatchProcessing
 @Configuration
 @RequiredArgsConstructor
 public class WeeklyLevelBatchConfig {
