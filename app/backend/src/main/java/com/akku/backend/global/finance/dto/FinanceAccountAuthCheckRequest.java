@@ -1,7 +1,9 @@
 package com.akku.backend.global.finance.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public record FinanceAccountAuthCheckRequest(
-    String accountNo,
-    String authText,
-    String authCode
+    @JsonProperty("accountNo") String accountNo,
+    @JsonProperty("authText") String authText,
+    @JsonProperty("authCode") String authCode
 ) {}
