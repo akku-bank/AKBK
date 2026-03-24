@@ -12,6 +12,7 @@ import org.springframework.batch.item.ItemProcessor;
 import org.springframework.stereotype.Component;
 
 import java.time.DayOfWeek;
+import java.util.UUID;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Objects;

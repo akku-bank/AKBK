@@ -64,6 +64,7 @@ public class GlobalExceptionHandler {
     }
 
     /**
+<<<<<<< Updated upstream
      * 외부 API 호출 오류 처리
      */
     @ExceptionHandler(org.springframework.web.client.RestClientResponseException.class)
@@ -77,6 +78,8 @@ public class GlobalExceptionHandler {
     }
 
     /**
+=======
+>>>>>>> Stashed changes
      * 서버 내부 오류 처리 (Unhandled Exception)
      */
     @ExceptionHandler(Exception.class)
