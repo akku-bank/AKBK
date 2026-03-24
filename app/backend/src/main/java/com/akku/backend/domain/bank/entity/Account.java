@@ -55,4 +55,11 @@ public class Account {
     public void revokePrimary() {
         this.isPrimary = false;
     }
+
+    public void deductBalance(long amount) {
+        if (this.balance < amount) {
+            throw new IllegalArgumentException("Insufficient balance");
+        }
+        this.balance -= amount;
+    }
 }
