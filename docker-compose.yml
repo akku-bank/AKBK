@@ -82,6 +82,9 @@
       - "8000:8000"
     restart: always
     command: uvicorn ai.main:app --host 0.0.0.0 --port 8000 --reload
+    networks:
+      - default
+      - proxy_net
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.6.0
@@ -174,6 +177,9 @@
       - KAFKA_BOOTSTRAP_SERVERS=akkubangkku_kafka:29092
       - OFFLINE_PAYMENT_SYSTEM_KEY=${OFFLINE_PAYMENT_SYSTEM_KEY}
     restart: always
+    networks:
+      - default
+      - proxy_net
 
   frontend:
     build:
@@ -256,4 +262,9 @@ volumes:
   kafka_data:
   redis_data:
 
-
+# 외부 네트워크 생성 필수: docker network create akku_proxy_net
+# 서버에서 한 번만 실행하여 akku_proxy_net 네트워크를 만들어야 nginx와 통신 가능
+networks:
+  proxy_net:
+    external: true
+    name: akku_proxy_net
