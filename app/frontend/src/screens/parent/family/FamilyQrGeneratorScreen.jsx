@@ -1,5 +1,5 @@
 ﻿import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, SafeAreaView, TouchableOpacity, Image, ActivityIndicator, Modal, TextInput, Alert } from 'react-native';
+import { View, StyleSheet, SafeAreaView, TouchableOpacity, Modal, TextInput, Alert } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 import { scale, verticalScale } from 'react-native-size-matters';
 import CustomText from '../../../components/common/CustomText';
@@ -12,6 +12,25 @@ const FamilyQrGeneratorScreen = ({ navigation }) => {
     const [isModalVisible, setModalVisible] = useState(false);
     const [memberName, setMemberName] = useState('');
     const [memberBirth, setMemberBirth] = useState('');
+
+    const syncQrState = (qrRes) => {
+        if (!qrRes?.qrCode) {
+            return;
+        }
+
+        setQrData(qrRes.qrCode);
+
+        if (qrRes.qrExpiresAt) {
+            const remainingSeconds = Math.max(
+                0,
+                Math.floor((new Date(qrRes.qrExpiresAt).getTime() - Date.now()) / 1000)
+            );
+            setTimeLeft(remainingSeconds);
+            return;
+        }
+
+        setTimeLeft(300);
+    };
 
     const handleAddMember = async () => {
         if (!memberName || !memberBirth) {
@@ -46,10 +65,7 @@ const FamilyQrGeneratorScreen = ({ navigation }) => {
         const fetchQr = async () => {
             try {
                 const res = await api.get('/families/qr');
-                const qrRes = res.data?.data;
-                if (!qrRes) return;
-                setQrData(qrRes.qrCode);
-                setTimeLeft(qrRes.expiresIn || 300);
+                syncQrState(res.data?.data);
             } catch (e) { console.error('QR Fetch Error:', e); }
         };
         fetchQr();
@@ -84,8 +100,11 @@ const FamilyQrGeneratorScreen = ({ navigation }) => {
 
                 <View style={styles.qrCard}>
                     <View style={styles.qrImageBox}>
-                        {/* 더미 QR 이미지. 실제 구현시 react-native-qrcode-svg 등 사용 */}
-                        <Image source={require('../../../assets/qr.png')} style={styles.qrImage} resizeMode="contain" />
+                        {qrData ? (
+                            <QRCode value={qrData} size={scale(148)} />
+                        ) : (
+                            <CustomText style={styles.qrLoadingText}>QR 코드를 불러오는 중입니다.</CustomText>
+                        )}
                     </View>
                     <CustomText style={styles.timerText}>인증 유효시간 {formatTime(timeLeft)}</CustomText>
                     {qrData && (
@@ -98,10 +117,7 @@ const FamilyQrGeneratorScreen = ({ navigation }) => {
                 <TouchableOpacity style={styles.refreshBtn} onPress={async () => {
                     try {
                         const res = await api.post('/families/qr/reissue');
-                        const qrRes = res.data?.data;
-                        if (!qrRes) return;
-                        setQrData(qrRes.qrCode);
-                        setTimeLeft(qrRes.expiresIn || 300);
+                        syncQrState(res.data?.data);
                     } catch (e) { console.error('QR Reissue Error', e); }
                 }}>
                     <CustomText style={styles.refreshBtnText}>🔄 QR 코드 갱신</CustomText>
@@ -166,7 +182,7 @@ const styles = StyleSheet.create({
 
     qrCard: { backgroundColor: '#F9FAFB', padding: scale(32), borderRadius: scale(24), alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: verticalScale(4) }, shadowOpacity: 0.1, shadowRadius: scale(8), elevation: 4 },
     qrImageBox: { width: scale(180), height: scale(180), backgroundColor: '#FFFFFF', borderRadius: scale(16), padding: scale(16), marginBottom: verticalScale(20), justifyContent: 'center', alignItems: 'center' },
-    qrImage: { width: '100%', height: '100%' },
+    qrLoadingText: { fontSize: scale(14), color: '#6B7280', textAlign: 'center', lineHeight: 20 },
     timerText: { fontSize: scale(16), fontWeight: 'bold', color: '#EF4444' },
 
     refreshBtn: { marginTop: verticalScale(32), padding: scale(12), borderRadius: scale(12), backgroundColor: '#F3F4F6' },
