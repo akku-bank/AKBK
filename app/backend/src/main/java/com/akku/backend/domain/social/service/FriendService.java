@@ -8,6 +8,7 @@ import com.akku.backend.domain.donation.repository.ActiveCharityRepository;
 import com.akku.backend.domain.social.dto.*;
 import com.akku.backend.domain.social.entity.FriendId;
 import com.akku.backend.domain.social.entity.FriendInvite;
+import com.akku.backend.domain.social.exception.SocialErrorCode;
 import com.akku.backend.domain.social.repository.FriendInviteRepository;
 import com.akku.backend.domain.social.repository.FriendRepository;
 import com.akku.backend.domain.user.exception.UserErrorCode;
@@ -123,7 +124,12 @@ public class FriendService {
     /**
      * 친구 타운 정보 조회
      */
-    public FriendTownResponse getFriendTown(UUID friendId) {
+    public FriendTownResponse getFriendTown(UUID userId, UUID friendId) {
+        // 친구 관계 확인
+        if (!friendRepository.existsById(new FriendId(userId, friendId))) {
+            throw new ApiException(SocialErrorCode.SOC_004);
+        }
+
         User friend = userRepository.findById(friendId)
                 .orElseThrow(() -> new ApiException(UserErrorCode.USER_NOT_FOUND));
 

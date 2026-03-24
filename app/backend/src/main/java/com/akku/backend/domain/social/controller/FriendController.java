@@ -85,9 +85,10 @@ public class FriendController {
     @GetMapping("/town/{friendId}")
     @PreAuthorize("hasRole('CHILD')")
     public ResponseEntity<ApiResponse<FriendTownResponse>> getFriendTown(
+            @AuthenticationPrincipal UUID userId,
             @PathVariable UUID friendId
     ) {
-        FriendTownResponse data = friendService.getFriendTown(friendId);
+        FriendTownResponse data = friendService.getFriendTown(userId, friendId);
         return ResponseEntity.ok(ApiResponse.success("친구 타운 정보를 조회했습니다.", data));
     }
 }
