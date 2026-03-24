@@ -32,9 +32,8 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-security'
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
-	implementation 'org.springframework.boot:spring-boot-starter-batch'
-	implementation 'org.springframework.batch:spring-batch-core'
-	implementation 'org.springframework.batch:spring-batch-infrastructure'
+	// TODO: Spring Batch 6.x (Spring Boot 4.x 호환 버전) 출시 후 재활성화
+	// implementation 'org.springframework.boot:spring-boot-starter-batch'
 	implementation 'org.springframework.boot:spring-boot-starter-json'
 	implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
 	implementation 'org.flywaydb:flyway-database-postgresql'
@@ -46,13 +45,8 @@ dependencies {
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'
 	runtimeOnly 'org.postgresql:postgresql'
 	annotationProcessor 'org.projectlombok:lombok'
-	testImplementation 'org.springframework.boot:spring-boot-starter-data-jpa-test'
-	testImplementation 'org.springframework.boot:spring-boot-starter-flyway-test'
-	testImplementation 'org.springframework.boot:spring-boot-starter-kafka-test'
-	testImplementation 'org.springframework.boot:spring-boot-starter-security-test'
-	testImplementation 'org.springframework.boot:spring-boot-starter-validation-test'
-	testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
-	testImplementation 'org.springframework.batch:spring-batch-test'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	// testImplementation 'org.springframework.batch:spring-batch-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 	implementation 'com.github.gavlyukovskiy:p6spy-spring-boot-starter:1.9.1'
 	implementation 'io.github.cdimascio:dotenv-java:3.1.0'
@@ -61,6 +55,20 @@ dependencies {
 	// ShedLock — 다중 서버 환경에서 스케줄러 중복 실행 방지 (JDBC 방식: 별도 인프라 불필요)
 	implementation 'net.javacrumbs.shedlock:shedlock-spring:5.16.0'
 	implementation 'net.javacrumbs.shedlock:shedlock-provider-jdbc-template:5.16.0'
+}
+
+// TODO: Spring Batch 6.x (Spring Boot 4.x 호환 버전) 출시 후 아래 블록 제거
+sourceSets {
+	main {
+		java {
+			exclude 'com/akku/backend/domain/report/batch/**'
+		}
+	}
+	test {
+		java {
+			exclude 'com/akku/backend/domain/report/batch/**'
+		}
+	}
 }
 
 tasks.named('test') {
