@@ -73,7 +73,7 @@ class CardPaymentEventListenerTest {
     }
 
     private CardPaymentEvent buildEvent(UUID userId, String category) {
-        return new CardPaymentEvent(userId, category, 3_000L, LocalDate.of(2025, 1, 8));
+        return new CardPaymentEvent(userId, category, 3_000L, LocalDate.of(2025, 1, 8), false);
     }
 
     // --- test cases ---
