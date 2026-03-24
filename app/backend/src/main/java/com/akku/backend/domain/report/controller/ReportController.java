@@ -12,6 +12,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Clock;
 import java.time.LocalDate;
 import java.util.UUID;
 
@@ -22,6 +23,7 @@ import java.util.UUID;
 public class ReportController {
 
     private final ReportService reportService;
+    private final Clock clock;
 
     @Operation(summary = "내 주간 리포트 조회", description = "로그인한 사용자의 주간 소비 및 활동 리포트를 조회합니다.")
     @GetMapping("/me/weekly")
@@ -31,7 +33,7 @@ public class ReportController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
     ) {
         if (date == null) {
-            date = LocalDate.now();
+            date = LocalDate.now(clock);
         }
         WeeklyReportResponse response = reportService.getWeeklyReport(userId, date);
         return ResponseEntity.ok(ApiResponse.success("주간 리포트 조회 성공", response));
