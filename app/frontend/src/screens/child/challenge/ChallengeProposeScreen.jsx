@@ -10,6 +10,7 @@ const CATEGORIES = ['간식', '쇼핑', '게임', '기타'];
 const ChallengeProposeScreen = ({ navigation }) => {
     const [selectedCategory, setSelectedCategory] = useState(CATEGORIES[0]);
     const [goalAmount, setGoalAmount] = useState('');
+    const [rewardAmount, setRewardAmount] = useState('');
     const [memo, setMemo] = useState('');
 
     useEffect(() => {
@@ -28,10 +29,16 @@ const ChallengeProposeScreen = ({ navigation }) => {
             return;
         }
 
+        if (!rewardAmount || isNaN(rewardAmount)) {
+            Alert.alert('알림', '보상 금액을 정확히 입력해주세요.');
+            return;
+        }
+
         try {
             await api.post('/challenges/spending', {
-                subCategoryName: selectedCategory,
-                targetAmount: parseInt(goalAmount),
+                category: selectedCategory,
+                targetSpending: parseInt(goalAmount, 10),
+                rewardAmount: parseInt(rewardAmount, 10),
             });
             Alert.alert('제안 완료', `부모님께 "${selectedCategory}" 지출 줄이기 챌린지를 제안했어요!`, [{ text: '확인', onPress: () => navigation.goBack() }]);
         } catch (e) {
@@ -80,6 +87,19 @@ const ChallengeProposeScreen = ({ navigation }) => {
                             keyboardType="numeric"
                             value={goalAmount}
                             onChangeText={setGoalAmount}
+                        />
+                        <CustomText style={styles.currencyText}>원</CustomText>
+                    </View>
+
+                    <CustomText style={styles.sectionLabel}>성공하면 얼마를 받을까요? (보상 금액)</CustomText>
+                    <View style={styles.inputContainer}>
+                        <CustomTextInput
+                            style={styles.amountInput}
+                            placeholder="예: 1000"
+                            placeholderTextColor="#9CA3AF"
+                            keyboardType="numeric"
+                            value={rewardAmount}
+                            onChangeText={setRewardAmount}
                         />
                         <CustomText style={styles.currencyText}>원</CustomText>
                     </View>
