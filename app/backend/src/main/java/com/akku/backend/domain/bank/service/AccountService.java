@@ -7,11 +7,15 @@ import com.akku.backend.domain.auth.service.SsafyFinanceService;
 import com.akku.backend.domain.bank.dto.*;
 import com.akku.backend.domain.bank.entity.Account;
 import com.akku.backend.domain.bank.repository.AccountRepository;
+import com.akku.backend.domain.bank.entity.AccountVerification;
+import com.akku.backend.domain.bank.repository.AccountVerificationRepository;
 import com.akku.backend.domain.user.exception.UserErrorCode;
 import com.akku.backend.domain.bank.exception.BankErrorCode;
 import com.akku.backend.domain.family.entity.FamilyProfileEntity;
 import com.akku.backend.domain.family.repository.FamilyProfileRepository;
 import com.akku.backend.global.error.ApiException;
+import com.akku.backend.global.finance.dto.FinanceAccountAuthCheckResponse;
+import com.akku.backend.global.finance.dto.FinanceAccountAuthResponse;
 import com.akku.backend.global.finance.dto.FinanceAccountCreateResponse;
 import com.akku.backend.global.finance.dto.FinanceAccountListResponse;
 import com.akku.backend.global.finance.dto.FinanceTransferResponse;
@@ -21,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
 @Service
@@ -30,6 +35,7 @@ public class AccountService {
     private final UserRepository userRepository;
     private final FamilyProfileRepository familyProfileRepository;
     private final AccountRepository accountRepository;
+    private final AccountVerificationRepository accountVerificationRepository;
     private final SsafyFinanceService ssafyFinanceService;
 
     /**
@@ -97,34 +103,6 @@ public class AccountService {
         return new AccountListResponse(accounts);
     }
 
-    /**
-     * 타행 계좌 연동
-     */
-    @Transactional
-    public void linkExternalAccount(UUID userId, AccountLinkRequest request) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ApiException(UserErrorCode.USER_NOT_FOUND));
-
-        // 금융망 연동 호출 전 우리 DB 중복 검사
-        boolean isAlreadyLinked = accountRepository.existsByAccountNumberAndBankCode(request.accountNumber(), request.bankCode());
-        if (isAlreadyLinked) {
-             throw new ApiException(BankErrorCode.ALREADY_EXISTS_ACCOUNT);
-        }
-
-        // 금융망 API 호출하여 계좌 연동 처리
-        ssafyFinanceService.linkAccount(user.getUserKey(), request.bankCode(), request.accountNumber());
-
-        // 우리 DB에도 연동된 계좌 정보 저장
-        Account account = Account.builder()
-                .userId(user.getId())
-                .accountNumber(request.accountNumber())
-                .bankCode(request.bankCode())
-                .type("EXTERNAL") // 타행 계좌
-                .balance(0L) // 실제 잔액은 추후
-                .build();
-
-        accountRepository.save(account);
-    }
 
     /**
      * 내부 전용 보상 송금 (PIN 검증 없음 — Challenge 도메인에서만 호출)
@@ -238,5 +216,124 @@ public class AccountService {
         );
 
         return new TransferResponse(finRec.transactionUniqueNo(), withdrawalAccount.getBalance() - request.amount());
+    }
+
+    /**
+     * 1원 송금 인증 요청
+     */
+    @Transactional
+    public void request1WonVerification(UUID userId, AccountVerifyRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ApiException(UserErrorCode.USER_NOT_FOUND));
+
+        // 이미 연동된 계좌인지 확인
+        boolean isAlreadyLinked = accountRepository.existsByAccountNumberAndBankCode(request.accountNumber(), request.bankCode());
+        if (isAlreadyLinked) {
+            throw new ApiException(BankErrorCode.ALREADY_EXISTS_ACCOUNT);
+        }
+
+        // 기존 동일 계좌 인증 정보 삭제 (새로운 요청으로 갱신)
+        accountVerificationRepository.deleteAllByUserIdAndAccountNumberAndBankCode(user.getId(), request.accountNumber(), request.bankCode());
+
+        // 인증코드 생성 (4자리 숫자)
+        String authCode = String.format("%04d", ThreadLocalRandom.current().nextInt(10000));
+        
+        // 송금 메시지: "SSAFY {code}"
+        String authText = "SSAFY " + authCode;
+
+        // 인증 정보 저장 (5분 유효)
+        AccountVerification verification = AccountVerification.builder()
+                .userId(user.getId())
+                .accountNumber(request.accountNumber())
+                .bankCode(request.bankCode())
+                .authCode(authCode)
+                .authText("SSAFY") // 검증 시 사용할 접두어
+                .status("PENDING")
+                .expiresAt(LocalDateTime.now().plusMinutes(5))
+                .build();
+        
+        accountVerificationRepository.save(verification);
+
+        // 금융망 API 호출
+        ssafyFinanceService.openAccountAuth(user.getUserKey(), request.accountNumber(), authText);
+    }
+
+    /**
+     * 1원 송금 인증 확인 및 계좌 연동
+     */
+    @Transactional
+    public AccountLinkResponse verifyAccountAndLink(UUID userId, AccountVerifyConfirmRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ApiException(UserErrorCode.USER_NOT_FOUND));
+
+        // DB에서 인증 정보 조회
+        AccountVerification verification = accountVerificationRepository.findTopByUserIdAndAccountNumberAndBankCodeOrderByCreatedAtDesc(
+                        user.getId(), request.accountNumber(), request.bankCode())
+                .orElseThrow(() -> new ApiException(BankErrorCode.INVALID_AUTH_CODE));
+
+        if (verification.isExpired()) {
+            throw new ApiException(BankErrorCode.EXPIRED_PAYMENT_TOKEN);
+        }
+
+        // 금융망 API 호출하여 코드 검증
+        FinanceAccountAuthCheckResponse.Rec verifyRec = ssafyFinanceService.checkAuthCode(
+                user.getUserKey(), 
+                request.accountNumber(), 
+                verification.getAuthText(), 
+                request.authCode()
+        );
+
+        if (!"SUCCESS".equals(verifyRec.status())) {
+            throw new ApiException(BankErrorCode.INVALID_AUTH_CODE);
+        }
+
+        // 우리 DB 중복 검사
+        boolean isAlreadyLinked = accountRepository.existsByAccountNumberAndBankCode(request.accountNumber(), request.bankCode());
+        if (isAlreadyLinked) {
+            throw new ApiException(BankErrorCode.ALREADY_EXISTS_ACCOUNT);
+        }
+
+        // 인증 성공 시 계좌 연동 (우리 DB 저장)
+        Account account = Account.builder()
+                .userId(user.getId())
+                .accountNumber(request.accountNumber())
+                .bankCode(request.bankCode())
+                .type("EXTERNAL")
+                .balance(0L)
+                .build();
+
+        Account savedAccount = accountRepository.save(account);
+
+        // 사용 완료된 인증 정보 삭제
+        accountVerificationRepository.deleteAllByUserIdAndAccountNumberAndBankCode(user.getId(), request.accountNumber(), request.bankCode());
+
+        // 은행 이름 매핑
+        String bankName = getBankName(request.bankCode());
+
+        return new AccountLinkResponse(savedAccount.getId(), bankName);
+    }
+
+    private String getBankName(String bankCode) {
+        return switch (bankCode) {
+            case "001" -> "한국은행";
+            case "002" -> "산업은행";
+            case "003" -> "기업은행";
+            case "004" -> "국민은행";
+            case "011" -> "농협은행";
+            case "020" -> "우리은행";
+            case "023" -> "SC제일은행";
+            case "027" -> "시티은행";
+            case "032" -> "대구은행";
+            case "034" -> "광주은행";
+            case "035" -> "제주은행";
+            case "037" -> "전북은행";
+            case "039" -> "경남은행";
+            case "045" -> "새마을금고";
+            case "081" -> "KEB하나은행";
+            case "088" -> "신한은행";
+            case "090" -> "카카오뱅크";
+            case "999" -> "싸피은행";
+            default -> "기타은행";
+        };
     }
 }

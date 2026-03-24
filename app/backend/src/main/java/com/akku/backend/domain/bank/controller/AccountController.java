@@ -39,14 +39,25 @@ public class AccountController {
         return ApiResponse.success("계좌 목록 조회 성공", response);
     }
 
-    @Operation(summary = "타행 계좌 연동", description = "타행 계좌를 서비스에 연동합니다.")
-    @PostMapping("/link")
-    public ApiResponse<Void> linkExternalAccount(
+
+    @Operation(summary = "타행 계좌 연동인증 요청 (1원 송금)", description = "타행 계좌 점유 확인을 위해 1원을 송금합니다.")
+    @PostMapping("/verify/request")
+    public ApiResponse<Void> verifyExternalAccountRequest(
             @AuthenticationPrincipal UUID userId,
-            @Valid @RequestBody AccountLinkRequest request
+            @Valid @RequestBody AccountVerifyRequest request
     ) {
-        accountService.linkExternalAccount(userId, request);
-        return ApiResponse.success("계좌 연동 성공");
+        accountService.request1WonVerification(userId, request);
+        return ApiResponse.success("1원 송금 요청 성공");
+    }
+
+    @Operation(summary = "타행 계좌 연동 인증 확인", description = "입력한 인증코드를 검증하고 계좌 연동을 완료합니다.")
+    @PostMapping("/verify/confirm")
+    public ApiResponse<AccountLinkResponse> confirmExternalAccountVerification(
+            @AuthenticationPrincipal UUID userId,
+            @Valid @RequestBody AccountVerifyConfirmRequest request
+    ) {
+        AccountLinkResponse response = accountService.verifyAccountAndLink(userId, request);
+        return ApiResponse.success("계좌 연동 성공", response);
     }
 
     @Operation(summary = "주계좌 지정", description = "특정 계좌를 주계좌로 설정합니다. 기존 주계좌는 자동 해제됩니다.")
