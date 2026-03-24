@@ -61,8 +61,6 @@ public class UserQuiz {
     public void submit(boolean isCorrect) {
         this.isSubmitted = true;
         this.isCorrect = isCorrect;
-        if (isCorrect) {
-            this.solvedDate = LocalDate.now();
-        }
+        this.solvedDate = LocalDate.now();
     }
 }
