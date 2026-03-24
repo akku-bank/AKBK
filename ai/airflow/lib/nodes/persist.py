@@ -10,7 +10,7 @@ def persist_quiz_node(state: QuizState) -> QuizState:
             topic=quiz_data.topic,
             difficulty=state["difficulty"],
             problem_json={"question": quiz_data.question, "options": quiz_data.options},
-            correct_choice_no=quiz_data.correct_choice_no,
+            correct_answer=quiz_data.correct_choice_no,
             explanation=quiz_data.explanation
         )
         db.add(new_quiz)

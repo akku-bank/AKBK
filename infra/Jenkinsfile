@@ -40,6 +40,13 @@ pipeline {
                         targetBranch = matcher[0][2]
                     }
 
+                    // env에 저장해야 다음 stage에서 사용 가능
+                    env.SOURCE_BRANCH = sourceBranch ?: ""
+                    env.TARGET_BRANCH = targetBranch ?: "unknown"
+
+                    echo "SOURCE_BRANCH=${env.SOURCE_BRANCH}"
+                    echo "TARGET_BRANCH=${env.TARGET_BRANCH}"
+
                     // 팀 판별용 기준 브랜치
                     def branchForTeam = sourceBranch?.trim() ? sourceBranch : env.BUILT_BRANCH
                     def parts = branchForTeam.tokenize('/')
@@ -71,7 +78,7 @@ pipeline {
 
         stage('Infrastructure Check') {
             steps {
-                sh '[ -f infra/docker-compose.yml ] && echo "Docker config found" || echo "Skip check"'
+                sh '[ -f docker-compose.yml ] && echo "Docker config found" || echo "Skip check"'
             }
         }
 
@@ -86,7 +93,7 @@ pipeline {
 
         stage('Deploy') {
             when {
-                expression { env.BUILT_BRANCH == 'develop' }
+                expression { env.BUILT_BRANCH == 'develop' || env.TARGET_BRANCH == 'develop' }
             }
             steps {
                 script {
@@ -106,25 +113,18 @@ pipeline {
                         echo "[Deploy] git safe.directory 설정"
                         git config --global --add safe.directory "${DEPLOY_PATH}"
 
-                        echo "[Deploy] credential helper 설정"
-                        git config --global credential.helper \
-                        '!f() { echo username=$GIT_USERNAME; echo password=$GIT_PASSWORD; }; f'
-
                         echo "[Deploy] origin URL 설정"
                         git remote set-url origin https://lab.ssafy.com/s14-fintech-finance-sub1/S14P21B101.git
 
                         echo "[Deploy] develop 브랜치 최신화"
-                        git fetch origin develop
+                        git -c "credential.helper=!f() { echo username=${GIT_USERNAME}; echo password=${GIT_PASSWORD}; }; f" fetch origin develop
                         git reset --hard origin/develop
 
                         echo "[Deploy] docker compose 빌드 및 재기동"
-                        docker-compose -f infra/docker-compose.yml up -d --build
+                        docker-compose -f docker-compose.yml up -d --build
 
                         echo "[Deploy] 미사용 이미지 정리"
                         docker image prune -f
-
-                        echo "[Deploy] credential helper 정리"
-                        git config --global --unset credential.helper || true
 
                         echo "[Deploy] 배포 완료"
                     '''

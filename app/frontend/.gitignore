@@ -42,3 +42,7 @@ yarn-error.*
 
 # 카카오톡 로그인용 도장
 !debug.keystore
+
+# Google Services
+google-services.json
+GoogleService-Info.plist

@@ -8,6 +8,7 @@ import com.akku.backend.global.dto.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import jakarta.validation.Valid;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -48,7 +49,7 @@ public class TransactionController {
     @PatchMapping("/visibility")
     public ApiResponse<TransactionVisibilityResponse> updateVisibility(
             @AuthenticationPrincipal UUID userId,
-            @RequestBody TransactionVisibilityRequest request
+            @RequestBody @Valid TransactionVisibilityRequest request
     ) {
         TransactionVisibilityResponse response = transactionService.updateGlobalVisibility(userId, request);
         return ApiResponse.success("프라이버시 설정이 변경되었습니다.", response);
