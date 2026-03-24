@@ -245,4 +245,84 @@ class FriendServiceTest {
                 friendService.getFriendTown(userId, friendId));
         assertThat(exception.getErrorCode()).isEqualTo(SocialErrorCode.SOC_004);
     }
+
+    @Test
+    @DisplayName("친구 코드 수락 - 성공하면 양방향 친구 관계가 생성된다")
+    void acceptFriendInvite_Success() {
+        // given
+        UUID userId = UUID.randomUUID();
+        UUID inviterId = UUID.randomUUID();
+        String inviteCode = "valid-code";
+
+        FriendInvite invite = FriendInvite.builder()
+                .inviteCode(inviteCode)
+                .userId(inviterId)
+                .build();
+
+        given(friendInviteRepository.findById(inviteCode)).willReturn(Optional.of(invite));
+        given(friendRepository.existsById(new FriendId(userId, inviterId))).willReturn(false);
+
+        // when
+        friendService.acceptFriendInvite(userId, inviteCode);
+
+        // then - 양방향 친구 관계 저장 확인
+        verify(friendRepository, times(2)).save(any(Friend.class));
+    }
+
+    @Test
+    @DisplayName("친구 코드 수락 - 유효하지 않은 코드이면 SOC_001 예외를 던진다")
+    void acceptFriendInvite_InvalidCode() {
+        // given
+        UUID userId = UUID.randomUUID();
+        String invalidCode = "invalid-code";
+
+        given(friendInviteRepository.findById(invalidCode)).willReturn(Optional.empty());
+
+        // when & then
+        ApiException exception = org.junit.jupiter.api.Assertions.assertThrows(ApiException.class, () ->
+                friendService.acceptFriendInvite(userId, invalidCode));
+        assertThat(exception.getErrorCode()).isEqualTo(SocialErrorCode.SOC_001);
+    }
+
+    @Test
+    @DisplayName("친구 코드 수락 - 자기 자신의 코드이면 SOC_003 예외를 던진다")
+    void acceptFriendInvite_SelfInvite() {
+        // given
+        UUID userId = UUID.randomUUID();
+        String inviteCode = "self-code";
+
+        FriendInvite invite = FriendInvite.builder()
+                .inviteCode(inviteCode)
+                .userId(userId) // 자기 자신
+                .build();
+
+        given(friendInviteRepository.findById(inviteCode)).willReturn(Optional.of(invite));
+
+        // when & then
+        ApiException exception = org.junit.jupiter.api.Assertions.assertThrows(ApiException.class, () ->
+                friendService.acceptFriendInvite(userId, inviteCode));
+        assertThat(exception.getErrorCode()).isEqualTo(SocialErrorCode.SOC_003);
+    }
+
+    @Test
+    @DisplayName("친구 코드 수락 - 이미 친구이면 SOC_002 예외를 던진다")
+    void acceptFriendInvite_AlreadyFriends() {
+        // given
+        UUID userId = UUID.randomUUID();
+        UUID inviterId = UUID.randomUUID();
+        String inviteCode = "duplicate-code";
+
+        FriendInvite invite = FriendInvite.builder()
+                .inviteCode(inviteCode)
+                .userId(inviterId)
+                .build();
+
+        given(friendInviteRepository.findById(inviteCode)).willReturn(Optional.of(invite));
+        given(friendRepository.existsById(new FriendId(userId, inviterId))).willReturn(true);
+
+        // when & then
+        ApiException exception = org.junit.jupiter.api.Assertions.assertThrows(ApiException.class, () ->
+                friendService.acceptFriendInvite(userId, inviteCode));
+        assertThat(exception.getErrorCode()).isEqualTo(SocialErrorCode.SOC_002);
+    }
 }
