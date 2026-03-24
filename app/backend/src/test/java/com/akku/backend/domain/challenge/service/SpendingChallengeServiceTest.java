@@ -939,4 +939,103 @@ class SpendingChallengeServiceTest {
                     .internalRewardTransfer(any(), any(), any(), any(), any(), anyString(), anyString());
         }
     }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 9. getThisWeekChallenges (WeeklyChallengesFacade 전용)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    @Nested
+    @DisplayName("9. getThisWeekChallenges — 이번 주 소비 챌린지 목록 조회 (자녀 전용)")
+    class GetThisWeekChallenges {
+
+        private static final LocalDate THIS_MONDAY =
+                LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        private static final LocalDate THIS_SUNDAY = THIS_MONDAY.plusDays(6);
+
+        @Test
+        @DisplayName("9-1. 이번 주 챌린지 2건 → ChallengeSummary 리스트로 반환된다")
+        void returns_this_week_challenges_as_summaries() {
+            // given
+            UUID childId = UUID.randomUUID();
+            UUID familyId = UUID.randomUUID();
+            User child = mockChild(childId, familyId);
+
+            SpendingChallenge cafe = SpendingChallenge.builder()
+                    .id(UUID.randomUUID()).user(child).subCategoryName("카페")
+                    .targetSpending(30_000L).rewardAmount(5_000L)
+                    .status(ChallengeStatus.IN_PROGRESS)
+                    .startDate(THIS_MONDAY).endDate(THIS_SUNDAY).build();
+
+            SpendingChallenge grocery = SpendingChallenge.builder()
+                    .id(UUID.randomUUID()).user(child).subCategoryName("마트")
+                    .targetSpending(50_000L).rewardAmount(8_000L)
+                    .status(ChallengeStatus.IN_PROGRESS)
+                    .startDate(THIS_MONDAY).endDate(THIS_SUNDAY).build();
+
+            given(userRepository.findById(childId)).willReturn(Optional.of(child));
+            given(spendingChallengeRepository.findAllByUserAndStartDate(child, THIS_MONDAY))
+                    .willReturn(List.of(cafe, grocery));
+
+            // when
+            List<SpendingChallengeDto.ChallengeSummary> result =
+                    spendingChallengeService.getThisWeekChallenges(childId);
+
+            // then
+            assertThat(result).hasSize(2);
+            assertThat(result)
+                    .extracting(SpendingChallengeDto.ChallengeSummary::getCategory)
+                    .containsExactlyInAnyOrder("카페", "마트");
+            assertThat(result)
+                    .extracting(SpendingChallengeDto.ChallengeSummary::getStartDate)
+                    .allMatch(d -> d.equals(THIS_MONDAY));
+        }
+
+        @Test
+        @DisplayName("9-2. 이번 주 챌린지 0건 → 빈 리스트 반환")
+        void returns_empty_list_when_no_challenge_this_week() {
+            // given
+            UUID childId = UUID.randomUUID();
+            User child = mockChild(childId, UUID.randomUUID());
+
+            given(userRepository.findById(childId)).willReturn(Optional.of(child));
+            given(spendingChallengeRepository.findAllByUserAndStartDate(child, THIS_MONDAY))
+                    .willReturn(List.of());
+
+            // when
+            List<SpendingChallengeDto.ChallengeSummary> result =
+                    spendingChallengeService.getThisWeekChallenges(childId);
+
+            // then
+            assertThat(result).isEmpty();
+        }
+
+        @Test
+        @DisplayName("9-3. PARENT 역할 유저 호출 → ACCESS_DENIED")
+        void throws_access_denied_for_parent_role() {
+            // given
+            UUID parentId = UUID.randomUUID();
+            User parent = mockParent(parentId, UUID.randomUUID());
+            given(userRepository.findById(parentId)).willReturn(Optional.of(parent));
+
+            // when & then
+            assertThatThrownBy(() -> spendingChallengeService.getThisWeekChallenges(parentId))
+                    .isInstanceOf(ApiException.class)
+                    .extracting(e -> ((ApiException) e).getErrorCode())
+                    .isEqualTo(ChallengeErrorCode.ACCESS_DENIED);
+        }
+
+        @Test
+        @DisplayName("9-4. 존재하지 않는 유저 → USER_NOT_FOUND")
+        void throws_user_not_found_for_unknown_user() {
+            // given
+            UUID unknownId = UUID.randomUUID();
+            given(userRepository.findById(unknownId)).willReturn(Optional.empty());
+
+            // when & then
+            assertThatThrownBy(() -> spendingChallengeService.getThisWeekChallenges(unknownId))
+                    .isInstanceOf(ApiException.class)
+                    .extracting(e -> ((ApiException) e).getErrorCode())
+                    .isEqualTo(com.akku.backend.domain.user.exception.UserErrorCode.USER_NOT_FOUND);
+        }
+    }
 }
