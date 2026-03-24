@@ -325,7 +325,7 @@ public class AccountService {
 
     private String getBankName(String bankCode) {
         return switch (bankCode) {
-            case "001" -> "한국은행";
+            case "001" -> "싸피은행";
             case "002" -> "산업은행";
             case "003" -> "기업은행";
             case "004" -> "국민은행";

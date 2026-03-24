@@ -28,6 +28,4 @@ public interface AccountRepository extends JpaRepository<Account, UUID> {
     Optional<Account> findByUserIdAndIsPrimaryTrue(UUID userId);
     boolean existsByUserId(UUID userId);
     boolean existsByAccountNumberAndBankCode(String accountNumber, String bankCode);
-
-    java.util.Optional<Account> findByUserIdAndType(UUID userId, String type);
 }

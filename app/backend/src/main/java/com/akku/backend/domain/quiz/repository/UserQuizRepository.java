@@ -48,4 +48,9 @@ public interface UserQuizRepository extends JpaRepository<UserQuiz, UserQuizId> 
     @Query("SELECT uq FROM UserQuiz uq WHERE uq.userId = :userId AND uq.quizId = :quizId")
     Optional<UserQuiz> findByUserIdAndQuizIdForUpdate(
             @Param("userId") UUID userId, @Param("quizId") UUID quizId);
+
+    /**
+     * 이번 주(월~일) solved_date 가 설정된 레코드 중 정답인 것만 집합.
+     */
+    long countByUserIdAndIsCorrectTrueAndSolvedDateBetween(UUID userId, LocalDate start, LocalDate end);
 }
