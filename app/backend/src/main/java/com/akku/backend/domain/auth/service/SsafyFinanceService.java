@@ -194,6 +194,48 @@ public class SsafyFinanceService {
     }
 
     /**
+     * 계좌 이체 (적요 지정 버전)
+     * depositMemo  : 입금 계좌(자녀) 통장에 찍히는 적요
+     * withdrawalMemo: 출금 계좌(부모) 통장에 찍히는 적요
+     */
+    public FinanceTransferResponse.Rec transfer(String userKey,
+                                                String withdrawalBankCode, String withdrawalAccountNo,
+                                                String depositBankCode, String depositAccountNo,
+                                                Long amount,
+                                                String depositMemo, String withdrawalMemo) {
+        FinanceRequestHeader header = createHeader(
+                "createDemandDepositAccountTransfer",
+                "createDemandDepositAccountTransfer",
+                userKey);
+
+        FinanceTransferRequest data = new FinanceTransferRequest(
+                depositBankCode,
+                depositAccountNo,
+                amount,
+                withdrawalBankCode,
+                withdrawalAccountNo,
+                depositMemo,
+                withdrawalMemo
+        );
+
+        FinanceRequest<FinanceTransferRequest> request = new FinanceRequest<>(header, data);
+
+        FinanceResponse<FinanceTransferResponse> response = restClient.post()
+                .uri("/edu/demandDeposit/updateDemandDepositAccountTransfer")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(request)
+                .retrieve()
+                .body(new ParameterizedTypeReference<>() {});
+
+        validateResponse(response);
+        if (response != null && response.data() != null && response.data().rec() != null && !response.data().rec().isEmpty()) {
+            return response.data().rec().get(0);
+        }
+
+        throw new RuntimeException("금융망 이체 처리 실패");
+    }
+
+    /**
      * 계좌 거래 내역 조회
      */
     public List<FinanceTransactionHistoryResponse.TransactionDetails> getTransactionHistory(

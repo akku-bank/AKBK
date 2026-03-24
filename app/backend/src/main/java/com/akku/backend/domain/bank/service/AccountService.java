@@ -127,6 +127,77 @@ public class AccountService {
     }
 
     /**
+     * 내부 전용 보상 송금 (PIN 검증 없음 — Challenge 도메인에서만 호출)
+     *
+     * 호출 조건: 부모가 이미 인증된 상태이며, 챌린지 서비스가 REWARD_REQUESTED 상태를
+     *           검증한 뒤 위임하는 신뢰된 내부 호출이다.
+     *
+     * @param parentId        출금 주체(부모) userId
+     * @param childId         입금 대상(자녀) userId
+     * @param parentAccountId 부모가 선택한 출금 계좌 ID
+     * @param childAccountId  자녀의 입금 계좌 ID
+     * @param amount          송금 금액
+     * @param depositMemo     자녀 통장 적요 (예: "주간 소비 챌린지 보상 (카페)")
+     * @param withdrawalMemo  부모 통장 적요 (예: "챌린지 보상 송금 (카페)")
+     */
+    @Transactional
+    public void internalRewardTransfer(UUID parentId, UUID childId,
+                                       UUID parentAccountId, UUID childAccountId,
+                                       Long amount, String depositMemo, String withdrawalMemo) {
+        // 1. 부모 유저 조회 (금융망 userKey 확보)
+        User parent = userRepository.findById(parentId)
+                .orElseThrow(() -> new ApiException(UserErrorCode.USER_NOT_FOUND));
+
+        // 2. 부모 계좌 조회 및 소유권 검증
+        Account parentAccount = accountRepository.findById(parentAccountId)
+                .orElseThrow(() -> new ApiException(BankErrorCode.ACCOUNT_NOT_FOUND));
+        if (!parentAccount.getUserId().equals(parentId)) {
+            throw new ApiException(BankErrorCode.ACCOUNT_NOT_FOUND);
+        }
+
+        // 3. 자녀 계좌 조회 및 소유권 검증
+        Account childAccount = accountRepository.findById(childAccountId)
+                .orElseThrow(() -> new ApiException(BankErrorCode.ACCOUNT_NOT_FOUND));
+        if (!childAccount.getUserId().equals(childId)) {
+            throw new ApiException(BankErrorCode.ACCOUNT_NOT_FOUND);
+        }
+
+        // 4. 잔액 검증
+        if (parentAccount.getBalance() < amount) {
+            throw new ApiException(BankErrorCode.INSUFFICIENT_BALANCE);
+        }
+
+        // 5. 금융망 이체 API 호출 (실패 시 RuntimeException → @Transactional 롤백)
+        ssafyFinanceService.transfer(
+                parent.getUserKey(),
+                parentAccount.getBankCode(),
+                parentAccount.getAccountNumber(),
+                childAccount.getBankCode(),
+                childAccount.getAccountNumber(),
+                amount,
+                depositMemo,
+                withdrawalMemo
+        );
+    }
+
+    /**
+     * 주계좌 지정 — 기존 주계좌를 해제하고 새 계좌를 주계좌로 설정한다.
+     */
+    @Transactional
+    public void setPrimaryAccount(UUID userId, UUID accountId) {
+        Account account = accountRepository.findById(accountId)
+                .orElseThrow(() -> new ApiException(BankErrorCode.ACCOUNT_NOT_FOUND));
+        if (!account.getUserId().equals(userId)) {
+            throw new ApiException(BankErrorCode.ACCOUNT_NOT_FOUND);
+        }
+
+        accountRepository.findByUserIdAndIsPrimaryTrue(userId)
+                .ifPresent(Account::revokePrimary);
+
+        account.designateAsPrimary();
+    }
+
+    /**
      * 계좌 이체
      */
     @Transactional
