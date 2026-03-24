@@ -117,8 +117,22 @@ const FriendListScreen = ({ navigation, route }) => {
         }
     };
 
-    const handleFriendAddAttempt = () => {
-        Alert.alert('안내', '현재 백엔드에는 친구 추가 확정 API가 없어 조회까지만 가능합니다.');
+    const handleFriendAddAttempt = async () => {
+        const trimmedCode = inviteCodeInput.trim();
+        if (!trimmedCode) {
+            Alert.alert('안내', '초대 코드를 먼저 입력해 주세요.');
+            return;
+        }
+
+        try {
+            await api.post(`/social/friends/invites/${encodeURIComponent(trimmedCode)}/accept`);
+            closeInviteModal();
+            fetchFriends();
+            Alert.alert('완료', '친구가 추가되었습니다.');
+        } catch (e) {
+            console.error('Accept Friend Invite Error', e);
+            Alert.alert('오류', e.response?.data?.message || '친구 추가에 실패했습니다.');
+        }
     };
 
     return (
@@ -185,7 +199,6 @@ const FriendListScreen = ({ navigation, route }) => {
                             </View>
                             <View style={styles.friendInfo}>
                                 <CustomText style={styles.friendName}>{friend.name}</CustomText>
-                                <CustomText style={styles.townName}>{friend.friendId}</CustomText>
                             </View>
                             <TouchableOpacity
                                 style={styles.visitButton}
@@ -245,9 +258,6 @@ const FriendListScreen = ({ navigation, route }) => {
                                     <TouchableOpacity style={styles.confirmButton} onPress={handleFriendAddAttempt}>
                                         <CustomText style={styles.confirmButtonText}>친구 추가</CustomText>
                                     </TouchableOpacity>
-                                    <CustomText style={styles.lookupHint}>
-                                        현재는 조회 API만 연결되어 있습니다.
-                                    </CustomText>
                                 </View>
                             ) : (
                                 <View style={styles.lookupCardInvalid}>
@@ -395,8 +405,7 @@ const styles = StyleSheet.create({
     },
     avatarImage: { width: '80%', height: '80%' },
     friendInfo: { flex: 1 },
-    friendName: { fontSize: scale(16), fontWeight: 'bold', color: '#111', marginBottom: verticalScale(4) },
-    townName: { fontSize: scale(11), color: '#9CA3AF' },
+    friendName: { fontSize: scale(18), fontWeight: 'bold', color: '#111' },
     visitButton: {
         backgroundColor: '#A3E635',
         paddingHorizontal: scale(12),

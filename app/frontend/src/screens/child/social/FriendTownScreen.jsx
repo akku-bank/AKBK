@@ -75,6 +75,34 @@ const FriendTownScreen = ({ route, navigation }) => {
     const friendName = friendTownInfo?.friendName || fallbackFriendName;
     const recentCharity = friendTownInfo?.recentCharity;
 
+    const handleDeleteFriend = () => {
+        Alert.alert(
+            '안내',
+            `${friendName}을(를) 삭제할까요?`,
+            [
+                { text: '취소', style: 'cancel' },
+                {
+                    text: '삭제하기',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            await api.delete(`/social/friends/${friendId}`);
+                            Alert.alert('완료', '친구가 삭제되었습니다.', [
+                                {
+                                    text: '확인',
+                                    onPress: () => navigation.goBack(),
+                                },
+                            ]);
+                        } catch (e) {
+                            console.error('Friend Delete Error', e);
+                            Alert.alert('오류', e.response?.data?.message || '친구 삭제에 실패했습니다.');
+                        }
+                    },
+                },
+            ]
+        );
+    };
+
     return (
         <SafeAreaView style={styles.safeArea}>
             <View style={styles.header}>
@@ -82,7 +110,9 @@ const FriendTownScreen = ({ route, navigation }) => {
                     <CustomText style={styles.backButtonText}>←</CustomText>
                 </TouchableOpacity>
                 <CustomText style={styles.headerTitle}>{friendName}의 타운</CustomText>
-                <View style={{ width: scale(32) }} />
+                <TouchableOpacity style={styles.deleteButton} onPress={handleDeleteFriend}>
+                    <CustomText style={styles.deleteButtonText}>삭제</CustomText>
+                </TouchableOpacity>
             </View>
 
             <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
@@ -162,6 +192,20 @@ const styles = StyleSheet.create({
         fontSize: scale(18),
         fontWeight: 'bold',
         color: '#111',
+    },
+    deleteButton: {
+        backgroundColor: '#FEE2E2',
+        paddingHorizontal: scale(12),
+        paddingVertical: verticalScale(6),
+        borderRadius: scale(12),
+        alignItems: 'center',
+        justifyContent: 'center',
+        minWidth: scale(56),
+    },
+    deleteButtonText: {
+        fontSize: scale(13),
+        fontWeight: 'bold',
+        color: '#DC2626',
     },
     container: {
         flexGrow: 1,
