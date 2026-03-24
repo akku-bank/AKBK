@@ -29,6 +29,11 @@ public interface UserQuizRepository extends JpaRepository<UserQuiz, UserQuizId> 
             UUID userId, LocalDateTime from, LocalDateTime to);
 
     /**
+     * 특정 기간 동안 유저가 맞힌 퀴즈 개수 조회
+     */
+    long countByUserIdAndIsCorrectTrueAndSolvedDateBetween(java.util.UUID userId, java.time.LocalDate start, java.time.LocalDate end);
+
+    /**
      * 정답 제출 시 중복 보상 방지를 위한 비관적 잠금 조회
      */
     @Lock(LockModeType.PESSIMISTIC_WRITE)

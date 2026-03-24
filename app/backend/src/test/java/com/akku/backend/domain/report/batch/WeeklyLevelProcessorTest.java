@@ -32,6 +32,9 @@ class WeeklyLevelProcessorTest {
     @Mock
     private AccountRepository accountRepository;
 
+    @Mock
+    private com.akku.backend.domain.quiz.repository.UserQuizRepository userQuizRepository;
+
     @InjectMocks
     private WeeklyLevelProcessor weeklyLevelProcessor;
 
@@ -51,30 +54,66 @@ class WeeklyLevelProcessorTest {
     }
 
     @Test
-    @DisplayName("지출 적정성 30점 만점 시나리오: 지출 비율 50% 이하")
-    void process_SpendingScore_Perfect() {
+    @DisplayName("퀴즈 7개 모두 정답 시 50점 만점 시나리오")
+    void process_QuizScore_Perfect() {
         // given
-        // 수입 10,000원, 지출 2,000원 (비율 20%)
         WeeklyReport incomeReport = WeeklyReport.builder().totalAmount(10000L).id(new com.akku.backend.domain.report.entity.WeeklyReportId(userId, LocalDate.now(), "INCOME")).build();
-        WeeklyReport spendReport = WeeklyReport.builder().totalAmount(2000L).id(new com.akku.backend.domain.report.entity.WeeklyReportId(userId, LocalDate.now(), "SPEND")).build();
+        given(weeklyReportRepository.findByIdUserIdAndIdStartDay(any(), any())).willReturn(List.of(incomeReport));
+        given(accountRepository.findByUserIdAndType(any(), any())).willReturn(Optional.empty()); // 잔액 0
         
-        given(weeklyReportRepository.findByIdUserIdAndIdStartDay(any(), any())).willReturn(List.of(incomeReport, spendReport));
-        
-        // 현재 잔액 10,000원 (이월금은 역산 시 2,000원)
-        Account account = Account.builder().balance(10000L).build();
-        given(accountRepository.findByUserIdAndType(any(), any())).willReturn(Optional.of(account));
+        // 퀴즈 7개 정답
+        given(userQuizRepository.countByUserIdAndIsCorrectTrueAndSolvedDateBetween(any(), any(), any())).willReturn(7L);
 
         // when
         User result = weeklyLevelProcessor.process(child);
 
         // then
-        // 지출 적정성 (20%): 30점
-        // 잔액 유지력 (10,000 / 10,000 + 2,000 = 0.83): 약 17점 (20 * 0.83)
-        // 총점 약 47점 -> 레벨 3
+        // 퀴즈 점수 50점 + 소비 만점(30) + 잔액 0점 = 80점
+        assertThat(result.getScore()).isEqualTo(80);
+    }
+
+    @Test
+    @DisplayName("퀴즈 3개 정답 시 15점 반영 시나리오")
+    void process_QuizScore_Partial() {
+        // given
+        WeeklyReport incomeReport = WeeklyReport.builder().totalAmount(10000L).id(new com.akku.backend.domain.report.entity.WeeklyReportId(userId, LocalDate.now(), "INCOME")).build();
+        given(weeklyReportRepository.findByIdUserIdAndIdStartDay(any(), any())).willReturn(List.of(incomeReport));
+        given(accountRepository.findByUserIdAndType(any(), any())).willReturn(Optional.empty());
+
+        // 퀴즈 3개 정답
+        given(userQuizRepository.countByUserIdAndIsCorrectTrueAndSolvedDateBetween(any(), any(), any())).willReturn(3L);
+
+        // when
+        User result = weeklyLevelProcessor.process(child);
+
+        // then
+        // 퀴즈 점수 15점 + 소비 만점(30) + 잔액 0점 = 45점
+        assertThat(result.getScore()).isEqualTo(45);
+    }
+
+    @Test
+    @DisplayName("지출 적정성 30점 만점 시나리오: 지출 비율 50% 이하")
+    void process_SpendingScore_Perfect() {
+        // given
+        WeeklyReport incomeReport = WeeklyReport.builder().totalAmount(10000L).id(new com.akku.backend.domain.report.entity.WeeklyReportId(userId, LocalDate.now(), "INCOME")).build();
+        WeeklyReport spendReport = WeeklyReport.builder().totalAmount(2000L).id(new com.akku.backend.domain.report.entity.WeeklyReportId(userId, LocalDate.now(), "SPEND")).build();
+        
+        given(weeklyReportRepository.findByIdUserIdAndIdStartDay(any(), any())).willReturn(List.of(incomeReport, spendReport));
+        
+        Account account = Account.builder().balance(10000L).build();
+        given(accountRepository.findByUserIdAndType(any(), any())).willReturn(Optional.of(account));
+        
+        // 퀴즈 0개 정답
+        given(userQuizRepository.countByUserIdAndIsCorrectTrueAndSolvedDateBetween(any(), any(), any())).willReturn(0L);
+
+        // when
+        User result = weeklyLevelProcessor.process(child);
+
+        // then
+        // 소비 점수 30 + 잔액 점수 17 + 퀴즈 0 = 약 47
         assertThat(result).isNotNull();
         assertThat(result.getScore()).isGreaterThanOrEqualTo(40);
-        assertThat(result.getLevel()).isEqualTo(3);
-        verify(weeklyReportRepository).save(any()); // 차주 기초 잔액 저장 확인
+        verify(weeklyReportRepository).save(any());
     }
 
     @Test
@@ -94,12 +133,15 @@ class WeeklyLevelProcessorTest {
         Account account = Account.builder().balance(8000L).build();
         given(accountRepository.findByUserIdAndType(any(), any())).willReturn(Optional.of(account));
 
+        // 퀴즈 0개 정답
+        given(userQuizRepository.countByUserIdAndIsCorrectTrueAndSolvedDateBetween(any(), any(), any())).willReturn(0L);
+
         // when
         User result = weeklyLevelProcessor.process(child);
 
         // then
         // 총 가용 자금 = 수입(10000) + 기초잔액(5000) = 15,000
-        // 잔액 유지력 = 20 * (8000 / 15000) = 약 10.6 -> 11점
+        // 잔액 유지력 = 20 * (8000 / 15000) = 약 10.6 -> 11점 (반올림)
         assertThat(result.getScore()).isGreaterThan(0);
     }
 

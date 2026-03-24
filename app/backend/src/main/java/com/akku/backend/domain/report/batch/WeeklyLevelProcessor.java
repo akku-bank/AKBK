@@ -23,7 +23,7 @@ public class WeeklyLevelProcessor implements ItemProcessor<User, User> {
 
     private final WeeklyReportRepository weeklyReportRepository;
     private final AccountRepository accountRepository;
-    // private final UserQuizRepository userQuizRepository; // 퀴즈 정산 보류
+    private final UserQuizRepository userQuizRepository;
 
     @Override
     public User process(User user) {
@@ -67,17 +67,17 @@ public class WeeklyLevelProcessor implements ItemProcessor<User, User> {
         // 영역별 점수 계산
         int spendingScore = calculateSpendingScore(spend, totalFunds);
         int balanceScore = calculateBalanceScore(currentBalance, totalFunds);
-        // int quizScore = calculateQuizScore(user.getId(), lastMonday, lastSunday); // 퀴즈 정산 보류
+        int quizScore = calculateQuizScore(user.getId(), lastMonday, lastSunday);
 
-        // 최종 점수 및 레벨 산출 (현재 50점 만점 기준)
-        int totalScore = Math.min(100, spendingScore + balanceScore);
+        // 최종 점수 및 레벨 산출 (100점 만점)
+        int totalScore = Math.min(100, spendingScore + balanceScore + quizScore);
         int level = calculateLevel(totalScore);
 
         // 유저 정보 업데이트
         user.updateLevelAndScore(level, totalScore);
         
-        log.info("[Batch] User {} - Score: {}, Level: {} (Spending: {}, Balance: {})", 
-                user.getId(), totalScore, level, spendingScore, balanceScore);
+        log.info("[Batch] User {} - Score: {}, Level: {} (Spending: {}, Balance: {}, Quiz: {})", 
+                user.getId(), totalScore, level, spendingScore, balanceScore, quizScore);
         
         return user;
     }
@@ -106,15 +106,14 @@ public class WeeklyLevelProcessor implements ItemProcessor<User, User> {
     }
 
     /**
-     * 퀴즈 성과 (50점 만점) - 현재 보류
-     * 정답 개수당 10점, 최대 5개까지 인정
+     * 퀴즈 성과 (50점 만점)
+     * 문제당 5점, 7개 모두 정답 시 50점 (보너스 +15점)
      */
-    /*
     private int calculateQuizScore(java.util.UUID userId, LocalDate start, LocalDate end) {
         long correctCount = userQuizRepository.countByUserIdAndIsCorrectTrueAndSolvedDateBetween(userId, start, end);
-        return (int) Math.min(50, correctCount * 10);
+        if (correctCount >= 7) return 50;
+        return (int) (correctCount * 5);
     }
-    */
 
     /**
      * 레벨링 (1~5단계)
