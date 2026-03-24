@@ -55,6 +55,10 @@ dependencies {
 	implementation 'com.github.gavlyukovskiy:p6spy-spring-boot-starter:1.9.1'
 	implementation 'io.github.cdimascio:dotenv-java:3.1.0'
 	implementation 'com.google.firebase:firebase-admin:9.4.3'
+
+	// ShedLock — 다중 서버 환경에서 스케줄러 중복 실행 방지 (JDBC 방식: 별도 인프라 불필요)
+	implementation 'net.javacrumbs.shedlock:shedlock-spring:5.16.0'
+	implementation 'net.javacrumbs.shedlock:shedlock-provider-jdbc-template:5.16.0'
 }
 
 tasks.named('test') {

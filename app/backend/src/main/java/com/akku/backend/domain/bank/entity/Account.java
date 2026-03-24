@@ -30,11 +30,15 @@ public class Account {
     private String bankCode; 
 
     @Column(nullable = false, length = 20)
-    private String type; // CASH, JELLING, TICKET
+    private String type; // CASH
 
     @Column(nullable = false)
     @Builder.Default
     private Long balance = 0L;
+
+    @Column(name = "is_primary", nullable = false)
+    @Builder.Default
+    private Boolean isPrimary = false;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
@@ -43,4 +47,19 @@ public class Account {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    public void designateAsPrimary() {
+        this.isPrimary = true;
+    }
+
+    public void revokePrimary() {
+        this.isPrimary = false;
+    }
+
+    public void deductBalance(long amount) {
+        if (this.balance < amount) {
+            throw new IllegalArgumentException("Insufficient balance");
+        }
+        this.balance -= amount;
+    }
 }
