@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Image, Alert } from 'react-native';
+import CustomText from '../../components/common/CustomText';
 import { RFValue } from 'react-native-responsive-fontsize';
 
 const QrCheckScreen = ({ navigation, route }) => {
@@ -27,12 +28,12 @@ const QrCheckScreen = ({ navigation, route }) => {
         <SafeAreaView style={styles.safeArea}>
             <View style={styles.container}>
                 <View style={styles.titleSection}>
-                    <Text style={styles.title}>가족 연결하기</Text>
-                    <Text style={styles.subtitle}>
+                    <CustomText style={styles.title}>가족 연결하기</CustomText>
+                    <CustomText style={styles.subtitle}>
                         {role === 'CHILD'
                             ? '부모님이 공유해주신\n초대 QR 코드가 있나요?'
                             : '배우자가 공유한\n초대 QR 코드가 있나요?'}
-                    </Text>
+                    </CustomText>
                 </View>
 
                 <View style={styles.cardSection}>
@@ -43,11 +44,11 @@ const QrCheckScreen = ({ navigation, route }) => {
                         onPress={handleHasQr}
                     >
                         <View style={styles.iconWrapper}>
-                            <Text style={styles.iconText}>📷</Text>
+                            <CustomText style={styles.iconText}>📷</CustomText>
                         </View>
                         <View style={styles.cardTextContainer}>
-                            <Text style={styles.cardTitle}>네, QR 코드가 있어요</Text>
-                            <Text style={styles.cardDesc}>카메라폰으로 바로 스캔할게요.</Text>
+                            <CustomText style={styles.cardTitle}>네, QR 코드가 있어요</CustomText>
+                            <CustomText style={styles.cardDesc}>카메라폰으로 바로 스캔할게요.</CustomText>
                         </View>
                     </TouchableOpacity>
 
@@ -61,12 +62,12 @@ const QrCheckScreen = ({ navigation, route }) => {
                             <Image source={require('../../assets/croco/croco_parents.png')} style={styles.cardIconImage} resizeMode="contain" />
                         </View>
                         <View style={styles.cardTextContainer}>
-                            <Text style={styles.cardTitle}>아니요, 아직 없어요</Text>
-                            <Text style={styles.cardDesc}>
+                            <CustomText style={styles.cardTitle}>아니요, 아직 없어요</CustomText>
+                            <CustomText style={styles.cardDesc}>
                                 {role === 'CHILD'
                                     ? '부모님이 먼저 가입하셔야 해요.'
                                     : '새로운 가족 그룹을 만들게요.'}
-                            </Text>
+                            </CustomText>
                         </View>
                     </TouchableOpacity>
                 </View>
