@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 
 @Slf4j
 @EnableJpaAuditing
+@org.springframework.scheduling.annotation.EnableScheduling
 @SpringBootApplication
 public class AkkuApiApplication {
 
