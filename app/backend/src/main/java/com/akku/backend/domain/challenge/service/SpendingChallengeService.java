@@ -230,6 +230,34 @@ public class SpendingChallengeService {
     }
 
     /*
+        4-1. 이번 주 소비 목표 챌린지 목록 조회 (자녀 전용 — 종합 챌린지 Facade 전용)
+        - startDate = 이번 주 월요일인 챌린지 전체 반환 (상태 무관)
+        - CHILD 역할 검증만 수행; 역할 우회 방어선은 Facade/Controller 에도 있으나 여기서도 유지
+     */
+    public List<SpendingChallengeDto.ChallengeSummary> getThisWeekChallenges(UUID userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ApiException(UserErrorCode.USER_NOT_FOUND));
+        if (!"CHILD".equals(user.getRole())) {
+            throw new ApiException(ChallengeErrorCode.ACCESS_DENIED);
+        }
+
+        LocalDate thisMonday = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+
+        return spendingChallengeRepository.findAllByUserAndStartDate(user, thisMonday)
+                .stream()
+                .map(c -> SpendingChallengeDto.ChallengeSummary.builder()
+                        .challengeId(c.getId())
+                        .category(c.getSubCategoryName())
+                        .targetSpending(c.getTargetSpending())
+                        .rewardAmount(c.getRewardAmount())
+                        .status(c.getStatus().name())
+                        .startDate(c.getStartDate())
+                        .endDate(c.getEndDate())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    /*
         5. 차주 소비 목표 챌린지 목록 조회 (부모/자녀 공통)
      */
     public SpendingChallengeDto.ListResponse getNextWeekChallenges(UUID requestUserId, UUID childId, ChallengeStatus status) {
