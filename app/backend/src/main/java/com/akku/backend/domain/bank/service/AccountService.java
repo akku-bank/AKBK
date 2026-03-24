@@ -7,6 +7,8 @@ import com.akku.backend.domain.auth.service.SsafyFinanceService;
 import com.akku.backend.domain.bank.dto.*;
 import com.akku.backend.domain.bank.entity.Account;
 import com.akku.backend.domain.bank.repository.AccountRepository;
+import com.akku.backend.domain.bank.entity.AccountVerification;
+import com.akku.backend.domain.bank.repository.AccountVerificationRepository;
 import com.akku.backend.domain.user.exception.UserErrorCode;
 import com.akku.backend.domain.bank.exception.BankErrorCode;
 import com.akku.backend.domain.family.entity.FamilyProfileEntity;
@@ -33,6 +35,7 @@ public class AccountService {
     private final UserRepository userRepository;
     private final FamilyProfileRepository familyProfileRepository;
     private final AccountRepository accountRepository;
+    private final AccountVerificationRepository accountVerificationRepository;
     private final SsafyFinanceService ssafyFinanceService;
 
     /**
@@ -229,11 +232,27 @@ public class AccountService {
             throw new ApiException(BankErrorCode.ALREADY_EXISTS_ACCOUNT);
         }
 
+        // 기존 동일 계좌 인증 정보 삭제 (새로운 요청으로 갱신)
+        accountVerificationRepository.deleteAllByUserIdAndAccountNumberAndBankCode(user.getId(), request.accountNumber(), request.bankCode());
+
         // 인증코드 생성 (4자리 숫자)
         String authCode = String.format("%04d", ThreadLocalRandom.current().nextInt(10000));
         
         // 송금 메시지: "SSAFY {code}"
         String authText = "SSAFY " + authCode;
+
+        // 인증 정보 저장 (5분 유효)
+        AccountVerification verification = AccountVerification.builder()
+                .userId(user.getId())
+                .accountNumber(request.accountNumber())
+                .bankCode(request.bankCode())
+                .authCode(authCode)
+                .authText("SSAFY") // 검증 시 사용할 접두어
+                .status("PENDING")
+                .expiresAt(LocalDateTime.now().plusMinutes(5))
+                .build();
+        
+        accountVerificationRepository.save(verification);
 
         // 금융망 API 호출
         ssafyFinanceService.openAccountAuth(user.getUserKey(), request.accountNumber(), authText);
@@ -247,21 +266,25 @@ public class AccountService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ApiException(UserErrorCode.USER_NOT_FOUND));
 
+        // DB에서 인증 정보 조회
+        AccountVerification verification = accountVerificationRepository.findTopByUserIdAndAccountNumberAndBankCodeOrderByCreatedAtDesc(
+                        user.getId(), request.accountNumber(), request.bankCode())
+                .orElseThrow(() -> new ApiException(BankErrorCode.INVALID_AUTH_CODE));
+
+        if (verification.isExpired()) {
+            throw new ApiException(BankErrorCode.EXPIRED_PAYMENT_TOKEN);
+        }
+
         // 금융망 API 호출하여 코드 검증
         FinanceAccountAuthCheckResponse.Rec verifyRec = ssafyFinanceService.checkAuthCode(
                 user.getUserKey(), 
                 request.accountNumber(), 
-                "SSAFY", 
+                verification.getAuthText(), 
                 request.authCode()
         );
 
         if (!"SUCCESS".equals(verifyRec.status())) {
             throw new ApiException(BankErrorCode.INVALID_AUTH_CODE);
-        }
-
-        // 더미 데이터 번호와 대조
-        if (!"110-123-456789".equals(request.accountNumber())) {
-            throw new ApiException(BankErrorCode.ACCOUNT_NOT_FOUND);
         }
 
         // 우리 DB 중복 검사
@@ -281,6 +304,9 @@ public class AccountService {
 
         Account savedAccount = accountRepository.save(account);
 
+        // 사용 완료된 인증 정보 삭제
+        accountVerificationRepository.deleteAllByUserIdAndAccountNumberAndBankCode(user.getId(), request.accountNumber(), request.bankCode());
+
         // 은행 이름 매핑
         String bankName = getBankName(request.bankCode());
 
@@ -288,6 +314,26 @@ public class AccountService {
     }
 
     private String getBankName(String bankCode) {
-        return "AK은행";
+        return switch (bankCode) {
+            case "001" -> "한국은행";
+            case "002" -> "산업은행";
+            case "003" -> "기업은행";
+            case "004" -> "국민은행";
+            case "011" -> "농협은행";
+            case "020" -> "우리은행";
+            case "023" -> "SC제일은행";
+            case "027" -> "시티은행";
+            case "032" -> "대구은행";
+            case "034" -> "광주은행";
+            case "035" -> "제주은행";
+            case "037" -> "전북은행";
+            case "039" -> "경남은행";
+            case "045" -> "새마을금고";
+            case "081" -> "KEB하나은행";
+            case "088" -> "신한은행";
+            case "090" -> "카카오뱅크";
+            case "999" -> "싸피은행";
+            default -> "기타은행";
+        };
     }
 }
