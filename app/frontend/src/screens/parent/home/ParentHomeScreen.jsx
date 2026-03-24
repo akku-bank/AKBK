@@ -5,10 +5,12 @@ import { scale, verticalScale } from 'react-native-size-matters';
 import CustomText from '../../../components/common/CustomText';
 import useAuthStore from '../../../store/useAuthStore';
 import api from '../../../api/axios';
+import { Alert } from 'react-native';
 
 const ParentHomeScreen = ({ navigation }) => {
     const { user } = useAuthStore();
     const [childrenData, setChildrenData] = useState([]);
+    const [parentBalance, setParentBalance] = useState(0);
 
     useFocusEffect(
         useCallback(() => {
@@ -16,6 +18,8 @@ const ParentHomeScreen = ({ navigation }) => {
                 try {
                     const res = await api.get('/home/parent');
                     const childrenArray = res.data?.data?.children || [];
+                    const pBalance = res.data?.data?.parentBalance || 0;
+
                     // 백엔드 명세에 맞추어 프론트 데이터 형태로 매핑
                     const mappedChildren = childrenArray.map(child => ({
                         id: child.childId,
@@ -24,6 +28,7 @@ const ParentHomeScreen = ({ navigation }) => {
                         avatar: require('../../../assets/croco/croco_face.png') // 임시 아바타
                     }));
                     setChildrenData(mappedChildren);
+                    setParentBalance(pBalance);
                 } catch (e) {
                     console.error('Parent Home Fetch Error', e);
                 }
@@ -31,6 +36,26 @@ const ParentHomeScreen = ({ navigation }) => {
             fetchChildren();
         }, [])
     );
+
+    const handleDeleteMember = (child) => {
+        Alert.alert('가족 분리', `${child.name} 자녀를 가족 그룹에서 삭제하시겠습니까?`, [
+            { text: '취소', style: 'cancel' },
+            {
+                text: '삭제',
+                style: 'destructive',
+                onPress: async () => {
+                    try {
+                        await api.delete(`/families/members/${child.id}`);
+                        Alert.alert('완료', '가족 목록에서 삭제되었습니다.');
+                        setChildrenData(prev => prev.filter(c => c.id !== child.id));
+                    } catch (e) {
+                        console.error('Delete Member Error', e);
+                        Alert.alert('오류', '가족 분리에 실패했습니다.');
+                    }
+                }
+            }
+        ]);
+    };
 
     return (
         <SafeAreaView style={styles.safeArea}>
@@ -42,6 +67,12 @@ const ParentHomeScreen = ({ navigation }) => {
             </View>
 
             <ScrollView contentContainerStyle={styles.container}>
+                {/* 부모님 총 잔액 카드 */}
+                <View style={styles.parentBalanceCard}>
+                    <CustomText style={styles.parentBalanceLabel}>내 지갑(연동 계좌) 잔액</CustomText>
+                    <CustomText style={styles.parentBalanceValue}>{parentBalance.toLocaleString()}원</CustomText>
+                </View>
+
                 <View style={styles.sectionHeader}>
                     <CustomText style={styles.sectionTitle}>우리 아이들</CustomText>
                 </View>
@@ -66,6 +97,12 @@ const ParentHomeScreen = ({ navigation }) => {
                         <View style={styles.actionRow}>
                             <TouchableOpacity style={styles.actionBtn} onPress={() => navigation.navigate('ParentTransferScreen', { child })}>
                                 <CustomText style={styles.actionBtnText}>용돈 송금</CustomText>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.actionBtnOutline} onPress={() => navigation.navigate('ParentChildEdit', { child })}>
+                                <CustomText style={styles.actionBtnOutlineText}>정보 수정</CustomText>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.actionBtnDanger} onPress={() => handleDeleteMember(child)}>
+                                <CustomText style={styles.actionBtnDangerText}>가족 분리</CustomText>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -111,6 +148,10 @@ const styles = StyleSheet.create({
     sectionTitle: { fontSize: scale(18), fontWeight: 'bold', color: '#111' },
     manageText: { fontSize: scale(14), fontWeight: 'bold', color: '#6B7280' },
 
+    parentBalanceCard: { backgroundColor: '#3B82F6', borderRadius: scale(20), padding: scale(20), marginBottom: verticalScale(32), shadowColor: '#3B82F6', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: scale(8), elevation: 6 },
+    parentBalanceLabel: { fontSize: scale(14), color: '#E0F2FE', marginBottom: verticalScale(8) },
+    parentBalanceValue: { fontSize: scale(28), fontWeight: '900', color: '#FFFFFF' },
+
     childCard: { backgroundColor: '#FFFFFF', borderRadius: scale(20), padding: scale(20), marginBottom: verticalScale(16), shadowColor: '#000', shadowOffset: { width: 0, height: verticalScale(2) }, shadowOpacity: 0.05, shadowRadius: scale(4), elevation: 2 },
     childInfoRow: { flexDirection: 'row', alignItems: 'center', marginBottom: verticalScale(20) },
     childAvatarCircle: { width: scale(50), height: scale(50), borderRadius: scale(25), backgroundColor: '#E5E7EB', justifyContent: 'center', alignItems: 'center', marginRight: scale(16), overflow: 'hidden' },
@@ -121,9 +162,13 @@ const styles = StyleSheet.create({
     historyBtn: { backgroundColor: '#F3F4F6', paddingHorizontal: scale(12), paddingVertical: verticalScale(8), borderRadius: scale(8) },
     historyBtnText: { fontSize: scale(12), fontWeight: 'bold', color: '#4B5563' },
 
-    actionRow: { flexDirection: 'row', gap: scale(12) },
-    actionBtn: { flex: 1, backgroundColor: '#ECFCCB', paddingVertical: verticalScale(12), borderRadius: scale(12), alignItems: 'center' },
-    actionBtnText: { fontSize: scale(14), fontWeight: 'bold', color: '#4D7C0F' },
+    actionRow: { flexDirection: 'row', gap: scale(8), marginTop: verticalScale(4) },
+    actionBtn: { flex: 1.5, backgroundColor: '#ECFCCB', paddingVertical: verticalScale(10), borderRadius: scale(8), alignItems: 'center' },
+    actionBtnText: { fontSize: scale(13), fontWeight: 'bold', color: '#4D7C0F' },
+    actionBtnOutline: { flex: 1, backgroundColor: '#F3F4F6', paddingVertical: verticalScale(10), borderRadius: scale(8), alignItems: 'center' },
+    actionBtnOutlineText: { fontSize: scale(13), fontWeight: 'bold', color: '#4B5563' },
+    actionBtnDanger: { flex: 1, backgroundColor: '#FEE2E2', paddingVertical: verticalScale(10), borderRadius: scale(8), alignItems: 'center' },
+    actionBtnDangerText: { fontSize: scale(13), fontWeight: 'bold', color: '#DC2626' },
 
     addBabyCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: scale(16), padding: scale(20), marginBottom: verticalScale(32), borderStyle: 'dashed', borderWidth: 2, borderColor: '#D1D5DB' },
     addBabyIcon: { fontSize: scale(24), fontWeight: 'bold', color: '#9CA3AF', marginRight: scale(16) },

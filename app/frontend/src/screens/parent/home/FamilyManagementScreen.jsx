@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { View, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Alert, Modal, TextInput, Image } from 'react-native';
 import { scale, verticalScale } from 'react-native-size-matters';
 import CustomText from '../../../components/common/CustomText';
 import CustomTextInput from '../../../components/common/CustomTextInput';
@@ -9,6 +9,12 @@ const FamilyManagementScreen = ({ navigation }) => {
     const [profiles, setProfiles] = useState([]);
     const [editingId, setEditingId] = useState(null);
     const [editName, setEditName] = useState('');
+
+    // Modal states
+    const [isAddModalVisible, setIsAddModalVisible] = useState(false);
+    const [addName, setAddName] = useState('');
+    const [addBirth, setAddBirth] = useState('');
+    const [addRole, setAddRole] = useState('CHILD');
 
     const fetchProfiles = async () => {
         try {
@@ -33,35 +39,31 @@ const FamilyManagementScreen = ({ navigation }) => {
     }, []);
 
     const handleCreateProfile = () => {
-        Alert.alert(
-            '프로필 추가',
-            '추가할 가족 구성원의 역할을 선택하세요.',
-            [
-                { text: '취소', style: 'cancel' },
-                {
-                    text: '자녀 추가',
-                    onPress: async () => {
-                        try {
-                            const newName = `새 자녀 ${profiles.length + 1}`;
-                            await api.post('/families/members', { name: newName, role: "CHILD", birthDate: "2015-01-01" });
-                            Alert.alert('프로필 생성 완료', `${newName}의 계정이 추가되었습니다.`);
-                            fetchProfiles();
-                        } catch (error) { console.error('Profile create error', error); }
-                    }
-                },
-                {
-                    text: '부모(배우자) 추가',
-                    onPress: async () => {
-                        try {
-                            const newName = `새 부모 ${profiles.length + 1}`;
-                            await api.post('/families/members', { name: newName, role: "PARENT", birthDate: "1980-01-01" });
-                            Alert.alert('프로필 생성 완료', `${newName}의 계정이 추가되었습니다.`);
-                            fetchProfiles();
-                        } catch (error) { console.error('Profile create error', error); }
-                    }
-                }
-            ]
-        );
+        setAddName('');
+        setAddBirth('');
+        setAddRole('CHILD');
+        setIsAddModalVisible(true);
+    };
+
+    const submitAddProfile = async () => {
+        if (!addName.trim() || !addBirth.trim()) {
+            Alert.alert('알림', '이름과 생년월일(YYYY-MM-DD)을 모두 입력해주세요.');
+            return;
+        }
+        const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+        if (!dateRegex.test(addBirth)) {
+            Alert.alert('알림', '생년월일 형식을 YYYY-MM-DD (예: 2015-05-05)로 맞춰주세요.');
+            return;
+        }
+        try {
+            await api.post('/families/members', { name: addName, role: addRole, birthDate: addBirth });
+            Alert.alert('프로필 생성 완료', `${addName}의 계정이 추가되었습니다.`);
+            setIsAddModalVisible(false);
+            fetchProfiles();
+        } catch (error) {
+            console.error('Profile create error', error);
+            Alert.alert('오류', '프로필 추가 중 문제가 발생했습니다.');
+        }
     };
 
     const handleDelete = (memberId, name) => {
@@ -188,6 +190,35 @@ const FamilyManagementScreen = ({ navigation }) => {
                 </View>
 
             </ScrollView>
+
+            <Modal visible={isAddModalVisible} transparent={true} animationType="fade">
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        <CustomText style={styles.modalTitle}>새 가족 추가</CustomText>
+                        <TextInput style={styles.modalInput} placeholder="이름 (예: 안싸피)" placeholderTextColor="#9CA3AF" value={addName} onChangeText={setAddName} />
+                        <TextInput style={[styles.modalInput, { marginTop: 12 }]} placeholder="생년월일 (예: 2015-05-05)" placeholderTextColor="#9CA3AF" value={addBirth} onChangeText={setAddBirth} />
+
+                        <View style={{ flexDirection: 'row', marginTop: 12, marginBottom: 20, justifyContent: 'space-around' }}>
+                            <TouchableOpacity style={[styles.roleBtn, addRole === 'CHILD' && styles.roleBtnActive]} onPress={() => setAddRole('CHILD')}>
+                                <CustomText style={addRole === 'CHILD' ? styles.roleTextActive : styles.roleText}>자녀 추가</CustomText>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={[styles.roleBtn, addRole === 'PARENT' && styles.roleBtnActive]} onPress={() => setAddRole('PARENT')}>
+                                <CustomText style={addRole === 'PARENT' ? styles.roleTextActive : styles.roleText}>배우자 추가</CustomText>
+                            </TouchableOpacity>
+                        </View>
+
+                        <View style={styles.modalActionRow}>
+                            <TouchableOpacity style={[styles.modalBtn, { backgroundColor: '#E5E7EB' }]} onPress={() => setIsAddModalVisible(false)}>
+                                <CustomText style={{ color: '#4B5563', fontWeight: 'bold' }}>취소</CustomText>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={[styles.modalBtn, { backgroundColor: '#3B82F6' }]} onPress={submitAddProfile}>
+                                <CustomText style={{ color: '#FFF', fontWeight: 'bold' }}>저장하기</CustomText>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
+
         </SafeAreaView>
     );
 };
@@ -217,8 +248,8 @@ const styles = StyleSheet.create({
     },
     profileName: { fontSize: scale(16), fontWeight: 'bold', color: '#111', marginBottom: verticalScale(4) },
     profileStatus: { fontSize: scale(13), fontWeight: '600' },
-    statusPending: { color: '#F59E0B' }, // 주황색
-    statusActive: { color: '#10B981' }, // 초록색
+    statusPending: { color: '#F59E0B' },
+    statusActive: { color: '#10B981' },
 
     qrButton: { backgroundColor: '#F3F4F6', paddingHorizontal: scale(16), paddingVertical: verticalScale(8), borderRadius: scale(12) },
     qrButtonText: { fontSize: scale(14), fontWeight: 'bold', color: '#4B5563' },
@@ -232,6 +263,17 @@ const styles = StyleSheet.create({
     infoBox: { marginTop: verticalScale(32), backgroundColor: '#EFF6FF', padding: scale(16), borderRadius: scale(12) },
     infoTitle: { fontSize: scale(14), fontWeight: 'bold', color: '#1E3A8A', marginBottom: verticalScale(8) },
     infoText: { fontSize: scale(13), color: '#1E40AF', lineHeight: 20 },
+
+    modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
+    modalContent: { width: '85%', backgroundColor: '#FFF', borderRadius: scale(16), padding: scale(20) },
+    modalTitle: { fontSize: scale(18), fontWeight: 'bold', color: '#111', marginBottom: verticalScale(16), textAlign: 'center' },
+    modalInput: { width: '100%', height: scale(45), backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#D1D5DB', borderRadius: scale(8), paddingHorizontal: scale(12), fontSize: scale(14), color: '#111' },
+    roleBtn: { paddingVertical: verticalScale(8), paddingHorizontal: scale(16), borderRadius: scale(8), backgroundColor: '#F3F4F6' },
+    roleBtnActive: { backgroundColor: '#DBEAFE' },
+    roleText: { color: '#6B7280', fontWeight: 'bold' },
+    roleTextActive: { color: '#2563EB', fontWeight: 'bold' },
+    modalActionRow: { flexDirection: 'row', justifyContent: 'space-between', gap: scale(12) },
+    modalBtn: { flex: 1, height: scale(45), justifyContent: 'center', alignItems: 'center', borderRadius: scale(8) }
 });
 
 export default FamilyManagementScreen;

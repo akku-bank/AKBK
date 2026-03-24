@@ -1,5 +1,6 @@
 ﻿import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Platform, Image } from 'react-native';
+import CustomText from '../../components/common/CustomText';
 import { RFValue } from 'react-native-responsive-fontsize';
 
 const FamilyInvitationScreen = ({ navigation, route }) => {
@@ -27,13 +28,13 @@ const FamilyInvitationScreen = ({ navigation, route }) => {
                         />
                     </View>
 
-                    <Text style={styles.title}>
-                        <Text style={styles.highlight}>{inviterName}</Text>님이{'\n'}
+                    <CustomText style={styles.title}>
+                        <CustomText style={styles.highlight}>{inviterName}</CustomText>님이{'\n'}
                         가족으로 초대했어요!
-                    </Text>
-                    <Text style={styles.subtitle}>
+                    </CustomText>
+                    <CustomText style={styles.subtitle}>
                         초대를 수락하고 아꾸뱅꾸에서{'\n'}함께 금융 생활을 시작해볼까요?
-                    </Text>
+                    </CustomText>
                 </View>
 
                 <View style={styles.buttonSection}>
@@ -42,7 +43,7 @@ const FamilyInvitationScreen = ({ navigation, route }) => {
                         onPress={handleAccept}
                         activeOpacity={0.8}
                     >
-                        <Text style={styles.acceptButtonText}>수락하고 시작하기</Text>
+                        <CustomText style={styles.acceptButtonText}>수락하고 시작하기</CustomText>
                     </TouchableOpacity>
 
                     <TouchableOpacity
@@ -50,7 +51,7 @@ const FamilyInvitationScreen = ({ navigation, route }) => {
                         onPress={handleReject}
                         activeOpacity={0.8}
                     >
-                        <Text style={styles.rejectButtonText}>다음에 할게요</Text>
+                        <CustomText style={styles.rejectButtonText}>다음에 할게요</CustomText>
                     </TouchableOpacity>
                 </View>
             </View>
