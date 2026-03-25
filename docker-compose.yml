@@ -158,6 +158,8 @@
       context: ./app/backend # 백엔드 코드가 있는 경로
       dockerfile: Dockerfile
     container_name: akku_backend
+    ports:
+      - "8080:8080"
     depends_on:
       postgres:
         condition: service_healthy # DB가 완전히 뜬 후에 백엔드 실행

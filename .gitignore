@@ -171,3 +171,7 @@ data/spark/checkpoints/
 # zookeeper runtime data
 data/zookeeper/data/
 data/zookeeper/log/
+
+
+# certbot
+infra/nginx/certbot/
