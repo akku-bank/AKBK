@@ -1,11 +1,12 @@
 import React, { useCallback, useState } from 'react';
-import { View, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Alert, Image } from 'react-native';
+import { View, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Alert, Image, Modal } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { scale, verticalScale } from 'react-native-size-matters';
 import CustomText from '../../../components/common/CustomText';
 import api from '../../../api/axios';
 
 const CROCO_PARENTS_IMAGE = require('../../../assets/croco/croco_parents.png');
+const AKKU_WELCOME_IMAGE = require('../../../assets/croco/akku-welcome.png');
 
 const STATUS_UI = {
     PENDING: { label: '승인 대기', style: 'pending' },
@@ -45,6 +46,7 @@ const ChallengeScreen = ({ navigation }) => {
     const [nextWeekChallenges, setNextWeekChallenges] = useState([]);
     const [pastChallenges, setPastChallenges] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [isRewardSuccessVisible, setIsRewardSuccessVisible] = useState(false);
 
     const fetchChallenges = useCallback(async () => {
         setIsLoading(true);
@@ -84,6 +86,17 @@ const ChallengeScreen = ({ navigation }) => {
         } catch (error) {
             console.error('Reward request error', error);
             Alert.alert('오류', '보상 요청에 실패했습니다.');
+        }
+    };
+
+    const handleRewardRequestWithModal = async (challengeId) => {
+        try {
+            await api.post(`/challenges/spending/${challengeId}/reward`);
+            setIsRewardSuccessVisible(true);
+            fetchChallenges();
+        } catch (error) {
+            console.error('Reward request error', error);
+            Alert.alert('?ㅻ쪟', '蹂댁긽 ?붿껌???ㅽ뙣?덉뒿?덈떎.');
         }
     };
 
@@ -195,7 +208,7 @@ const ChallengeScreen = ({ navigation }) => {
                 {canRequestReward && (
                     <TouchableOpacity
                         style={styles.rewardBtn}
-                        onPress={() => handleRewardRequest(item.challengeId)}
+                        onPress={() => handleRewardRequestWithModal(item.challengeId)}
                     >
                         <CustomText style={styles.rewardBtnText}>보상 요청</CustomText>
                     </TouchableOpacity>
@@ -343,6 +356,31 @@ const ChallengeScreen = ({ navigation }) => {
                     </TouchableOpacity>
                 </>
             )}
+            <Modal
+                visible={isRewardSuccessVisible}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setIsRewardSuccessVisible(false)}
+            >
+                <View style={styles.successModalOverlay}>
+                    <View style={styles.successModalCard}>
+                        <View style={styles.successImageWrap}>
+                            <Image source={AKKU_WELCOME_IMAGE} style={styles.successImage} resizeMode="contain" />
+                        </View>
+                        <CustomText style={styles.successTitle}>보상 요청 완료</CustomText>
+                        <CustomText style={styles.successDescription}>
+                            부모님께 보상 송금 요청을 보냈어요.
+                        </CustomText>
+                        <TouchableOpacity
+                            style={styles.successButton}
+                            onPress={() => setIsRewardSuccessVisible(false)}
+                            activeOpacity={0.85}
+                        >
+                            <CustomText style={styles.successButtonText}>확인</CustomText>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
         </SafeAreaView>
     );
 };
@@ -485,7 +523,66 @@ const styles = StyleSheet.create({
         elevation: 3,
         marginBottom: verticalScale(8),
     },
-    fabMenuItemText: { fontSize: scale(15), fontWeight: 'bold', color: '#111' }
+    fabMenuItemText: { fontSize: scale(15), fontWeight: 'bold', color: '#111' },
+    successModalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(17, 24, 39, 0.38)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: scale(24),
+    },
+    successModalCard: {
+        width: '100%',
+        maxWidth: scale(320),
+        backgroundColor: '#FFFFFF',
+        borderRadius: scale(28),
+        paddingHorizontal: scale(24),
+        paddingTop: verticalScale(26),
+        paddingBottom: verticalScale(22),
+        alignItems: 'center',
+        shadowColor: '#111827',
+        shadowOffset: { width: 0, height: verticalScale(10) },
+        shadowOpacity: 0.14,
+        shadowRadius: scale(20),
+        elevation: 12,
+    },
+    successImageWrap: {
+        width: scale(168),
+        height: verticalScale(134),
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: verticalScale(8),
+    },
+    successImage: {
+        width: '100%',
+        height: '100%',
+    },
+    successTitle: {
+        fontSize: scale(22),
+        fontWeight: 'bold',
+        color: '#111827',
+        marginBottom: verticalScale(8),
+    },
+    successDescription: {
+        fontSize: scale(14),
+        lineHeight: scale(20),
+        color: '#6B7280',
+        textAlign: 'center',
+        marginBottom: verticalScale(20),
+    },
+    successButton: {
+        minWidth: scale(132),
+        backgroundColor: '#A3E635',
+        borderRadius: scale(999),
+        paddingVertical: verticalScale(12),
+        paddingHorizontal: scale(24),
+        alignItems: 'center',
+    },
+    successButtonText: {
+        fontSize: scale(15),
+        fontWeight: 'bold',
+        color: '#1F2937',
+    }
 });
 
 export default ChallengeScreen;
