@@ -27,6 +27,7 @@ const TABS = {
 const ChallengeScreen = ({ navigation }) => {
     const [activeTab, setActiveTab] = useState(TABS.REQUESTED);
     const [isFabOpen, setIsFabOpen] = useState(false);
+    const [isScheduledOpen, setIsScheduledOpen] = useState(true);
     const [thisWeekChallenges, setThisWeekChallenges] = useState([]);
     const [nextWeekChallenges, setNextWeekChallenges] = useState([]);
     const [pastChallenges, setPastChallenges] = useState([]);
@@ -196,6 +197,12 @@ const ChallengeScreen = ({ navigation }) => {
     };
 
     const currentChallenges = getCurrentChallenges();
+    const requestedChallenges = activeTab === TABS.REQUESTED
+        ? currentChallenges.filter((challenge) => challenge.status !== 'APPROVED')
+        : currentChallenges;
+    const scheduledChallenges = activeTab === TABS.REQUESTED
+        ? currentChallenges.filter((challenge) => challenge.status === 'APPROVED')
+        : [];
 
     return (
         <SafeAreaView style={styles.safeArea}>
@@ -241,7 +248,32 @@ const ChallengeScreen = ({ navigation }) => {
                         )}
                     </View>
                 ) : (
-                    currentChallenges.map(renderChallengeItem)
+                    activeTab === TABS.REQUESTED ? (
+                        <>
+                            {requestedChallenges.map(renderChallengeItem)}
+                            {scheduledChallenges.length > 0 && (
+                                <View style={styles.scheduledSection}>
+                                    <TouchableOpacity
+                                        style={styles.scheduledHeader}
+                                        onPress={() => setIsScheduledOpen((prev) => !prev)}
+                                        activeOpacity={0.8}
+                                    >
+                                        <CustomText style={styles.scheduledTitle}>진행 예정</CustomText>
+                                    </TouchableOpacity>
+                                    {isScheduledOpen && (
+                                        <>
+                                            <View style={styles.scheduledNotice}>
+                                                <CustomText style={styles.scheduledNoticeText}>다음주 월요일에 챌린지가 시작해요!</CustomText>
+                                            </View>
+                                            {scheduledChallenges.map(renderChallengeItem)}
+                                        </>
+                                    )}
+                                </View>
+                            )}
+                        </>
+                    ) : (
+                        currentChallenges.map(renderChallengeItem)
+                    )
                 )}
 
                 <View style={[styles.card, { marginTop: verticalScale(24), backgroundColor: '#F9FAFB' }]}>
@@ -366,6 +398,27 @@ const styles = StyleSheet.create({
         borderRadius: scale(25),
     },
     emptyAddBtnText: { fontSize: scale(16), fontWeight: 'bold', color: '#111' },
+    scheduledSection: { marginBottom: verticalScale(8) },
+    scheduledHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: verticalScale(12),
+        paddingHorizontal: scale(4),
+    },
+    scheduledTitle: { fontSize: scale(16), fontWeight: 'bold', color: '#374151' },
+    scheduledNotice: {
+        backgroundColor: '#F3F4F6',
+        borderRadius: scale(12),
+        paddingHorizontal: scale(14),
+        paddingVertical: verticalScale(5),
+        marginBottom: verticalScale(12),
+    },
+    scheduledNoticeText: {
+        fontSize: scale(12),
+        color: '#6B7280',
+        fontWeight: '600',
+        textAlign: 'center',
+    },
 
     menuTitle: { fontSize: scale(16), fontWeight: 'bold', color: '#4B5563', marginBottom: verticalScale(12) },
     menuBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', padding: scale(16), borderRadius: scale(12), marginBottom: verticalScale(12), borderWidth: 1, borderColor: '#E5E7EB' },

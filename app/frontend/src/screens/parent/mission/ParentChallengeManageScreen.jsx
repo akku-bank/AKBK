@@ -21,6 +21,8 @@ const ParentChallengeManageScreen = ({ navigation, route }) => {
     const routeChildId = route?.params?.childId || routeChild?.childId;
     const routeChildName = route?.params?.childName || routeChild?.name;
 
+    const [children, setChildren] = useState([]);
+    const [selectedChildId, setSelectedChildId] = useState(routeChildId || null);
     const [challenges, setChallenges] = useState([]);
     const [childName, setChildName] = useState(routeChildName || '자녀');
     const [isLoading, setIsLoading] = useState(true);
@@ -31,23 +33,29 @@ const ParentChallengeManageScreen = ({ navigation, route }) => {
                 setIsLoading(true);
 
                 try {
-                    let resolvedChildId = routeChildId;
-                    let resolvedChildName = routeChildName;
+                    const familyRes = await api.get('/families/members');
+                    const childMembers = (familyRes.data?.data?.members || []).filter(
+                        member => member.role === 'CHILD' && member.userId
+                    );
 
-                    if (!resolvedChildId) {
-                        const familyRes = await api.get('/families/members');
-                        const firstChild = (familyRes.data?.data?.members || []).find(
-                            member => member.role === 'CHILD' && member.userId
-                        );
+                    setChildren(childMembers);
 
-                        if (!firstChild) {
-                            setChallenges([]);
-                            setChildName('자녀');
-                            return;
-                        }
+                    const resolvedChild =
+                        childMembers.find(member => member.userId === (selectedChildId || routeChildId)) ||
+                        childMembers[0];
 
-                        resolvedChildId = firstChild.userId;
-                        resolvedChildName = firstChild.name;
+                    if (!resolvedChild) {
+                        setChallenges([]);
+                        setChildName('자녀');
+                        setSelectedChildId(null);
+                        return;
+                    }
+
+                    const resolvedChildId = resolvedChild.userId;
+                    const resolvedChildName = resolvedChild.name;
+
+                    if (resolvedChildId !== selectedChildId) {
+                        setSelectedChildId(resolvedChildId);
                     }
 
                     const res = await api.get('/challenges/spending', {
@@ -66,7 +74,7 @@ const ParentChallengeManageScreen = ({ navigation, route }) => {
             };
 
             fetchChallenges();
-        }, [routeChildId, routeChildName])
+        }, [routeChildId, routeChildName, selectedChildId])
     );
 
     const renderStatusBadge = (status) => {
@@ -98,14 +106,35 @@ const ParentChallengeManageScreen = ({ navigation, route }) => {
     return (
         <SafeAreaView style={styles.safeArea}>
             <View style={styles.header}>
-                <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-                    <CustomText style={styles.backButtonText}>←</CustomText>
-                </TouchableOpacity>
                 <CustomText style={styles.headerTitle}>용돈 미션 관리</CustomText>
-                <View style={{ width: scale(32) }} />
             </View>
 
             <ScrollView contentContainerStyle={styles.container}>
+                {children.length > 0 && (
+                    <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={styles.childTabs}
+                    >
+                        {children.map((child) => {
+                            const isActive = child.userId === selectedChildId;
+
+                            return (
+                                <TouchableOpacity
+                                    key={child.userId}
+                                    style={[styles.childTab, isActive && styles.childTabActive]}
+                                    onPress={() => setSelectedChildId(child.userId)}
+                                    activeOpacity={0.85}
+                                >
+                                    <CustomText style={[styles.childTabText, isActive && styles.childTabTextActive]}>
+                                        {child.name}
+                                    </CustomText>
+                                </TouchableOpacity>
+                            );
+                        })}
+                    </ScrollView>
+                )}
+
                 <CustomText style={styles.sectionTitle}>{childName}의 소비 챌린지</CustomText>
 
                 {isLoading ? (
@@ -161,23 +190,40 @@ const styles = StyleSheet.create({
     header: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
+        justifyContent: 'center',
         paddingHorizontal: scale(16),
         paddingVertical: verticalScale(16),
         backgroundColor: '#F3F4F6'
     },
-    backButton: { width: scale(32), height: scale(32), justifyContent: 'center' },
-    backButtonText: { fontSize: scale(22), fontWeight: 'bold', color: '#111' },
     headerTitle: { fontSize: scale(18), fontWeight: 'bold', color: '#111' },
     container: { flexGrow: 1, paddingHorizontal: scale(16), paddingTop: verticalScale(20) },
+    childTabs: { paddingBottom: verticalScale(14) },
+    childTab: {
+        backgroundColor: '#E5E7EB',
+        borderRadius: scale(999),
+        paddingHorizontal: scale(14),
+        paddingVertical: verticalScale(8),
+        marginRight: scale(8),
+    },
+    childTabActive: {
+        backgroundColor: '#D9F99D',
+    },
+    childTabText: {
+        fontSize: scale(13),
+        fontWeight: '600',
+        color: '#4B5563',
+    },
+    childTabTextActive: {
+        color: '#365314',
+    },
 
     sectionTitle: { fontSize: scale(16), fontWeight: 'bold', color: '#4B5563', marginBottom: verticalScale(16) },
 
     card: {
         backgroundColor: '#FFFFFF',
         borderRadius: scale(16),
-        padding: scale(20),
-        marginBottom: verticalScale(16),
+        padding: scale(16),
+        marginBottom: verticalScale(12),
         shadowColor: '#000',
         shadowOffset: { width: 0, height: verticalScale(2) },
         shadowOpacity: 0.05,
@@ -196,10 +242,10 @@ const styles = StyleSheet.create({
     statusBadgeFail: { backgroundColor: '#FEE2E2' },
     statusTextFail: { color: '#B91C1C' },
 
-    childName: { fontSize: scale(13), color: '#6B7280', marginBottom: verticalScale(16) },
+    childName: { fontSize: scale(13), color: '#6B7280', marginBottom: verticalScale(10) },
 
-    infoSection: { marginTop: verticalScale(4) },
-    infoRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: verticalScale(8) },
+    infoSection: { marginTop: verticalScale(2) },
+    infoRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: verticalScale(5) },
     infoLabel: { fontSize: scale(13), color: '#6B7280' },
     infoValue: { fontSize: scale(13), fontWeight: 'bold', color: '#111' },
     emptyBox: {
