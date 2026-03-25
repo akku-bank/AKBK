@@ -78,8 +78,6 @@
     volumes:
       # 코드 변경 시 컨테이너 내부의 /app 디렉토리에 자동 반영
       - .:/app # 배포 시 삭제 !!!!!
-    ports:
-      - "8000:8000"
     restart: always
     command: uvicorn ai.main:app --host 0.0.0.0 --port 8000 --reload
     networks:
@@ -162,8 +160,6 @@
         condition: service_healthy # DB가 완전히 뜬 후에 백엔드 실행
       kafka:
         condition: service_healthy # Kafka가 완전히 뜬 후에 백엔드 실행
-    ports:
-      - "8080:8080" # 외부에서 localhost:8080으로 API 호출 가능
     env_file:
       - .env # 최상단 .env 파일의 변수들(JWT, KAKAO 등)을 주입받음
     environment:
@@ -181,23 +177,23 @@
       - default
       - proxy_net
 
-  frontend:
-    build:
-      context: ./app/frontend
-      dockerfile: Dockerfile
-    container_name: akku_frontend
-    command: npm start
-    depends_on:
-      backend:
-        condition: service_started
-    ports:
-      - "8081:8081"
-    volumes:
-      - ./app/frontend:/app # 코드 변경 시 컨테이너 내부의 /app 디렉토리에 자동 반영
-      - /app/node_modules # node_modules는 호스트와 공유하지 않음 (컨테이너 내부에서 설치)
-    env_file:
-      - .env # 최상단 .env 파일의 변수들(JWT, KAKAO 등)을 주입받음
-    restart: always
+  # frontend:
+  #   build:
+  #     context: ./app/frontend
+  #     dockerfile: Dockerfile
+  #   container_name: akku_frontend
+  #   command: npm start
+  #   depends_on:
+  #     backend:
+  #       condition: service_started
+  #   ports:
+  #     - "8081:8081"
+  #   volumes:
+  #     - ./app/frontend:/app # 코드 변경 시 컨테이너 내부의 /app 디렉토리에 자동 반영
+  #     - /app/node_modules # node_modules는 호스트와 공유하지 않음 (컨테이너 내부에서 설치)
+  #   env_file:
+  #     - .env # 최상단 .env 파일의 변수들(JWT, KAKAO 등)을 주입받음
+  #   restart: always
 
   # Spark Master: 클러스터 매니저 역할
   spark-master:
