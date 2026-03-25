@@ -48,9 +48,14 @@ export const AvatarProvider = ({ children }) => {
                         nextState.lower = 'none';
                         nextState.shoe = 'none';
                     }
-                    // 단품 장착 시 한벌옷 벗기기
+                    // 단품 장착 시 한벌옷 벗기기 (이 때 알몸 방지)
                     else if (['upper', 'lower', 'shoe'].includes(category)) {
-                        nextState.outfit = 'none';
+                        if (nextState.outfit !== 'none') {
+                            nextState.outfit = 'none';
+                            // 방금 입은 부위가 아닌 나머지 핵심 부위들은 기본옷으로 채워놓기
+                            if (category !== 'upper') nextState.upper = 'upper1';
+                            if (category !== 'lower') nextState.lower = 'lower1';
+                        }
                     }
                 } else if (itemId === 'none') {
                     // 명시적 '해제(X)' 버튼 클릭 시 알몸 방지

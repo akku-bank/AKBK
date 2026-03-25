@@ -125,7 +125,7 @@ const AvatarDictionaryScreen = ({ navigation }) => {
                             <View key={item.id} style={[styles.itemCard, isLocked && styles.lockedCard]}>
                                 <View style={styles.imageBox}>
                                     {Array.isArray(item.image) ? (
-                                        <View style={{ width: '130%', height: '130%', position: 'relative' }}>
+                                        <View style={{ width: item.id.includes('akku') ? '100%' : '130%', height: item.id.includes('akku') ? '100%' : '130%', position: 'relative', marginTop: -20 }}>
                                             {item.image.map((imgSrc, idx) => (
                                                 <Image
                                                     key={idx}
@@ -138,7 +138,7 @@ const AvatarDictionaryScreen = ({ navigation }) => {
                                     ) : (
                                         <Image
                                             source={item.image}
-                                            style={[styles.itemImage, isLocked && styles.lockedImage]}
+                                            style={[styles.itemImage, item.id.includes('akku') ? { width: '70%', height: '70%', marginTop: -20 } : { marginTop: -20 }, isLocked && styles.lockedImage]}
                                             resizeMode="contain"
                                         />
                                     )}

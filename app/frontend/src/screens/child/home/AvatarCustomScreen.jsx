@@ -135,13 +135,13 @@ const AvatarCustomScreen = ({ navigation }) => {
                         >
                             <View style={styles.itemImageContainer}>
                                 {Array.isArray(item.img) ? (
-                                    <View style={{ width: 60, height: 60 }}>
+                                    <View style={{ width: item.id.includes('akku') ? 45 : 60, height: item.id.includes('akku') ? 45 : 60, position: 'relative', marginTop: -20 }}>
                                         {item.img.map((imgSrc, idx) => (
-                                            <Image key={idx} source={imgSrc} style={[styles.itemThumbnail, { position: 'absolute' }]} resizeMode="contain" />
+                                            <Image key={idx} source={imgSrc} style={[{ width: '100%', height: '100%' }, { position: 'absolute' }]} resizeMode="contain" />
                                         ))}
                                     </View>
                                 ) : item.img ? (
-                                    <Image source={item.img} style={styles.itemThumbnail} resizeMode="contain" />
+                                    <Image source={item.img} style={[styles.itemThumbnail, item.id.includes('akku') ? { width: 45, height: 45, marginTop: -20 } : { marginTop: -20 }]} resizeMode="contain" />
                                 ) : (
                                     <CustomText style={styles.noneText}>X</CustomText>
                                 )}

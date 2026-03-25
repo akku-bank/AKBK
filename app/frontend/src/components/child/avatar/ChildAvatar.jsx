@@ -81,10 +81,25 @@ const ChildAvatar = ({
                 )}
             </View>
 
-            {/* 3. 상체 이동 (상의가 하의 밑에 깔리도록 먼저 렌더링) */}
+            {/* 2. 상체 기본 뼈대 (가장 뒤에 깔림, 숨쉬기 연동) */}
             <View style={[styles.layer, { transform: [{ translateY: bodyOffsetY }] }]}>
                 <Image source={AVATAR_ASSETS.body.upper_base} style={styles.layer} />
+            </View>
 
+            {/* 하체 기본 뼈대 (상체 뼈대 위로 올라옴) */}
+            <Image source={AVATAR_ASSETS.body.lower_base} style={styles.layer} />
+
+            {/* 하의 장착 (바지가 상체보다 앞에 그려짐) */}
+            {equipState.outfit && equipState.outfit !== 'none' && AVATAR_ASSETS.outfit[equipState.outfit] ? (
+                <Image source={AVATAR_ASSETS.outfit[equipState.outfit].lower} style={styles.layer} />
+            ) : (
+                equipState.lower !== 'none' && AVATAR_ASSETS.lower[equipState.lower] && (
+                    <Image source={AVATAR_ASSETS.lower[equipState.lower]} style={styles.layer} />
+                )
+            )}
+
+            {/* 3. 상의 장착 (가장 위에서 덮음, 숨쉬기 연동) */}
+            <View style={[styles.layer, { transform: [{ translateY: bodyOffsetY }] }]}>
                 {/* 상의 장착 (한벌옷이 있으면 한벌옷 상의 우선 렌더링) */}
                 {equipState.outfit && equipState.outfit !== 'none' && AVATAR_ASSETS.outfit[equipState.outfit] ? (
                     <Image source={AVATAR_ASSETS.outfit[equipState.outfit].upper} style={styles.layer} />
@@ -94,18 +109,6 @@ const ChildAvatar = ({
                     )
                 )}
             </View>
-
-            {/* 하체 고정 (상의 위에 렌더링되도록 뒤로 배치) */}
-            <Image source={AVATAR_ASSETS.body.lower_base} style={styles.layer} />
-
-            {/* 하의 장착 (한벌옷이 있으면 한벌옷 하의 우선 렌더링) */}
-            {equipState.outfit && equipState.outfit !== 'none' && AVATAR_ASSETS.outfit[equipState.outfit] ? (
-                <Image source={AVATAR_ASSETS.outfit[equipState.outfit].lower} style={styles.layer} />
-            ) : (
-                equipState.lower !== 'none' && AVATAR_ASSETS.lower[equipState.lower] && (
-                    <Image source={AVATAR_ASSETS.lower[equipState.lower]} style={styles.layer} />
-                )
-            )}
 
             {/* 신발 장착 (한벌옷이 있으면 한벌옷 신발 우선 렌더링) */}
             {equipState.outfit && equipState.outfit !== 'none' && AVATAR_ASSETS.outfit[equipState.outfit] && AVATAR_ASSETS.outfit[equipState.outfit].shoe ? (

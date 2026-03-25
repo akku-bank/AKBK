@@ -29,6 +29,7 @@ import ParentChallengeManageScreen from './src/screens/parent/mission/ParentChal
 import FamilyManagementScreen from './src/screens/parent/home/FamilyManagementScreen';
 import { AvatarProvider } from './src/components/child/avatar/AvatarContext';
 
+import AnimatedSplashScreen from './src/screens/auth/AnimatedSplashScreen';
 import OnboardingTutorialScreen from './src/screens/auth/OnboardingTutorialScreen';
 import FamilyInvitationScreen from './src/screens/auth/FamilyInvitationScreen';
 import SocialLoginScreen from './src/screens/auth/SocialLoginScreen';
@@ -97,7 +98,8 @@ export default function App() {
       <SafeAreaProvider style={{ flex: 1 }}>
         <AvatarProvider>
           <NavigationContainer>
-            <Stack.Navigator screenOptions={{ headerShown: false, freezeOnBlur: false, animationEnabled: false }} detachInactiveScreens={false} initialRouteName="OnboardingTutorial">
+            <Stack.Navigator screenOptions={{ headerShown: false, freezeOnBlur: false, animationEnabled: false }} detachInactiveScreens={false} initialRouteName="AnimatedSplash">
+              <Stack.Screen name="AnimatedSplash" component={AnimatedSplashScreen} />
               <Stack.Screen name="OnboardingTutorial" component={OnboardingTutorialScreen} />
               <Stack.Screen name="FamilyInvitation" component={FamilyInvitationScreen} />
               <Stack.Screen name="SocialLogin" component={SocialLoginScreen} />
