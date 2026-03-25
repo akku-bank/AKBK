@@ -33,4 +33,7 @@ public class Charity {
 
     @Column(columnDefinition = "TEXT")
     private String description;
+
+    @Column(length = 50)
+    private String category;
 }
