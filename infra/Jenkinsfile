@@ -20,7 +20,6 @@ pipeline {
                     env.TRIGGER_USER  = env.gitlabUserName ?: "unknown"
                     env.DEPLOY_STATUS = "배포: 대상 아님"
 
-                    // 최신 커밋 메시지 읽기
                     def commitMessage = sh(
                         script: "git log -1 --pretty=%B",
                         returnStdout: true
@@ -31,8 +30,6 @@ pipeline {
                     def sourceBranch = ""
                     def targetBranch = env.BUILT_BRANCH
 
-                    // merge commit 메시지 예시:
-                    // Merge branch 'fix/infra/S14P21B101-120_jenkins-alert-message' into 'develop'
                     def matcher = (commitMessage =~ /Merge branch '(.+)' into '(.+)'/)
 
                     if (matcher) {
@@ -40,24 +37,22 @@ pipeline {
                         targetBranch = matcher[0][2]
                     }
 
-                    // env에 저장해야 다음 stage에서 사용 가능
                     env.SOURCE_BRANCH = sourceBranch ?: ""
                     env.TARGET_BRANCH = targetBranch ?: "unknown"
 
                     echo "SOURCE_BRANCH=${env.SOURCE_BRANCH}"
                     echo "TARGET_BRANCH=${env.TARGET_BRANCH}"
 
-                    // 팀 판별용 기준 브랜치
                     def branchForTeam = sourceBranch?.trim() ? sourceBranch : env.BUILT_BRANCH
                     def parts = branchForTeam.tokenize('/')
                     def teamCode = parts.size() >= 2 ? parts[1].toLowerCase() : "unknown"
 
                     def teamMap = [
-                        "ai"   : "AI",
-                        "de"   : "DATA",
-                        "be"   : "BACKEND",
-                        "fe"   : "FRONTEND",
-                        "infra"   : "INFRA"
+                        "ai"    : "AI",
+                        "de"    : "DATA",
+                        "be"    : "BACKEND",
+                        "fe"    : "FRONTEND",
+                        "infra" : "INFRA"
                     ]
 
                     env.TARGET_TEAM = teamMap.get(teamCode, "COMMON_OPS")
@@ -105,33 +100,127 @@ pipeline {
                     usernameVariable: 'GIT_USERNAME',
                     passwordVariable: 'GIT_PASSWORD'
                 )]) {
-                    sh '''
-                        set -e
-                        echo "[Deploy] 프로젝트 디렉토리로 이동: ${DEPLOY_PATH}"
-                        cd "${DEPLOY_PATH}"
+                    script {
+                        def deployResult = sh(
+                            script: '''
+                                set -e
+                                echo "[Deploy] 프로젝트 디렉토리로 이동: ${DEPLOY_PATH}"
+                                cd "${DEPLOY_PATH}"
 
-                        echo "[Deploy] git safe.directory 설정"
-                        git config --global --add safe.directory "${DEPLOY_PATH}"
+                                echo "[Deploy] git safe.directory 설정"
+                                git config --global --add safe.directory "${DEPLOY_PATH}"
 
-                        echo "[Deploy] origin URL 설정"
-                        git remote set-url origin https://lab.ssafy.com/s14-fintech-finance-sub1/S14P21B101.git
+                                echo "[Deploy] origin URL 설정"
+                                git remote set-url origin https://lab.ssafy.com/s14-fintech-finance-sub1/S14P21B101.git
 
-                        echo "[Deploy] develop 브랜치 최신화"
-                        git -c "credential.helper=!f() { echo username=${GIT_USERNAME}; echo password=${GIT_PASSWORD}; }; f" fetch origin develop
-                        git reset --hard origin/develop
+                                echo "[Deploy] develop 브랜치 최신화"
+                                git -c "credential.helper=!f() { echo username=${GIT_USERNAME}; echo password=${GIT_PASSWORD}; }; f" fetch origin develop
+                                git reset --hard origin/develop
 
-                        echo "[Deploy] docker compose 빌드 및 재기동"
-                        docker-compose -f docker-compose.yml up -d --build
+                                echo "[Deploy] 변경 파일 목록 추출"
+                                CHANGED_FILES=$(git diff-tree --no-commit-id --name-only -r HEAD || true)
+                                echo "===== CHANGED FILES ====="
+                                echo "$CHANGED_FILES"
+                                echo "========================="
 
-                        echo "[Deploy] 미사용 이미지 정리"
-                        docker image prune -f
+                                SERVICES=""
+                                RUN_KAFKA_INIT="false"
 
-                        echo "[Deploy] 배포 완료"
-                    '''
-                }
+                                add_service() {
+                                  for svc in "$@"; do
+                                    if ! echo " $SERVICES " | grep -q " $svc "; then
+                                      SERVICES="$SERVICES $svc"
+                                    fi
+                                  done
+                                }
 
-                script {
-                    env.DEPLOY_STATUS = "배포: EC2 develop 반영 완료"
+                                if echo "$CHANGED_FILES" | grep -qE '^(app/backend/)'; then
+                                  echo "[Deploy] backend 변경 감지"
+                                  add_service backend
+                                fi
+
+                                if echo "$CHANGED_FILES" | grep -qE '^(ai/)'; then
+                                  echo "[Deploy] ai 변경 감지"
+                                  add_service ai-server airflow
+                                fi
+
+                                if echo "$CHANGED_FILES" | grep -qE '^(data/spark/)'; then
+                                  echo "[Deploy] spark 변경 감지"
+                                  add_service spark-master spark-worker
+                                fi
+
+                                if echo "$CHANGED_FILES" | grep -qE '^(data/kafka-init/)'; then
+                                  echo "[Deploy] kafka-init 변경 감지"
+                                  RUN_KAFKA_INIT="true"
+                                fi
+
+                                if echo "$CHANGED_FILES" | grep -qE '^(docker-compose\\.yml|\\.env)$'; then
+                                  echo "[Deploy] compose/env 변경 감지"
+                                  add_service backend ai-server airflow
+                                fi
+
+                                if echo "$CHANGED_FILES" | grep -qE '^(app/backend/Dockerfile|ai/Dockerfile|gradlew|build.gradle|settings.gradle)'; then
+                                  echo "[Deploy] 공통 빌드 설정 변경 감지"
+                                  add_service backend ai-server
+                                fi
+
+                                ONLY_INFRA_CHANGED="false"
+                                if [ -n "$CHANGED_FILES" ]; then
+                                  if echo "$CHANGED_FILES" | grep -qvE '^(infra/)'; then
+                                    ONLY_INFRA_CHANGED="false"
+                                  else
+                                    ONLY_INFRA_CHANGED="true"
+                                  fi
+                                fi
+
+                                if [ "$ONLY_INFRA_CHANGED" = "true" ]; then
+                                  echo "[Deploy] infra 경로만 변경됨 - 루트 앱 배포 생략"
+                                  SERVICES=""
+                                  RUN_KAFKA_INIT="false"
+                                fi
+
+                                SERVICES=$(echo "$SERVICES" | xargs || true)
+
+                                echo "[Deploy] 최종 대상 서비스: ${SERVICES:-없음}"
+                                echo "[Deploy] kafka-init 실행 여부: $RUN_KAFKA_INIT"
+
+                                if [ -z "$SERVICES" ] && [ "$RUN_KAFKA_INIT" = "false" ]; then
+                                  echo "[Deploy] 재배포 대상 없음 - 배포 생략"
+                                  echo "SKIPPED"
+                                  exit 0
+                                fi
+
+                                if [ -n "$SERVICES" ]; then
+                                  echo "[Deploy] 대상 서비스 빌드 시작: $SERVICES"
+                                  docker-compose -f docker-compose.yml build $SERVICES
+
+                                  echo "[Deploy] 대상 서비스 재기동 시작: $SERVICES"
+                                  docker-compose -f docker-compose.yml up -d $SERVICES
+                                fi
+
+                                if [ "$RUN_KAFKA_INIT" = "true" ]; then
+                                  echo "[Deploy] kafka-init 실행"
+                                  docker-compose -f docker-compose.yml up kafka-init
+                                fi
+
+                                echo "[Deploy] 미사용 이미지 정리"
+                                docker image prune -f
+
+                                echo "DEPLOYED"
+                            ''',
+                            returnStdout: true
+                        ).trim()
+
+                        echo deployResult
+
+                        if (deployResult.contains("SKIPPED")) {
+                            env.DEPLOY_STATUS = "배포: 스킵됨 (재배포 대상 없음)"
+                        } else if (deployResult.contains("DEPLOYED")) {
+                            env.DEPLOY_STATUS = "배포: EC2 develop 반영 완료"
+                        } else {
+                            env.DEPLOY_STATUS = "배포: 상태 확인 필요"
+                        }
+                    }
                 }
             }
         }
@@ -140,10 +229,10 @@ pipeline {
     post {
         success {
             sh """
-            curl -X POST -H 'Content-Type: application/json' \
+            curl -X POST -H 'Content-Type: application/json' \\
             -d '{
-              "text":"✅ **[${env.TARGET_TEAM}] Jenkins 빌드 성공**\\n- 프로젝트: ${env.JOB_NAME}\\n- 빌드 번호: #${env.BUILD_NUMBER}\\n- 브랜치: ${env.BRANCH_DISPLAY}\\n- 요청자: ${env.TRIGGER_USER}\\n- ${env.DEPLOY_STATUS}\\n- 확인: ${env.BUILD_URL}"
-            }' \
+              "text":"✅ **[${env.TARGET_TEAM}] Jenkins 빌드 성공**\\\\n- 프로젝트: ${env.JOB_NAME}\\\\n- 빌드 번호: #${env.BUILD_NUMBER}\\\\n- 브랜치: ${env.BRANCH_DISPLAY}\\\\n- 요청자: ${env.TRIGGER_USER}\\\\n- ${env.DEPLOY_STATUS}\\\\n- 확인: ${env.BUILD_URL}"
+            }' \\
             ${MM_WEBHOOK}
             """
         }
@@ -167,16 +256,16 @@ pipeline {
 
                 if (analyzeStatus == 0) {
                     sh """
-                    curl -X POST -H 'Content-Type: application/json' \
-                    -d @${env.WORKSPACE}/mattermost_payload.json \
+                    curl -X POST -H 'Content-Type: application/json' \\
+                    -d @${env.WORKSPACE}/mattermost_payload.json \\
                     ${MM_WEBHOOK}
                     """
                 } else {
                     sh """
-                    curl -X POST -H 'Content-Type: application/json' \
+                    curl -X POST -H 'Content-Type: application/json' \\
                     -d '{
-                      "text":"❌ **[${env.TARGET_TEAM}] Jenkins 빌드 실패**\\n- 프로젝트: ${env.JOB_NAME}\\n- 빌드 번호: #${env.BUILD_NUMBER}\\n- 브랜치: ${env.BRANCH_DISPLAY}\\n- 요청자: ${env.TRIGGER_USER}\\n- 확인: ${env.BUILD_URL}console\\n- 비고: analyze_log.py 실행 실패"
-                    }' \
+                      "text":"❌ **[${env.TARGET_TEAM}] Jenkins 빌드 실패**\\\\n- 프로젝트: ${env.JOB_NAME}\\\\n- 빌드 번호: #${env.BUILD_NUMBER}\\\\n- 브랜치: ${env.BRANCH_DISPLAY}\\\\n- 요청자: ${env.TRIGGER_USER}\\\\n- 확인: ${env.BUILD_URL}console\\\\n- 비고: analyze_log.py 실행 실패"
+                    }' \\
                     ${MM_WEBHOOK}
                     """
                 }
