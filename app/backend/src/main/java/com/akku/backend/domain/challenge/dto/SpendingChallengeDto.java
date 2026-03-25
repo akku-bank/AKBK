@@ -74,6 +74,7 @@ public class SpendingChallengeDto {
         private Long targetSpending;
         private Long rewardAmount;
         private String status;
+        private String parentMessage; // 부모의 메모
         private LocalDate startDate;
         private LocalDate endDate;
     }

@@ -6,8 +6,8 @@
       POSTGRES_USER: ${DB_USERNAME}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: ${DB_NAME}
-    ports:
-      - "5432:5432"
+    # ports:
+    #   - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./ai/db/init:/docker-entrypoint-initdb.d
@@ -78,16 +78,17 @@
     volumes:
       # 코드 변경 시 컨테이너 내부의 /app 디렉토리에 자동 반영
       - .:/app # 배포 시 삭제 !!!!!
-    ports:
-      - "8000:8000"
     restart: always
     command: uvicorn ai.main:app --host 0.0.0.0 --port 8000 --reload
+    networks:
+      - default
+      - proxy_net
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.6.0
     container_name: akkubangkku_zookeeper
-    ports:
-      - "2181:2181"
+    # ports:
+    #   - "2181:2181"
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
@@ -99,20 +100,23 @@
   kafka:
     image: confluentinc/cp-kafka:7.6.0
     container_name: akkubangkku_kafka
-    ports:
-      - "28080:28080"
-      - "29092:29092"
+    # ports:
+    #   - "28080:28080"
+    #   - "29092:29092"
     environment:
       KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: akkubangkku_zookeeper:2181
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
 
       # 내부 도커 통신용: akkubangkku_kafka:29092
       # 로컬 호스트 접속용: localhost:9092
-      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092,PLAINTEXT_HOST://0.0.0.0:28080
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://akkubangkku_kafka:29092,PLAINTEXT_HOST://localhost:28080
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      # KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092,PLAINTEXT_HOST://0.0.0.0:28080
+      # KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://akkubangkku_kafka:29092,PLAINTEXT_HOST://localhost:28080
+      # KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-
+ 
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
@@ -122,7 +126,7 @@
     volumes:
       - kafka_data:/var/lib/kafka/data
     healthcheck:
-      test: [ "CMD-SHELL", "nc -z localhost 28080 || exit 1" ]
+      test: [ "CMD-SHELL", "nc -z localhost 29092 || exit 1" ]
       interval: 10s
       timeout: 10s
       retries: 10
@@ -134,8 +138,8 @@
       - "8090:8080"
     environment:
       KAFKA_CLUSTERS_0_NAME: Akkubangkku-Cluster
-      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: akkubangkku_kafka:29092
-      KAFKA_CLUSTERS_0_ZOOKEEPER: akkubangkku_zookeeper:2181
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
     depends_on:
       - kafka
 
@@ -154,13 +158,13 @@
       context: ./app/backend # 백엔드 코드가 있는 경로
       dockerfile: Dockerfile
     container_name: akku_backend
+    ports:
+      - "8080:8080"
     depends_on:
       postgres:
         condition: service_healthy # DB가 완전히 뜬 후에 백엔드 실행
       kafka:
         condition: service_healthy # Kafka가 완전히 뜬 후에 백엔드 실행
-    ports:
-      - "8080:8080" # 외부에서 localhost:8080으로 API 호출 가능
     env_file:
       - .env # 최상단 .env 파일의 변수들(JWT, KAKAO 등)을 주입받음
     environment:
@@ -171,27 +175,30 @@
       - DB_USERNAME=${DB_USERNAME}
       - DB_PASSWORD=${DB_PASSWORD}
       - EXTERNAL_FASTAPI_BASE_URL=http://ai-server:8000 # localhost:8000 대신 ai_server 컨테이너 이름 사용
-      - KAFKA_BOOTSTRAP_SERVERS=akkubangkku_kafka:29092
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
       - OFFLINE_PAYMENT_SYSTEM_KEY=${OFFLINE_PAYMENT_SYSTEM_KEY}
     restart: always
+    networks:
+      - default
+      - proxy_net
 
-  frontend:
-    build:
-      context: ./app/frontend
-      dockerfile: Dockerfile
-    container_name: akku_frontend
-    command: npm start
-    depends_on:
-      backend:
-        condition: service_started
-    ports:
-      - "8081:8081"
-    volumes:
-      - ./app/frontend:/app # 코드 변경 시 컨테이너 내부의 /app 디렉토리에 자동 반영
-      - /app/node_modules # node_modules는 호스트와 공유하지 않음 (컨테이너 내부에서 설치)
-    env_file:
-      - .env # 최상단 .env 파일의 변수들(JWT, KAKAO 등)을 주입받음
-    restart: always
+  # frontend:
+  #   build:
+  #     context: ./app/frontend
+  #     dockerfile: Dockerfile
+  #   container_name: akku_frontend
+  #   command: npm start
+  #   depends_on:
+  #     backend:
+  #       condition: service_started
+  #   ports:
+  #     - "8081:8081"
+  #   volumes:
+  #     - ./app/frontend:/app # 코드 변경 시 컨테이너 내부의 /app 디렉토리에 자동 반영
+  #     - /app/node_modules # node_modules는 호스트와 공유하지 않음 (컨테이너 내부에서 설치)
+  #   env_file:
+  #     - .env # 최상단 .env 파일의 변수들(JWT, KAKAO 등)을 주입받음
+  #   restart: always
 
   # Spark Master: 클러스터 매니저 역할
   spark-master:
@@ -209,7 +216,7 @@
       - SPARK_MODE=master
     ports:
       - "18080:8080"
-      - "7077:7077"
+      - "7077:7077"    # spark 7077은 내부용이면 제거 검토
     volumes:
       - ./data/spark:/opt/spark/work-dir
     command: >
@@ -238,8 +245,8 @@
     image: redis:latest
     container_name: akkubangkku_redis
     command: redis-server --appendonly yes # [중요] AOF 기능 활성화
-    ports:
-      - "6379:6379"
+    # ports:
+    #   - "6379:6379"
     volumes:
       - redis_data:/data
     restart: always
@@ -256,4 +263,9 @@ volumes:
   kafka_data:
   redis_data:
 
-
+# 외부 네트워크 생성 필수: docker network create akku_proxy_net
+# 서버에서 한 번만 실행하여 akku_proxy_net 네트워크를 만들어야 nginx와 통신 가능
+networks:
+  proxy_net:
+    external: true
+    name: akku_proxy_net
