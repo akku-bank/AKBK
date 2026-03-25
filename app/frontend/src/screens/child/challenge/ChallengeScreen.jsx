@@ -24,6 +24,19 @@ const TABS = {
     COMPLETED: 'COMPLETED',
 };
 
+const getDdayLabel = (item, activeTab) => {
+    if (!item?.startDate || !item?.endDate) return null;
+    if (activeTab !== TABS.IN_PROGRESS) return null;
+
+    const today = new Date();
+    const currentDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const endDate = new Date(`${item.endDate}T00:00:00`);
+    const msPerDay = 24 * 60 * 60 * 1000;
+
+    const diffDays = Math.ceil((endDate - currentDate) / msPerDay);
+    return diffDays <= 0 ? 'D-DAY' : `D-${diffDays}`;
+};
+
 const ChallengeScreen = ({ navigation }) => {
     const [activeTab, setActiveTab] = useState(TABS.REQUESTED);
     const [isFabOpen, setIsFabOpen] = useState(false);
@@ -151,14 +164,22 @@ const ChallengeScreen = ({ navigation }) => {
         const canDelete = activeTab === TABS.REQUESTED && (item.status === 'PENDING' || item.status === 'REJECTED');
         const canEdit = activeTab === TABS.REQUESTED && (item.status === 'PENDING' || item.status === 'REJECTED');
         const canRequestReward = activeTab === TABS.COMPLETED && item.status === 'SUCCESS';
+        const ddayLabel = getDdayLabel(item, activeTab);
+        const canOpenDetail = activeTab === TABS.IN_PROGRESS;
 
         return (
-            <View key={item.challengeId} style={styles.card}>
+            <TouchableOpacity
+                key={item.challengeId}
+                style={styles.card}
+                onPress={() => canOpenDetail ? navigation.navigate('ChallengeDetail', { challengeId: item.challengeId }) : null}
+                activeOpacity={canOpenDetail ? 0.85 : 1}
+            >
                 <View style={styles.cardHeader}>
                     <View style={styles.cardHeaderLeft}>
                         {renderStatusBadge(item.status)}
                         <CustomText style={styles.categoryText}>{item.category} 아끼기</CustomText>
                     </View>
+                    {ddayLabel ? <CustomText style={styles.ddayText}>{ddayLabel}</CustomText> : null}
                 </View>
 
                 <CustomText style={styles.goalText}>목표 금액: {Number(item.targetSpending || 0).toLocaleString()}원</CustomText>
@@ -192,7 +213,7 @@ const ChallengeScreen = ({ navigation }) => {
                         </TouchableOpacity>
                     </View>
                 )}
-            </View>
+            </TouchableOpacity>
         );
     };
 
@@ -357,6 +378,7 @@ const styles = StyleSheet.create({
     badgeTextFailed: { color: '#DC2626', fontSize: scale(11), fontWeight: 'bold' },
 
     categoryText: { fontSize: scale(14), fontWeight: '600', color: '#4B5563', marginLeft: scale(8) },
+    ddayText: { fontSize: scale(12), fontWeight: '700', color: '#6B7280', marginLeft: scale(8) },
     goalText: { fontSize: scale(15), color: '#374151', marginBottom: verticalScale(8) },
     goalSubText: { fontSize: scale(14), color: '#6B7280' },
     parentMessageRow: {

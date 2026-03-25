@@ -18,6 +18,7 @@ import CardProductScreen from './src/screens/child/account/CardProductScreen';
 import QuizScreen from './src/screens/child/challenge/QuizScreen';
 import QuizDifficultySelectScreen from './src/screens/child/challenge/QuizDifficultySelectScreen';
 import ChallengeProposeScreen from './src/screens/child/challenge/ChallengeProposeScreen';
+import ChallengeDetailScreen from './src/screens/child/challenge/ChallengeDetailScreen';
 import WeeklyReportScreen from './src/screens/child/report/WeeklyReportScreen';
 import ChildMyPageScreen from './src/screens/child/mypage/ChildMyPageScreen';
 import ParentHomeScreen from './src/screens/parent/home/ParentHomeScreen';
@@ -143,6 +144,7 @@ export default function App() {
               <Stack.Screen name="QuizScreen" component={QuizScreen} />
               <Stack.Screen name="QuizDifficultySelect" component={QuizDifficultySelectScreen} />
               <Stack.Screen name="ChallengePropose" component={ChallengeProposeScreen} />
+              <Stack.Screen name="ChallengeDetail" component={ChallengeDetailScreen} />
 
               <Stack.Screen name="WeeklyReport" component={WeeklyReportScreen} />
 
