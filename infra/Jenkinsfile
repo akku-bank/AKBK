@@ -231,7 +231,7 @@ pipeline {
             sh """
             curl -X POST -H 'Content-Type: application/json' \\
             -d '{
-              "text":"✅ **[${env.TARGET_TEAM}] Jenkins 빌드 성공**\\\\n- 프로젝트: ${env.JOB_NAME}\\\\n- 빌드 번호: #${env.BUILD_NUMBER}\\\\n- 브랜치: ${env.BRANCH_DISPLAY}\\\\n- 요청자: ${env.TRIGGER_USER}\\\\n- ${env.DEPLOY_STATUS}\\\\n- 확인: ${env.BUILD_URL}"
+            "text":"✅ **[${env.TARGET_TEAM}] Jenkins 빌드 성공**\n- 프로젝트: ${env.JOB_NAME}\n- 빌드 번호: #${env.BUILD_NUMBER}\n- 브랜치: ${env.BRANCH_DISPLAY}\n- 요청자: ${env.TRIGGER_USER}\n- ${env.DEPLOY_STATUS}\n- 확인: ${env.BUILD_URL}"
             }' \\
             ${MM_WEBHOOK}
             """
