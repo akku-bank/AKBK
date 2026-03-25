@@ -251,6 +251,7 @@ public class SpendingChallengeService {
                         .targetSpending(c.getTargetSpending())
                         .rewardAmount(c.getRewardAmount())
                         .status(c.getStatus().name())
+                        .parentMessage(c.getParentMessage())
                         .startDate(c.getStartDate())
                         .endDate(c.getEndDate())
                         .build())
@@ -311,6 +312,7 @@ public class SpendingChallengeService {
                         .targetSpending(c.getTargetSpending())
                         .rewardAmount(c.getRewardAmount())
                         .status(c.getStatus().name())
+                        .parentMessage(c.getParentMessage())
                         .startDate(c.getStartDate())
                         .endDate(c.getEndDate())
                         .build())
@@ -399,6 +401,7 @@ public class SpendingChallengeService {
                         .targetSpending(c.getTargetSpending())
                         .rewardAmount(c.getRewardAmount())
                         .status(c.getStatus().name())
+                        .parentMessage(c.getParentMessage())
                         .startDate(c.getStartDate())
                         .endDate(c.getEndDate())
                         .build())
@@ -526,6 +529,99 @@ public class SpendingChallengeService {
                 .challengeId(challenge.getId())
                 .status(ChallengeStatus.REWARDED.name())
                 .rewardAmount(challenge.getRewardAmount())
+                .build();
+    }
+
+    /*
+        10. 이번 주 소비 목표 챌린지 목록 조회 (부모 전용)
+        - startDate = 이번 주 월요일인 특정 자녀의 챌린지 전체 반환 (상태 무관)
+        - PARENT 역할 및 가족 관계(familyId 일치) 검증 수행
+     */
+    public SpendingChallengeDto.ListResponse getThisWeekChallengesForParent(UUID parentId, UUID childId) {
+
+        // 1. 부모 유저 조회 및 역할 검증
+        User parent = userRepository.findById(parentId)
+                .orElseThrow(() -> new ApiException(UserErrorCode.USER_NOT_FOUND));
+        if (!"PARENT".equals(parent.getRole())) {
+            throw new ApiException(ChallengeErrorCode.ACCESS_DENIED);
+        }
+
+        // 2. 자녀 유저 조회
+        User child = userRepository.findById(childId)
+                .orElseThrow(() -> new ApiException(UserErrorCode.USER_NOT_FOUND));
+
+        // 3. 가족 관계 검증 (부모와 자녀가 같은 familyId)
+        if (parent.getFamilyId() == null || child.getFamilyId() == null
+                || !parent.getFamilyId().equals(child.getFamilyId())) {
+            throw new ApiException(ChallengeErrorCode.ACCESS_DENIED);
+        }
+
+        // 4. 이번 주 월요일 날짜 계산
+        LocalDate thisMonday = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+
+        // 5. 자녀의 이번 주 챌린지 조회 및 DTO 변환
+        List<SpendingChallengeDto.ChallengeSummary> summaries =
+                spendingChallengeRepository.findAllByUserAndStartDate(child, thisMonday)
+                        .stream()
+                        .map(c -> SpendingChallengeDto.ChallengeSummary.builder()
+                                .challengeId(c.getId())
+                                .category(c.getSubCategoryName())
+                                .targetSpending(c.getTargetSpending())
+                                .rewardAmount(c.getRewardAmount())
+                                .status(c.getStatus().name())
+                                .parentMessage(c.getParentMessage())
+                                .startDate(c.getStartDate())
+                                .endDate(c.getEndDate())
+                                .build())
+                        .collect(Collectors.toList());
+
+        return SpendingChallengeDto.ListResponse.builder()
+                .challenges(summaries)
+                .build();
+    }
+
+    /*
+        11. 보상 요청 챌린지 목록 조회 (부모 전용)
+        - 자녀가 보상 요청(REWARD_REQUESTED)한 챌린지 전체 목록 반환
+        - PARENT 역할 및 가족 관계(familyId 일치) 검증 수행
+     */
+    public SpendingChallengeDto.ListResponse getRewardRequestedChallenges(UUID parentId, UUID childId) {
+
+        // 1. 부모 유저 조회 및 역할 검증
+        User parent = userRepository.findById(parentId)
+                .orElseThrow(() -> new ApiException(UserErrorCode.USER_NOT_FOUND));
+        if (!"PARENT".equals(parent.getRole())) {
+            throw new ApiException(ChallengeErrorCode.ACCESS_DENIED);
+        }
+
+        // 2. 자녀 유저 조회
+        User child = userRepository.findById(childId)
+                .orElseThrow(() -> new ApiException(UserErrorCode.USER_NOT_FOUND));
+
+        // 3. 가족 관계 검증 (부모와 자녀가 같은 familyId)
+        if (parent.getFamilyId() == null || child.getFamilyId() == null
+                || !parent.getFamilyId().equals(child.getFamilyId())) {
+            throw new ApiException(ChallengeErrorCode.ACCESS_DENIED);
+        }
+
+        // 4. 자녀의 REWARD_REQUESTED 상태 챌린지 조회 및 DTO 변환
+        List<SpendingChallengeDto.ChallengeSummary> summaries =
+                spendingChallengeRepository.findAllByUserAndStatus(child, ChallengeStatus.REWARD_REQUESTED)
+                        .stream()
+                        .map(c -> SpendingChallengeDto.ChallengeSummary.builder()
+                                .challengeId(c.getId())
+                                .category(c.getSubCategoryName())
+                                .targetSpending(c.getTargetSpending())
+                                .rewardAmount(c.getRewardAmount())
+                                .status(c.getStatus().name())
+                                .parentMessage(c.getParentMessage())
+                                .startDate(c.getStartDate())
+                                .endDate(c.getEndDate())
+                                .build())
+                        .collect(Collectors.toList());
+
+        return SpendingChallengeDto.ListResponse.builder()
+                .challenges(summaries)
                 .build();
     }
 
