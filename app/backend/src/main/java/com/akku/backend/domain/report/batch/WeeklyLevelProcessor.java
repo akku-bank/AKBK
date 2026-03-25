@@ -8,7 +8,7 @@ import com.akku.backend.domain.report.entity.WeeklyReport;
 import com.akku.backend.domain.report.repository.WeeklyReportRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.batch.item.ItemProcessor;
+import org.springframework.batch.infrastructure.item.ItemProcessor;
 import org.springframework.stereotype.Component;
 
 import java.time.DayOfWeek;
