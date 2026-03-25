@@ -322,6 +322,8 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         gap: scale(10),
         marginBottom: verticalScale(10),
+        zIndex: 10,
+        elevation: 10,
     },
     avatarActionBtn: {
         backgroundColor: '#F3F4F6',

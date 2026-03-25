@@ -11,11 +11,13 @@ const CATEGORIES = [
     { id: 'gender', label: '성별' },
     { id: 'face', label: '얼굴' },
     { id: 'hair', label: '헤어' },
+    { id: 'outfit', label: '한벌옷' },
     { id: 'upper', label: '상의' },
     { id: 'lower', label: '하의' },
     { id: 'hat', label: '모자' },
     { id: 'shoe', label: '신발' },
-    { id: 'wing', label: '날개' },
+    { id: 'back', label: '등' },
+    { id: 'pet', label: '펫' },
 ];
 
 const { width } = Dimensions.get('window');
@@ -38,20 +40,14 @@ const AvatarCustomScreen = ({ navigation }) => {
                 const mapF2U = {};
 
                 items.forEach(backendItem => {
-                    // 카테고리 매핑 (백엔드 -> 프론트엔드)
-                    let frontendCat = null;
-                    if (backendItem.category === 'HAT') frontendCat = 'hat';
-                    else if (backendItem.category === 'TOP') frontendCat = 'upper';
-                    else if (backendItem.category === 'BOTTOM') frontendCat = 'lower';
-
-                    if (frontendCat) {
-                        // 프론트의 AVATAR_ITEMS에서 name으로 일치하는 항목 찾기
-                        const matchingFrontendItem = AVATAR_ITEMS[frontendCat]?.find(i => i.name === backendItem.name);
+                    for (const cat in AVATAR_ITEMS) {
+                        const matchingFrontendItem = AVATAR_ITEMS[cat].find(i => i.name === backendItem.name);
                         if (matchingFrontendItem) {
                             if (backendItem.isOwned) {
                                 owned[matchingFrontendItem.id] = true;
                             }
                             mapF2U[matchingFrontendItem.id] = backendItem.itemId;
+                            break;
                         }
                     }
                 });
@@ -66,8 +62,8 @@ const AvatarCustomScreen = ({ navigation }) => {
         setEquipState(prev => ({
             ...prev,
             gender: gender,
-            face: `base_${gender}`,
-            hair: `hair_${gender}`,
+            face: gender === 'boy' ? 'boy1' : 'girl1',
+            hair: gender === 'boy' ? 'boy1' : 'girl1',
         }));
     };
 
@@ -107,10 +103,10 @@ const AvatarCustomScreen = ({ navigation }) => {
                 return true;
             });
         }
-        // 보유 중인 아이템만 필터링 (기본 얼굴/헤어/none은 통과)
+        // 보유 중인 아이템만 필터링 (기본 얼굴/헤어 및 레벨 1인 기본장비, none은 무조건 표시)
         items = items.filter(item => {
-            const isEquipCat = ['upper', 'lower', 'hat'].includes(selectedCategory);
-            const isBaseOrNone = item.id.includes('base') || item.id === 'none';
+            const isEquipCat = ['upper', 'lower', 'hat', 'shoe', 'back', 'outfit', 'pet'].includes(selectedCategory);
+            const isBaseOrNone = item.id.includes('base') || item.id === 'none' || item.level === 1;
             return !isEquipCat || isBaseOrNone || ownedItemIds[item.id];
         });
 
@@ -132,7 +128,13 @@ const AvatarCustomScreen = ({ navigation }) => {
                             }}
                         >
                             <View style={styles.itemImageContainer}>
-                                {item.img ? (
+                                {Array.isArray(item.img) ? (
+                                    <View style={{ width: 60, height: 60 }}>
+                                        {item.img.map((imgSrc, idx) => (
+                                            <Image key={idx} source={imgSrc} style={[styles.itemThumbnail, { position: 'absolute' }]} resizeMode="contain" />
+                                        ))}
+                                    </View>
+                                ) : item.img ? (
                                     <Image source={item.img} style={styles.itemThumbnail} resizeMode="contain" />
                                 ) : (
                                     <CustomText style={styles.noneText}>X</CustomText>
@@ -174,6 +176,15 @@ const AvatarCustomScreen = ({ navigation }) => {
             <View style={styles.previewSection}>
                 <View style={styles.avatarWrapper}>
                     <ChildAvatar equipState={equipState} size={280} />
+
+                    {/* 꾸미기 전용 펫 미리보기 */}
+                    {equipState.pet && equipState.pet !== 'none' && (
+                        <View style={{ position: 'absolute', right: 0, bottom: -10, width: 120, height: 120 }} pointerEvents="none">
+                            {AVATAR_ASSETS.pet[equipState.pet]?.leg && <Image source={AVATAR_ASSETS.pet[equipState.pet].leg} style={{ position: 'absolute', width: '100%', height: '100%' }} resizeMode="contain" />}
+                            {AVATAR_ASSETS.pet[equipState.pet]?.body && <Image source={AVATAR_ASSETS.pet[equipState.pet].body} style={{ position: 'absolute', width: '100%', height: '100%' }} resizeMode="contain" />}
+                            {AVATAR_ASSETS.pet[equipState.pet]?.base && <Image source={AVATAR_ASSETS.pet[equipState.pet].base} style={{ position: 'absolute', width: '100%', height: '100%' }} resizeMode="contain" />}
+                        </View>
+                    )}
                 </View>
 
                 <TouchableOpacity

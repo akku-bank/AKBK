@@ -6,16 +6,18 @@ import useAuthStore from '../../../store/useAuthStore';
 export const AvatarContext = createContext();
 
 export const AvatarProvider = ({ children }) => {
-    // 기본 상태
+    // 기본 상태 (AVATAR_ASSETS 딕셔너리 이름과 100% 동일하게 맞춰주세요!)
     const [equipState, setEquipState] = useState({
         gender: 'boy',
-        face: 'base_boy',
-        hair: 'hair_boy',
-        upper: 'upper_base',
-        lower: 'lower_base',
+        face: 'boy1',
+        hair: 'boy1',
+        outfit: 'none',
+        upper: 'upper1',
+        lower: 'lower1',
         hat: 'none',
-        shoe: 'none',
-        wing: 'none',
+        shoe: 'shoe1',
+        back: 'none',
+        pet: 'none',
     });
 
     const updateEquip = (category, itemId) => {
@@ -40,16 +42,13 @@ export const AvatarProvider = ({ children }) => {
                 let hasChanges = false;
 
                 items.filter(i => i.isEquipped).forEach(backendItem => {
-                    let frontendCat = null;
-                    if (backendItem.category === 'HAT') frontendCat = 'hat';
-                    else if (backendItem.category === 'TOP') frontendCat = 'upper';
-                    else if (backendItem.category === 'BOTTOM') frontendCat = 'lower';
-
-                    if (frontendCat && AVATAR_ITEMS[frontendCat]) {
-                        const matching = AVATAR_ITEMS[frontendCat].find(i => i.name === backendItem.name);
+                    // 프론트의 모든 카테고리를 뒤져서 이름이 일치하는 아이템을 찾아 장착
+                    for (const cat in AVATAR_ITEMS) {
+                        const matching = AVATAR_ITEMS[cat].find(i => i.name === backendItem.name);
                         if (matching) {
-                            newEquip[frontendCat] = matching.id;
+                            newEquip[cat] = matching.id;
                             hasChanges = true;
+                            break;
                         }
                     }
                 });
