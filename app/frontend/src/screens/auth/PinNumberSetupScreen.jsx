@@ -27,9 +27,11 @@ const PinNumberSetupScreen = ({ navigation, route }) => {
 
     const handlePinSubmit = async (finalPin) => {
         try {
-            await api.post('/auth/signup/pin', { pin: finalPin }, { headers: { Authorization: `Bearer ${tempToken}` } });
-            
-            await setAuthInfo(tempToken, role, name);
+            const response = await api.post('/auth/signup/pin', { pin: finalPin }, { headers: { Authorization: `Bearer ${tempToken}` } });
+            const payload = response.data?.data || response.data || {};
+            const resolvedToken = payload.token || payload.accessToken || tempToken;
+
+            await setAuthInfo(resolvedToken, role, name);
             setIsSuccess(true);
             setTimeout(() => {
                 if (role === 'PARENT') {
