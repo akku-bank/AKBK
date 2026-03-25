@@ -5,10 +5,33 @@ import CustomText from '../../../components/common/CustomText';
 import CustomTextInput from '../../../components/common/CustomTextInput';
 import api from '../../../api/axios';
 
+const DONATION_OPTIONS = [
+    {
+        id: 'tree-planting',
+        name: '나무심기',
+        description: '도시 숲 조성과 나무 식재 활동에 기부해요.',
+        targetAmount: 300,
+        emoji: '🌳',
+    },
+    {
+        id: 'animal-shelter',
+        name: '유기동물 보호소',
+        description: '보호소 사료와 치료비를 지원해요.',
+        targetAmount: 500,
+        emoji: '🐶',
+    },
+    {
+        id: 'arts-support',
+        name: '문화예술 기부',
+        description: '아이들을 위한 공연과 전시를 후원해요.',
+        targetAmount: 700,
+        emoji: '🎨',
+    },
+];
+
 const SafeBoxScreen = ({ navigation }) => {
     const [isLoading, setIsLoading] = useState(true);
     const [hubInfo, setHubInfo] = useState(null); // { totalJelling, activeCharity: { id, name, description, goalAmount, currentAmount } }
-    const [charities, setCharities] = useState([]); // 기부처 목록
 
     const [donateAmount, setDonateAmount] = useState('');
     const progressAnim = useRef(new Animated.Value(0)).current;
@@ -24,10 +47,8 @@ const SafeBoxScreen = ({ navigation }) => {
             const data = res.data?.data;
             if (data) {
                 setHubInfo(data);
-                if (!data.activeCharity) {
-                    fetchCharities();
-                } else {
-                    animateProgress(data.activeCharity.currentAmount, data.activeCharity.goalAmount);
+                if (data.activeCharity) {
+                    animateProgress(data.activeCharity.currentAmount, data.activeCharity.targetAmount);
                 }
             }
         } catch (e) {
@@ -35,17 +56,6 @@ const SafeBoxScreen = ({ navigation }) => {
             Alert.alert('오류', '젤링 허브 정보를 불러오지 못했습니다.');
         } finally {
             setIsLoading(false);
-        }
-    };
-
-    const fetchCharities = async () => {
-        try {
-            const res = await api.get('/jelling-hub/charities');
-            if (res.data?.data) {
-                setCharities(res.data.data.charities || []);
-            }
-        } catch (e) {
-            console.error('Fetch Charities Error:', e);
         }
     };
 
@@ -58,22 +68,22 @@ const SafeBoxScreen = ({ navigation }) => {
         }).start();
     };
 
-    const handleSelectCharity = async (charityId, charityName) => {
+    const handleSelectCharity = async (charity) => {
         Alert.alert(
-            '목표 설정',
-            `'${charityName}'(을)를 현재 저금통 목표로 설정할까요?`,
+            '기부하시겠어요?',
+            `${charity.name}에 ${charity.targetAmount}젤링을 기부할까요?`,
             [
                 { text: '취소', style: 'cancel' },
                 {
-                    text: '설정하기', onPress: async () => {
+                    text: '확인', onPress: async () => {
                         try {
                             setIsLoading(true);
-                            await api.post('/jelling-hub/active-charity', { charityId });
+                            await api.post('/jelling-hub/donations', { amount: charity.targetAmount });
                             await fetchHubInfo();
-                            Alert.alert('성공', '새로운 기부 목표가 설정되었습니다!');
+                            Alert.alert('성공', '기부 요청이 전송되었습니다.');
                         } catch (e) {
-                            console.error('Set Charity Error:', e);
-                            Alert.alert('오류', '목표 설정에 실패했습니다.');
+                            console.error('Donate Preset Error:', e);
+                            Alert.alert('오류', '기부 요청에 실패했습니다.');
                             setIsLoading(false);
                         }
                     }
@@ -148,18 +158,22 @@ const SafeBoxScreen = ({ navigation }) => {
                         <View style={styles.charitySelectionBox}>
                             <CustomText style={styles.sectionTitle}>어디에 기부해 볼까요?</CustomText>
                             <CustomText style={{ color: '#6B7280', marginBottom: RFValue(16) }}>
-                                새로운 저금통 목표를 선택해주세요!
+                                원하는 기부처를 먼저 선택해주세요!
                             </CustomText>
 
-                            {charities.map((charity) => (
+                            {DONATION_OPTIONS.map((charity) => (
                                 <TouchableOpacity
-                                    key={charity.id || charity.charityId}
+                                    key={charity.id}
                                     style={styles.charityItemCard}
-                                    onPress={() => handleSelectCharity(charity.id || charity.charityId, charity.name)}
+                                    onPress={() => handleSelectCharity(charity)}
                                 >
+                                    <CustomText style={styles.targetEmoji}>{charity.emoji}</CustomText>
                                     <View style={styles.targetInfo}>
                                         <CustomText style={styles.targetTitle}>{charity.name}</CustomText>
                                         <CustomText style={styles.targetDesc}>{charity.description}</CustomText>
+                                    </View>
+                                    <View style={styles.goalPill}>
+                                        <CustomText style={styles.goalPillText}>{charity.targetAmount} 💎</CustomText>
                                     </View>
                                 </TouchableOpacity>
                             ))}
