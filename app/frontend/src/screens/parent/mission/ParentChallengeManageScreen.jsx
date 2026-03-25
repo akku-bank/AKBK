@@ -113,6 +113,7 @@ const ParentChallengeManageScreen = ({ navigation, route }) => {
                 {children.length > 0 && (
                     <ScrollView
                         horizontal
+                        style={styles.childTabsWrapper}
                         showsHorizontalScrollIndicator={false}
                         contentContainerStyle={styles.childTabs}
                     >
@@ -197,13 +198,15 @@ const styles = StyleSheet.create({
     },
     headerTitle: { fontSize: scale(18), fontWeight: 'bold', color: '#111' },
     container: { flexGrow: 1, paddingHorizontal: scale(16), paddingTop: verticalScale(20) },
-    childTabs: { paddingBottom: verticalScale(14) },
+    childTabsWrapper: { flexGrow: 0 },
+    childTabs: { paddingBottom: verticalScale(14), alignItems: 'center' },
     childTab: {
         backgroundColor: '#E5E7EB',
         borderRadius: scale(999),
         paddingHorizontal: scale(14),
         paddingVertical: verticalScale(8),
         marginRight: scale(8),
+        alignSelf: 'flex-start',
     },
     childTabActive: {
         backgroundColor: '#D9F99D',
