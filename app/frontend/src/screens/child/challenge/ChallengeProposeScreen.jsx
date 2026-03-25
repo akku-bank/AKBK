@@ -7,13 +7,22 @@ import api from '../../../api/axios';
 
 const CATEGORIES = ['간식', '쇼핑', '게임', '기타'];
 
-const ChallengeProposeScreen = ({ navigation }) => {
-    const [selectedCategory, setSelectedCategory] = useState(CATEGORIES[0]);
+const ChallengeProposeScreen = ({ navigation, route }) => {
+    const editingChallenge = route?.params?.challenge || null;
+    const isEditMode = Boolean(editingChallenge?.challengeId);
+
+    const [selectedCategory, setSelectedCategory] = useState(editingChallenge?.category || CATEGORIES[0]);
     const [goalAmount, setGoalAmount] = useState('');
     const [rewardAmount, setRewardAmount] = useState('');
     const [memo, setMemo] = useState('');
 
     useEffect(() => {
+        if (isEditMode) {
+            setSelectedCategory(editingChallenge?.category || CATEGORIES[0]);
+            setGoalAmount(String(editingChallenge?.targetSpending || ''));
+            setRewardAmount(String(editingChallenge?.rewardAmount || ''));
+        }
+
         // [UI 테스트용 임시 주석] 주말(토, 일)에만 제안 가능 로직
         // const today = new Date().getDay();
         // if (today !== 0 && today !== 6) {
@@ -21,7 +30,7 @@ const ChallengeProposeScreen = ({ navigation }) => {
         //         { text: '확인', onPress: () => navigation.goBack() }
         //     ]);
         // }
-    }, [navigation]);
+    }, [editingChallenge, isEditMode, navigation]);
 
     const handleSubmit = async () => { // Added async here
         if (!goalAmount || isNaN(goalAmount)) {
@@ -35,15 +44,22 @@ const ChallengeProposeScreen = ({ navigation }) => {
         }
 
         try {
-            await api.post('/challenges/spending', {
+            const payload = {
                 category: selectedCategory,
                 targetSpending: parseInt(goalAmount, 10),
                 rewardAmount: parseInt(rewardAmount, 10),
-            });
-            Alert.alert('제안 완료', `부모님께 "${selectedCategory}" 지출 줄이기 챌린지를 제안했어요!`, [{ text: '확인', onPress: () => navigation.goBack() }]);
+            };
+
+            if (isEditMode) {
+                await api.patch(`/challenges/spending/${editingChallenge.challengeId}`, payload);
+                Alert.alert('수정 완료', `"${selectedCategory}" 챌린지를 수정했어요!`, [{ text: '확인', onPress: () => navigation.goBack() }]);
+            } else {
+                await api.post('/challenges/spending', payload);
+                Alert.alert('제안 완료', `부모님께 "${selectedCategory}" 지출 줄이기 챌린지를 제안했어요!`, [{ text: '확인', onPress: () => navigation.goBack() }]);
+            }
         } catch (e) {
             console.error('Challenge Propose Error', e);
-            Alert.alert('오류', '챌린지 생성 중 문제가 발생했습니다.');
+            Alert.alert('오류', isEditMode ? '챌린지 수정 중 문제가 발생했습니다.' : '챌린지 생성 중 문제가 발생했습니다.');
         }
     };
 
@@ -53,7 +69,7 @@ const ChallengeProposeScreen = ({ navigation }) => {
                 <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
                     <CustomText style={styles.backButtonText}>←</CustomText>
                 </TouchableOpacity>
-                <CustomText style={styles.headerTitle}>용돈 미션 제안하기</CustomText>
+                <CustomText style={styles.headerTitle}>{isEditMode ? '용돈 미션 수정하기' : '용돈 미션 제안하기'}</CustomText>
                 <View style={{ width: scale(32) }} />
             </View>
 
@@ -61,8 +77,12 @@ const ChallengeProposeScreen = ({ navigation }) => {
                 <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
 
                     <View style={styles.instructionCard}>
-                        <CustomText style={styles.instructionTitle}>어떤 소비를 줄여볼까요?</CustomText>
-                        <CustomText style={styles.instructionDesc}>이번 주에 나의 용돈을 아낄 수 있는 카테고리와 목표를 부모님께 약속해보세요.</CustomText>
+                        <CustomText style={styles.instructionTitle}>{isEditMode ? '어떤 내용으로 다시 제안할까요?' : '어떤 소비를 줄여볼까요?'}</CustomText>
+                        <CustomText style={styles.instructionDesc}>
+                            {isEditMode
+                                ? '반려되었거나 승인 대기 중인 챌린지를 수정해서 다시 요청할 수 있어요.'
+                                : '이번 주에 나의 용돈을 아낄 수 있는 카테고리와 목표를 부모님께 약속해보세요.'}
+                        </CustomText>
                     </View>
 
                     <CustomText style={styles.sectionLabel}>소비 카테고리</CustomText>
@@ -117,7 +137,7 @@ const ChallengeProposeScreen = ({ navigation }) => {
                 </ScrollView>
                 <View style={styles.footer}>
                     <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-                        <CustomText style={styles.submitButtonText}>부모님께 제안하기</CustomText>
+                        <CustomText style={styles.submitButtonText}>{isEditMode ? '챌린지 수정하기' : '부모님께 제안하기'}</CustomText>
                     </TouchableOpacity>
                 </View>
             </KeyboardAvoidingView>

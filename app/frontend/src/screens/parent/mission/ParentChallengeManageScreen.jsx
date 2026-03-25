@@ -148,10 +148,6 @@ const ParentChallengeManageScreen = ({ navigation, route }) => {
                                     </CustomText>
                                 </View>
                             </View>
-
-                            {item.status === 'PENDING' && (
-                                <CustomText style={styles.actionPrompt}>눌러서 제안 검토하기 &gt;</CustomText>
-                            )}
                         </TouchableOpacity>
                     ))
                 )}
@@ -206,9 +202,6 @@ const styles = StyleSheet.create({
     infoRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: verticalScale(8) },
     infoLabel: { fontSize: scale(13), color: '#6B7280' },
     infoValue: { fontSize: scale(13), fontWeight: 'bold', color: '#111' },
-
-    actionPrompt: { fontSize: scale(13), color: '#2563EB', fontWeight: 'bold', marginTop: verticalScale(8), textAlign: 'right' },
-
     emptyBox: {
         backgroundColor: '#FFFFFF',
         borderRadius: scale(16),

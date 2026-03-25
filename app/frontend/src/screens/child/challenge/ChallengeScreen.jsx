@@ -17,13 +17,13 @@ const STATUS_UI = {
 };
 
 const TABS = {
-    THIS_WEEK: 'THIS_WEEK',
-    NEXT_WEEK: 'NEXT_WEEK',
-    PAST: 'PAST',
+    REQUESTED: 'REQUESTED',
+    IN_PROGRESS: 'IN_PROGRESS',
+    COMPLETED: 'COMPLETED',
 };
 
 const ChallengeScreen = ({ navigation }) => {
-    const [activeTab, setActiveTab] = useState(TABS.THIS_WEEK);
+    const [activeTab, setActiveTab] = useState(TABS.REQUESTED);
     const [isFabOpen, setIsFabOpen] = useState(false);
     const [thisWeekChallenges, setThisWeekChallenges] = useState([]);
     const [nextWeekChallenges, setNextWeekChallenges] = useState([]);
@@ -95,6 +95,10 @@ const ChallengeScreen = ({ navigation }) => {
         );
     };
 
+    const handleEdit = (challenge) => {
+        navigation.navigate('ChallengePropose', { challenge });
+    };
+
     const handleOpenQuizDifficulty = () => {
         const parentNavigation = navigation.getParent?.();
 
@@ -107,8 +111,8 @@ const ChallengeScreen = ({ navigation }) => {
     };
 
     const getCurrentChallenges = () => {
-        if (activeTab === TABS.THIS_WEEK) return thisWeekChallenges;
-        if (activeTab === TABS.NEXT_WEEK) return nextWeekChallenges;
+        if (activeTab === TABS.REQUESTED) return nextWeekChallenges;
+        if (activeTab === TABS.IN_PROGRESS) return thisWeekChallenges;
         return pastChallenges;
     };
 
@@ -141,8 +145,9 @@ const ChallengeScreen = ({ navigation }) => {
     };
 
     const renderChallengeItem = (item) => {
-        const canDelete = activeTab === TABS.NEXT_WEEK && (item.status === 'PENDING' || item.status === 'REJECTED');
-        const canRequestReward = activeTab === TABS.PAST && item.status === 'SUCCESS';
+        const canDelete = activeTab === TABS.REQUESTED && (item.status === 'PENDING' || item.status === 'REJECTED');
+        const canEdit = activeTab === TABS.REQUESTED && (item.status === 'PENDING' || item.status === 'REJECTED');
+        const canRequestReward = activeTab === TABS.COMPLETED && item.status === 'SUCCESS';
 
         return (
             <View key={item.challengeId} style={styles.card}>
@@ -167,6 +172,11 @@ const ChallengeScreen = ({ navigation }) => {
 
                 {canDelete && (
                     <View style={styles.actionRow}>
+                        {canEdit && (
+                            <TouchableOpacity style={[styles.actionBtn, styles.editBtn]} onPress={() => handleEdit(item)}>
+                                <CustomText style={styles.editBtnText}>수정하기</CustomText>
+                            </TouchableOpacity>
+                        )}
                         <TouchableOpacity style={[styles.actionBtn, styles.deleteBtn]} onPress={() => handleDelete(item.challengeId)}>
                             <CustomText style={styles.deleteBtnText}>삭제</CustomText>
                         </TouchableOpacity>
@@ -186,22 +196,22 @@ const ChallengeScreen = ({ navigation }) => {
 
             <View style={styles.tabContainer}>
                 <TouchableOpacity
-                    style={[styles.tabBtn, activeTab === TABS.THIS_WEEK && styles.tabBtnActive]}
-                    onPress={() => { setActiveTab(TABS.THIS_WEEK); setIsFabOpen(false); }}
+                    style={[styles.tabBtn, activeTab === TABS.REQUESTED && styles.tabBtnActive]}
+                    onPress={() => { setActiveTab(TABS.REQUESTED); setIsFabOpen(false); }}
                 >
-                    <CustomText style={[styles.tabText, activeTab === TABS.THIS_WEEK && styles.tabTextActive]}>이번 주</CustomText>
+                    <CustomText style={[styles.tabText, activeTab === TABS.REQUESTED && styles.tabTextActive]}>요청된 챌린지</CustomText>
                 </TouchableOpacity>
                 <TouchableOpacity
-                    style={[styles.tabBtn, activeTab === TABS.NEXT_WEEK && styles.tabBtnActive]}
-                    onPress={() => { setActiveTab(TABS.NEXT_WEEK); setIsFabOpen(false); }}
+                    style={[styles.tabBtn, activeTab === TABS.IN_PROGRESS && styles.tabBtnActive]}
+                    onPress={() => { setActiveTab(TABS.IN_PROGRESS); setIsFabOpen(false); }}
                 >
-                    <CustomText style={[styles.tabText, activeTab === TABS.NEXT_WEEK && styles.tabTextActive]}>다음 주</CustomText>
+                    <CustomText style={[styles.tabText, activeTab === TABS.IN_PROGRESS && styles.tabTextActive]}>진행중</CustomText>
                 </TouchableOpacity>
                 <TouchableOpacity
-                    style={[styles.tabBtn, activeTab === TABS.PAST && styles.tabBtnActive]}
-                    onPress={() => { setActiveTab(TABS.PAST); setIsFabOpen(false); }}
+                    style={[styles.tabBtn, activeTab === TABS.COMPLETED && styles.tabBtnActive]}
+                    onPress={() => { setActiveTab(TABS.COMPLETED); setIsFabOpen(false); }}
                 >
-                    <CustomText style={[styles.tabText, activeTab === TABS.PAST && styles.tabTextActive]}>지난 주</CustomText>
+                    <CustomText style={[styles.tabText, activeTab === TABS.COMPLETED && styles.tabTextActive]}>완료된 챌린지</CustomText>
                 </TouchableOpacity>
             </View>
 
@@ -213,9 +223,9 @@ const ChallengeScreen = ({ navigation }) => {
                 ) : currentChallenges.length === 0 ? (
                     <View style={styles.emptyView}>
                         <CustomText style={styles.emptyText}>
-                            {activeTab === TABS.PAST ? '지난 주 챌린지가 없어요!' : '표시할 챌린지가 없어요!'}
+                            {activeTab === TABS.COMPLETED ? '완료된 챌린지가 없어요!' : '표시할 챌린지가 없어요!'}
                         </CustomText>
-                        {activeTab === TABS.NEXT_WEEK && (
+                        {activeTab === TABS.REQUESTED && (
                             <TouchableOpacity style={styles.emptyAddBtn} onPress={() => navigation.navigate('ChallengePropose')}>
                                 <CustomText style={styles.emptyAddBtnText}>새 챌린지 제안하기</CustomText>
                             </TouchableOpacity>
@@ -254,7 +264,7 @@ const ChallengeScreen = ({ navigation }) => {
                 </View>
             </ScrollView>
 
-            {activeTab === TABS.NEXT_WEEK && (
+            {activeTab === TABS.REQUESTED && (
                 <>
                     {isFabOpen && (
                         <View style={styles.fabMenuContainer}>
@@ -314,6 +324,8 @@ const styles = StyleSheet.create({
 
     actionRow: { flexDirection: 'row', justifyContent: 'flex-end', marginTop: verticalScale(12) },
     actionBtn: { paddingHorizontal: scale(12), paddingVertical: verticalScale(6), borderRadius: scale(8), marginLeft: scale(8) },
+    editBtn: { backgroundColor: '#DBEAFE' },
+    editBtnText: { color: '#2563EB', fontWeight: 'bold' },
     deleteBtn: { backgroundColor: '#FEE2E2' },
     deleteBtnText: { color: '#DC2626', fontWeight: 'bold' },
 
