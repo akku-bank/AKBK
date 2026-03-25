@@ -67,6 +67,9 @@ public interface SpendingChallengeRepository extends JpaRepository<SpendingChall
     // 미수령 보상 목록 조회용 — 특정 유저의 SUCCESS + 특정 endDate 챌린지 조회
     List<SpendingChallenge> findAllByUserAndStatusAndEndDate(User user, ChallengeStatus status, LocalDate endDate);
 
+    // 보상 요청 목록 조회용 — 특정 유저의 특정 상태 챌린지 전체 조회 (날짜 무관)
+    List<SpendingChallenge> findAllByUserAndStatus(User user, ChallengeStatus status);
+
     // 보상 송금 동시성 제어용 — SELECT ... FOR UPDATE (비관적 쓰기 락)
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT sc FROM SpendingChallenge sc WHERE sc.id = :id")
