@@ -5,6 +5,7 @@ import java.util.UUID;
 public record CharityResponse(
         UUID charityId,
         String name,
-        String description
+        String description,
+        String category
 ) {
 }

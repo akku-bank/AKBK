@@ -1,0 +1,1 @@
+ALTER TABLE charities ADD COLUMN category VARCHAR(50);
