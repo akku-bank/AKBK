@@ -57,9 +57,9 @@ const Pet = ({ petType = 'shiba', size = 100 }) => {
                 </View>
             )}
 
-            {/* 2. 몸통 (프레임 1,2,3에서 1단계 아래로 이동) */}
+            {/* 2. 몸통 (프레임 1,2,3에서 1단계 아래로 이동, 단 아꾸는 바닥 고정) */}
             {assets.body && (
-                <Animated.View style={[styles.absoluteImage, { width: size, height: size, transform: [{ translateY: bodyTranslateY }] }]}>
+                <Animated.View style={[styles.absoluteImage, { width: size, height: size, transform: [{ translateY: petType === 'akku' ? 0 : bodyTranslateY }] }]}>
                     <Animated.Image
                         source={assets.body}
                         style={{ width: '100%', height: '100%', resizeMode: 'contain' }}
@@ -67,9 +67,9 @@ const Pet = ({ petType = 'shiba', size = 100 }) => {
                 </Animated.View>
             )}
 
-            {/* 3. 머리상단(base) (프레임 단위로 1단계 -> 2단계 -> 1단계 내려감) */}
+            {/* 3. 머리상단(base) (프레임 단위로 1단계 -> 2단계 -> 1단계 내려감, 아꾸는 머리만 1단계 이동) */}
             {assets.base && (
-                <Animated.View style={[styles.absoluteImage, { width: size, height: size, transform: [{ translateY: headTranslateY }] }]}>
+                <Animated.View style={[styles.absoluteImage, { width: size, height: size, transform: [{ translateY: petType === 'akku' ? bodyTranslateY : headTranslateY }] }]}>
                     <Animated.Image
                         source={assets.base}
                         style={{ width: '100%', height: '100%', resizeMode: 'contain' }}

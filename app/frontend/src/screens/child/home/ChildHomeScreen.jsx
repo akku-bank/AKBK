@@ -64,9 +64,15 @@ const ChildHomeScreen = ({ navigation }) => {
                             if (eq.category === 'HAT') frontendCat = 'hat';
                             else if (eq.category === 'TOP') frontendCat = 'upper';
                             else if (eq.category === 'BOTTOM') frontendCat = 'lower';
+                            else if (eq.category === 'SHOE') frontendCat = 'shoe';
+                            else if (eq.category === 'BACK' || eq.category === 'ACC' || eq.category === 'DECORATION') frontendCat = 'back';
+                            else if (eq.category === 'OUTFIT') frontendCat = 'outfit';
+                            else if (eq.category === 'PET') frontendCat = 'pet';
 
                             if (frontendCat) {
-                                const assetItem = AVATAR_ITEMS[frontendCat]?.find(a => a.name === dictItem.name);
+                                // back, pet, outfit 등 명칭 불일치 대응
+                                const assetList = AVATAR_ITEMS[frontendCat] || AVATAR_ITEMS.decoration || AVATAR_ITEMS.pet || [];
+                                const assetItem = assetList.find(a => a.name === dictItem.name);
                                 if (assetItem) {
                                     if (!newEquip) newEquip = { ...equipState };
                                     newEquip[frontendCat] = assetItem.id;
@@ -114,6 +120,7 @@ const ChildHomeScreen = ({ navigation }) => {
                 <ImageBackground
                     source={require('../../../assets/background.png')}
                     style={styles.contentBackground}
+                    imageStyle={{ left: -21, width: width + 30 }}
                     resizeMode="cover"
                 >
                     {/* 친구, 알림 버튼 */}
@@ -152,10 +159,10 @@ const ChildHomeScreen = ({ navigation }) => {
                         <View style={styles.avatarWrapper}>
                             <ChildAvatar equipState={equipState} size={avatarSize} />
 
-                            {/* 펫 배치 (백엔드 펫 데이터가 있을 때만 렌더링되도록 사전 준비) */}
-                            {homeData?.pet && (
-                                <View style={{ position: 'absolute', right: scale(-120), bottom: verticalScale(-115) }}>
-                                    <Pet petType={homeData.pet.type || 'shiba'} size={scale(350)} />
+                            {/* 펫 배치 */}
+                            {equipState.pet && equipState.pet !== 'none' && (
+                                <View style={{ position: 'absolute', right: scale(-150), bottom: verticalScale(-110) }}>
+                                    <Pet petType={equipState.pet} size={scale(400)} />
                                 </View>
                             )}
                         </View>
@@ -349,6 +356,7 @@ const styles = StyleSheet.create({
         width: '100%',
         alignItems: 'center',
         justifyContent: 'flex-end',
+        paddingBottom: verticalScale(15),
     },
     qrModalBackground: {
         flex: 1,

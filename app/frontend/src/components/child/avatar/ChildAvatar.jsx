@@ -74,31 +74,14 @@ const ChildAvatar = ({
 
     const renderDefaultAvatar = () => (
         <View style={[styles.canvasContainer, { width: responsiveSize, height: responsiveSize }]}>
-            {/* 1. 호흡 시 날개도 상체 따라 움직이기 (등 장식 & 장식품) */}
+            {/* 1. 호흡 시 날개도 상체 따라 움직이기 (자율 등 장식 - 바보는 제외) */}
             <View style={[styles.layer, { transform: [{ translateY: bodyOffsetY }] }]}>
-                {equipState.back !== 'none' && AVATAR_ASSETS.decoration[equipState.back] && (
+                {equipState.back !== 'none' && equipState.back !== 'babo' && AVATAR_ASSETS.decoration[equipState.back] && (
                     <Image source={AVATAR_ASSETS.decoration[equipState.back]} style={styles.layer} />
                 )}
             </View>
 
-            {/* 하체 고정 */}
-            <Image source={AVATAR_ASSETS.body.lower_base} style={styles.layer} />
-
-            {/* 하의 장착 (한벌옷이 있으면 한벌옷 하의 우선 렌더링) */}
-            {equipState.outfit && equipState.outfit !== 'none' && AVATAR_ASSETS.outfit[equipState.outfit] ? (
-                <Image source={AVATAR_ASSETS.outfit[equipState.outfit].lower} style={styles.layer} />
-            ) : (
-                equipState.lower !== 'none' && AVATAR_ASSETS.lower[equipState.lower] && (
-                    <Image source={AVATAR_ASSETS.lower[equipState.lower]} style={styles.layer} />
-                )
-            )}
-
-            {/* 신발 장착 */}
-            {equipState.shoe !== 'none' && AVATAR_ASSETS.shoe[equipState.shoe] && (
-                <Image source={AVATAR_ASSETS.shoe[equipState.shoe]} style={styles.layer} />
-            )}
-
-            {/* 3. 상체 이동 */}
+            {/* 3. 상체 이동 (상의가 하의 밑에 깔리도록 먼저 렌더링) */}
             <View style={[styles.layer, { transform: [{ translateY: bodyOffsetY }] }]}>
                 <Image source={AVATAR_ASSETS.body.upper_base} style={styles.layer} />
 
@@ -112,10 +95,32 @@ const ChildAvatar = ({
                 )}
             </View>
 
+            {/* 하체 고정 (상의 위에 렌더링되도록 뒤로 배치) */}
+            <Image source={AVATAR_ASSETS.body.lower_base} style={styles.layer} />
+
+            {/* 하의 장착 (한벌옷이 있으면 한벌옷 하의 우선 렌더링) */}
+            {equipState.outfit && equipState.outfit !== 'none' && AVATAR_ASSETS.outfit[equipState.outfit] ? (
+                <Image source={AVATAR_ASSETS.outfit[equipState.outfit].lower} style={styles.layer} />
+            ) : (
+                equipState.lower !== 'none' && AVATAR_ASSETS.lower[equipState.lower] && (
+                    <Image source={AVATAR_ASSETS.lower[equipState.lower]} style={styles.layer} />
+                )
+            )}
+
+            {/* 신발 장착 (한벌옷이 있으면 한벌옷 신발 우선 렌더링) */}
+            {equipState.outfit && equipState.outfit !== 'none' && AVATAR_ASSETS.outfit[equipState.outfit] && AVATAR_ASSETS.outfit[equipState.outfit].shoe ? (
+                <Image source={AVATAR_ASSETS.outfit[equipState.outfit].shoe} style={styles.layer} />
+            ) : (
+                equipState.shoe !== 'none' && AVATAR_ASSETS.shoe[equipState.shoe] && (
+                    <Image source={AVATAR_ASSETS.shoe[equipState.shoe]} style={styles.layer} />
+                )
+            )}
+
+
             {/* 4. 얼굴 */}
             {renderFace()}
 
-            {/* 5. 헤어 및 모자 -> 모자 장착 시 헤어 X */}
+            {/* 5. 헤어 및 모자 -> 모자 장착 시 다시 헤어 가리기 (User Request) */}
             <View style={[styles.layer, { transform: [{ translateY: faceOffsetY }] }]}>
                 {equipState.hair !== 'none' && equipState.hat === 'none' && AVATAR_ASSETS.hair[equipState.hair] && (
                     <Image source={AVATAR_ASSETS.hair[equipState.hair]} style={styles.layer} />
@@ -124,6 +129,13 @@ const ChildAvatar = ({
                     <Image source={AVATAR_ASSETS.hat[equipState.hat]} style={styles.layer} />
                 )}
             </View>
+
+            {/* 6. 바보 딱지 (상체에 바짝 붙은 가장 앞 레이어) */}
+            {equipState.back === 'babo' && AVATAR_ASSETS.decoration.babo && (
+                <View style={[styles.layer, { transform: [{ translateY: bodyOffsetY }] }]}>
+                    <Image source={AVATAR_ASSETS.decoration.babo} style={styles.layer} />
+                </View>
+            )}
         </View>
     );
 

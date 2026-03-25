@@ -1,9 +1,10 @@
 ﻿import React, { useContext, useState } from 'react';
 import { View, StyleSheet, TouchableOpacity, ScrollView, Image, Dimensions, Alert } from 'react-native';
 import { AvatarContext } from '../../../components/child/avatar/AvatarContext';
-import { AVATAR_ITEMS } from '../../../components/child/avatar/AvatarAssets';
+import { AVATAR_ITEMS, AVATAR_ASSETS } from '../../../components/child/avatar/AvatarAssets';
 import ChildAvatar from '../../../components/child/avatar/ChildAvatar';
-import FacePaintingModal from '../../../components/child/modals/FacePaintingModal';
+import Pet from '../../../components/child/avatar/Pet';
+import { scale, verticalScale } from 'react-native-size-matters';
 import CustomText from '../../../components/common/CustomText';
 import api from '../../../api/axios';
 
@@ -23,9 +24,8 @@ const CATEGORIES = [
 const { width } = Dimensions.get('window');
 
 const AvatarCustomScreen = ({ navigation }) => {
-    const { equipState, updateEquip, setEquipState, facePaintPaths, setFacePaintPaths } = useContext(AvatarContext);
+    const { equipState, updateEquip, setEquipState } = useContext(AvatarContext);
     const [selectedCategory, setSelectedCategory] = useState('hair');
-    const [isFacePaintingModalVisible, setFacePaintingModalVisible] = useState(false);
     const [ownedItemIds, setOwnedItemIds] = useState({});
     const [frontendToUuidMap, setFrontendToUuidMap] = useState({});
     const [userLevel, setUserLevel] = useState(1);
@@ -162,13 +162,13 @@ const AvatarCustomScreen = ({ navigation }) => {
                     // 백엔드에 아바타 장착 옷차림 저장
                     try {
                         const equippedUUIDs = [];
-                        if (equipState.hat && frontendToUuidMap[equipState.hat]) equippedUUIDs.push(frontendToUuidMap[equipState.hat]);
-                        if (equipState.upper && frontendToUuidMap[equipState.upper]) equippedUUIDs.push(frontendToUuidMap[equipState.upper]);
-                        if (equipState.lower && frontendToUuidMap[equipState.lower]) equippedUUIDs.push(frontendToUuidMap[equipState.lower]);
+                        ['hat', 'upper', 'lower', 'shoe', 'back', 'outfit', 'pet'].forEach(cat => {
+                            if (equipState[cat] && equipState[cat] !== 'none' && frontendToUuidMap[equipState[cat]]) {
+                                equippedUUIDs.push(frontendToUuidMap[equipState[cat]]);
+                            }
+                        });
 
-                        if (equippedUUIDs.length >= 0) {
-                            await api.patch('/avatars/me/equipment', { equippedItemIds: equippedUUIDs });
-                        }
+                        await api.patch('/avatars/me/equipment', { equippedItemIds: equippedUUIDs });
                     } catch (e) { console.error('Avatar Save Error', e); }
                     navigation.goBack();
                 }}>
@@ -185,27 +185,11 @@ const AvatarCustomScreen = ({ navigation }) => {
 
                     {/* 꾸미기 전용 펫 미리보기 */}
                     {equipState.pet && equipState.pet !== 'none' && (
-                        <View style={{ position: 'absolute', right: 0, bottom: -10, width: 120, height: 120 }} pointerEvents="none">
-                            {AVATAR_ASSETS.pet[equipState.pet]?.leg && <Image source={AVATAR_ASSETS.pet[equipState.pet].leg} style={{ position: 'absolute', width: '100%', height: '100%' }} resizeMode="contain" />}
-                            {AVATAR_ASSETS.pet[equipState.pet]?.body && <Image source={AVATAR_ASSETS.pet[equipState.pet].body} style={{ position: 'absolute', width: '100%', height: '100%' }} resizeMode="contain" />}
-                            {AVATAR_ASSETS.pet[equipState.pet]?.base && <Image source={AVATAR_ASSETS.pet[equipState.pet].base} style={{ position: 'absolute', width: '100%', height: '100%' }} resizeMode="contain" />}
+                        <View style={{ position: 'absolute', right: scale(-210), bottom: verticalScale(-155) }} pointerEvents="none">
+                            <Pet petType={equipState.pet} size={scale(400)} />
                         </View>
                     )}
                 </View>
-
-                <TouchableOpacity
-                    style={styles.paintLaunchButton}
-                    onPress={() => setFacePaintingModalVisible(true)}
-                >
-                    <CustomText style={styles.paintLaunchIcon}>🎨</CustomText>
-                    <CustomText style={styles.paintLaunchText}>페이스 페인팅</CustomText>
-                </TouchableOpacity>
-                <TouchableOpacity
-                    style={styles.paintClearButton}
-                    onPress={() => setFacePaintPaths([])}
-                >
-                    <CustomText style={styles.paintLaunchText}>초기화 🗑️</CustomText>
-                </TouchableOpacity>
             </View>
 
             {/* 인벤토리 영역 */}
@@ -235,15 +219,6 @@ const AvatarCustomScreen = ({ navigation }) => {
                     {renderItemGrid()}
                 </View>
             </View>
-
-            {/* 페이스 페인팅 모달 */}
-            <FacePaintingModal
-                visible={isFacePaintingModalVisible}
-                onClose={() => setFacePaintingModalVisible(false)}
-                onSave={(paths) => setFacePaintPaths(paths)}
-                initialPaths={facePaintPaths}
-                equipState={equipState}
-            />
         </View>
     );
 };

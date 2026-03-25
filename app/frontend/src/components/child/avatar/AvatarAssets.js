@@ -148,9 +148,9 @@ export const AVATAR_ITEMS = {
     ],
     hat: [
         { id: 'hat1', name: '기본 모자', img: AVATAR_ASSETS.hat.hat1, level: 1 },
-        { id: 'farmer_hat', name: '농부 모자', img: AVATAR_ASSETS.hat.farmer, level: 4 },
-        { id: 'astronaut_hat', name: '우주인 헬멧', img: AVATAR_ASSETS.hat.astronaut, level: 5 },
-        { id: 'akku_hat', name: '아꾸 모자', img: AVATAR_ASSETS.hat.akku, level: 5 },
+        { id: 'farmer', name: '농부 모자', img: AVATAR_ASSETS.hat.farmer, level: 4 },
+        { id: 'astronaut', name: '우주인 헬멧', img: AVATAR_ASSETS.hat.astronaut, level: 5 },
+        { id: 'akku', name: '아꾸 모자', img: AVATAR_ASSETS.hat.akku, level: 5 },
         { id: 'none', name: '해제', img: null, level: 1 },
     ],
     shoe: [
@@ -161,10 +161,10 @@ export const AVATAR_ITEMS = {
         { id: 'none', name: '해제', img: null, level: 1 },
     ],
     back: [
-        { id: 'wing', name: '날개', img: AVATAR_ASSETS.decoration.wing, level: 99 },
-        { id: 'babo', name: '바보', img: AVATAR_ASSETS.decoration.babo, level: 99 },
-        { id: 'flag', name: '깃발', img: AVATAR_ASSETS.decoration.flag, level: 99 },
-        { id: 'watergun', name: '물총', img: AVATAR_ASSETS.decoration.watergun, level: 99 },
+        { id: 'wing', name: '날개', img: AVATAR_ASSETS.decoration.wing, level: 2 },
+        { id: 'babo', name: '바보', img: AVATAR_ASSETS.decoration.babo, level: 3 },
+        { id: 'flag', name: '깃발', img: AVATAR_ASSETS.decoration.flag, level: 4 },
+        { id: 'watergun', name: '물총', img: AVATAR_ASSETS.decoration.watergun, level: 5 },
         { id: 'none', name: '해제', img: null, level: 1 },
     ],
     outfit: [
@@ -174,9 +174,9 @@ export const AVATAR_ITEMS = {
         { id: 'none', name: '해제', img: null, level: 1 },
     ],
     pet: [
-        { id: 'shiba', name: '시바견', img: [AVATAR_ASSETS.pet.shiba.leg, AVATAR_ASSETS.pet.shiba.body, AVATAR_ASSETS.pet.shiba.base], level: 99 },
-        { id: 'cat', name: '고양이', img: [AVATAR_ASSETS.pet.cat.leg, AVATAR_ASSETS.pet.cat.body, AVATAR_ASSETS.pet.cat.base], level: 99 },
-        { id: 'akku', name: '아꾸', img: [AVATAR_ASSETS.pet.akku.body, AVATAR_ASSETS.pet.akku.base], level: 99 }, // 아꾸 펫은 leg 없음
+        { id: 'shiba', name: '시바견', img: [AVATAR_ASSETS.pet.shiba.leg, AVATAR_ASSETS.pet.shiba.body, AVATAR_ASSETS.pet.shiba.base], level: 2 },
+        { id: 'cat', name: '고양이', img: [AVATAR_ASSETS.pet.cat.leg, AVATAR_ASSETS.pet.cat.body, AVATAR_ASSETS.pet.cat.base], level: 3 },
+        { id: 'akku', name: '아꾸', img: [AVATAR_ASSETS.pet.akku.body, AVATAR_ASSETS.pet.akku.base], level: 4 }, // 아꾸 펫은 leg 없음
         { id: 'none', name: '해제', img: null, level: 1 },
     ]
 };
