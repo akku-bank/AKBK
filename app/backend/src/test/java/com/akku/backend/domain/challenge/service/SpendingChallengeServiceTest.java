@@ -1203,4 +1203,164 @@ class SpendingChallengeServiceTest {
                     .isEqualTo(com.akku.backend.domain.user.exception.UserErrorCode.USER_NOT_FOUND);
         }
     }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 그룹 11. 보상 요청 챌린지 목록 조회 (부모 전용)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    @Nested
+    @DisplayName("보상 요청 챌린지 목록 조회 (getRewardRequestedChallenges)")
+    class GetRewardRequestedChallengesTests {
+
+        @Test
+        @DisplayName("11-1. 성공 — 같은 가족 자녀의 REWARD_REQUESTED 챌린지 2건 반환")
+        void getRewardRequestedChallenges_Success_WithItems() {
+            // given
+            UUID parentId  = UUID.randomUUID();
+            UUID childId   = UUID.randomUUID();
+            UUID familyId  = UUID.randomUUID();
+
+            User parent = mockParent(parentId, familyId);
+            User child  = mockChild(childId, familyId);
+            given(userRepository.findById(parentId)).willReturn(Optional.of(parent));
+            given(userRepository.findById(childId)).willReturn(Optional.of(child));
+
+            LocalDate lastSunday = resolveLastSunday();
+            SpendingChallenge c1 = SpendingChallenge.builder()
+                    .id(UUID.randomUUID()).user(child).subCategoryName("카페")
+                    .targetSpending(50_000L).rewardAmount(10_000L)
+                    .status(ChallengeStatus.REWARD_REQUESTED)
+                    .startDate(lastSunday.minusDays(6)).endDate(lastSunday)
+                    .build();
+            SpendingChallenge c2 = SpendingChallenge.builder()
+                    .id(UUID.randomUUID()).user(child).subCategoryName("편의점")
+                    .targetSpending(30_000L).rewardAmount(5_000L)
+                    .status(ChallengeStatus.REWARD_REQUESTED)
+                    .startDate(lastSunday.minusDays(6)).endDate(lastSunday)
+                    .build();
+
+            given(spendingChallengeRepository.findAllByUserAndStatus(child, ChallengeStatus.REWARD_REQUESTED))
+                    .willReturn(List.of(c1, c2));
+
+            // when
+            SpendingChallengeDto.ListResponse response =
+                    spendingChallengeService.getRewardRequestedChallenges(parentId, childId);
+
+            // then
+            assertThat(response.getChallenges()).hasSize(2);
+            assertThat(response.getChallenges())
+                    .extracting(SpendingChallengeDto.ChallengeSummary::getStatus)
+                    .containsOnly(ChallengeStatus.REWARD_REQUESTED.name());
+            assertThat(response.getChallenges())
+                    .extracting(SpendingChallengeDto.ChallengeSummary::getCategory)
+                    .containsExactly("카페", "편의점");
+            verify(spendingChallengeRepository)
+                    .findAllByUserAndStatus(child, ChallengeStatus.REWARD_REQUESTED);
+        }
+
+        @Test
+        @DisplayName("11-2. 성공 — 보상 요청 챌린지 0건 시 빈 리스트 반환")
+        void getRewardRequestedChallenges_Success_EmptyList() {
+            // given
+            UUID parentId = UUID.randomUUID();
+            UUID childId  = UUID.randomUUID();
+            UUID familyId = UUID.randomUUID();
+
+            User parent = mockParent(parentId, familyId);
+            User child  = mockChild(childId, familyId);
+            given(userRepository.findById(parentId)).willReturn(Optional.of(parent));
+            given(userRepository.findById(childId)).willReturn(Optional.of(child));
+            given(spendingChallengeRepository.findAllByUserAndStatus(child, ChallengeStatus.REWARD_REQUESTED))
+                    .willReturn(List.of());
+
+            // when
+            SpendingChallengeDto.ListResponse response =
+                    spendingChallengeService.getRewardRequestedChallenges(parentId, childId);
+
+            // then
+            assertThat(response.getChallenges()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("11-3. 실패 — CHILD 역할 호출 시 ACCESS_DENIED, 자녀 조회 미호출")
+        void getRewardRequestedChallenges_Fail_ChildRole() {
+            // given
+            UUID callerId = UUID.randomUUID();
+            UUID childId  = UUID.randomUUID();
+
+            User caller = mockChild(callerId, UUID.randomUUID());
+            given(userRepository.findById(callerId)).willReturn(Optional.of(caller));
+
+            // when & then
+            assertThatThrownBy(() ->
+                    spendingChallengeService.getRewardRequestedChallenges(callerId, childId))
+                    .isInstanceOf(ApiException.class)
+                    .extracting(e -> ((ApiException) e).getErrorCode())
+                    .isEqualTo(ChallengeErrorCode.ACCESS_DENIED);
+
+            verify(userRepository, never()).findById(childId);
+        }
+
+        @Test
+        @DisplayName("11-4. 실패 — 다른 가족 자녀 조회 시 ACCESS_DENIED, Repository 미호출")
+        void getRewardRequestedChallenges_Fail_DifferentFamily() {
+            // given
+            UUID parentId = UUID.randomUUID();
+            UUID childId  = UUID.randomUUID();
+
+            User parent = mockParent(parentId, UUID.randomUUID());
+            User child  = mockChild(childId, UUID.randomUUID()); // 다른 familyId
+            given(userRepository.findById(parentId)).willReturn(Optional.of(parent));
+            given(userRepository.findById(childId)).willReturn(Optional.of(child));
+
+            // when & then
+            assertThatThrownBy(() ->
+                    spendingChallengeService.getRewardRequestedChallenges(parentId, childId))
+                    .isInstanceOf(ApiException.class)
+                    .extracting(e -> ((ApiException) e).getErrorCode())
+                    .isEqualTo(ChallengeErrorCode.ACCESS_DENIED);
+
+            verify(spendingChallengeRepository, never())
+                    .findAllByUserAndStatus(any(User.class), any(ChallengeStatus.class));
+        }
+
+        @Test
+        @DisplayName("11-5. 실패 — 부모 familyId null 시 ACCESS_DENIED")
+        void getRewardRequestedChallenges_Fail_ParentFamilyIdNull() {
+            // given
+            UUID parentId = UUID.randomUUID();
+            UUID childId  = UUID.randomUUID();
+
+            User parent = mockParent(parentId, null);
+            User child  = mockChild(childId, UUID.randomUUID());
+            given(userRepository.findById(parentId)).willReturn(Optional.of(parent));
+            given(userRepository.findById(childId)).willReturn(Optional.of(child));
+
+            // when & then
+            assertThatThrownBy(() ->
+                    spendingChallengeService.getRewardRequestedChallenges(parentId, childId))
+                    .isInstanceOf(ApiException.class)
+                    .extracting(e -> ((ApiException) e).getErrorCode())
+                    .isEqualTo(ChallengeErrorCode.ACCESS_DENIED);
+        }
+
+        @Test
+        @DisplayName("11-6. 실패 — 존재하지 않는 자녀 ID 시 USER_NOT_FOUND")
+        void getRewardRequestedChallenges_Fail_ChildNotFound() {
+            // given
+            UUID parentId      = UUID.randomUUID();
+            UUID unknownChildId = UUID.randomUUID();
+
+            User parent = mockParent(parentId, UUID.randomUUID());
+            given(userRepository.findById(parentId)).willReturn(Optional.of(parent));
+            given(userRepository.findById(unknownChildId)).willReturn(Optional.empty());
+
+            // when & then
+            assertThatThrownBy(() ->
+                    spendingChallengeService.getRewardRequestedChallenges(parentId, unknownChildId))
+                    .isInstanceOf(ApiException.class)
+                    .extracting(e -> ((ApiException) e).getErrorCode())
+                    .isEqualTo(com.akku.backend.domain.user.exception.UserErrorCode.USER_NOT_FOUND);
+        }
+    }
 }

@@ -190,6 +190,25 @@ public class SpendingChallengeController {
     }
 
     /**
+     * 11. 보상 요청 챌린지 목록 조회 (부모 전용)
+     */
+    @Operation(
+            summary = "보상 요청 챌린지 목록 조회 (부모 전용)",
+            description = "부모가 특정 자녀의 보상 요청(REWARD_REQUESTED) 상태인 챌린지 목록을 조회합니다. childId는 필수이며 가족 관계가 일치하는 자녀만 조회할 수 있습니다. 조회 후 각 챌린지에 대해 보상 송금 처리를 진행할 수 있습니다."
+    )
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "보상 요청 목록 조회 성공")
+    @GetMapping("/reward-requests")
+    public ResponseEntity<ApiResponse<SpendingChallengeDto.ListResponse>> getRewardRequestedChallenges(
+            @Parameter(description = "조회할 자녀의 ID (필수)") @RequestParam UUID childId,
+            @AuthenticationPrincipal UUID parentId) {
+
+        SpendingChallengeDto.ListResponse response =
+                spendingChallengeService.getRewardRequestedChallenges(parentId, childId);
+
+        return ResponseEntity.ok(ApiResponse.success("보상 요청 챌린지 목록을 불러왔습니다.", response));
+    }
+
+    /**
      * 10. 이번 주 소비 목표 챌린지 목록 조회 (부모 전용)
      */
     @Operation(
