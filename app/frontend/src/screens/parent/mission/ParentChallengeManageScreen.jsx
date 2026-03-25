@@ -157,7 +157,7 @@ const ParentChallengeManageScreen = ({ navigation, route }) => {
                         >
                             <View style={styles.cardHeader}>
                                 <CustomText style={styles.cardTitle}>
-                                    {item.category} {Number(item.targetSpending || 0).toLocaleString()}원 아끼기
+                                    {item.category} {Number(item.targetSpending || 0).toLocaleString()}원 이하로 소비하기
                                 </CustomText>
                                 {renderStatusBadge(item.status)}
                             </View>

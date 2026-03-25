@@ -54,7 +54,7 @@ const ChallengeProposeScreen = ({ navigation, route }) => {
                 Alert.alert('수정 완료', `"${selectedCategory}" 챌린지를 수정했어요!`, [{ text: '확인', onPress: () => navigation.goBack() }]);
             } else {
                 await api.post('/challenges/spending', payload);
-                Alert.alert('제안 완료', `부모님께 "${selectedCategory}" 지출 줄이기 챌린지를 제안했어요!`, [{ text: '확인', onPress: () => navigation.goBack() }]);
+                Alert.alert('제안 완료', `부모님께 "${selectedCategory}" 소비 목표 챌린지를 제안했어요!`, [{ text: '확인', onPress: () => navigation.goBack() }]);
             }
         } catch (e) {
             console.error('Challenge Propose Error', e);
@@ -81,11 +81,11 @@ const ChallengeProposeScreen = ({ navigation, route }) => {
                 <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
 
                     <View style={styles.instructionCard}>
-                        <CustomText style={styles.instructionTitle}>{isEditMode ? '어떤 내용으로 다시 제안할까요?' : '어떤 소비를 줄여볼까요?'}</CustomText>
+                        <CustomText style={styles.instructionTitle}>{isEditMode ? '어떤 내용으로 다시 제안할까요?' : '어떤 소비 목표를 정할까요?'}</CustomText>
                         <CustomText style={styles.instructionDesc}>
                             {isEditMode
                                 ? '반려되었거나 승인 대기 중인 챌린지를 수정해서 다시 요청할 수 있어요.'
-                                : '이번 주에 나의 용돈을 아낄 수 있는 카테고리와 목표를 부모님께 약속해보세요.'}
+                                : '이번 주에 내가 얼마까지 사용할지 카테고리와 목표 금액을 정해 부모님께 제안해보세요.'}
                         </CustomText>
                     </View>
 
@@ -102,7 +102,7 @@ const ChallengeProposeScreen = ({ navigation, route }) => {
                         ))}
                     </View>
 
-                    <CustomText style={styles.sectionLabel}>얼마를 덜 쓸까요? (억제 목표 금액)</CustomText>
+                    <CustomText style={styles.sectionLabel}>얼마까지 쓸까요? (소비 목표 금액)</CustomText>
                     <View style={styles.inputContainer}>
                         <CustomTextInput
                             style={styles.amountInput}

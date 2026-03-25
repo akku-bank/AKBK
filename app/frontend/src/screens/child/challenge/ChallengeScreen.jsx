@@ -177,7 +177,7 @@ const ChallengeScreen = ({ navigation }) => {
                 <View style={styles.cardHeader}>
                     <View style={styles.cardHeaderLeft}>
                         {renderStatusBadge(item.status)}
-                        <CustomText style={styles.categoryText}>{item.category} 아끼기</CustomText>
+                        <CustomText style={styles.categoryText}>{item.category}</CustomText>
                     </View>
                     {ddayLabel ? <CustomText style={styles.ddayText}>{ddayLabel}</CustomText> : null}
                 </View>
