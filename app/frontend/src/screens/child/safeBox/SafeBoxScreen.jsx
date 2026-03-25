@@ -239,9 +239,9 @@ const SafeBoxScreen = ({ navigation }) => {
                         </View>
                     )}
 
-                    <TouchableOpacity style={styles.mapButton} onPress={() => navigation.navigate('BadgeMap')}>
+                    {/* <TouchableOpacity style={styles.mapButton} onPress={() => navigation.navigate('BadgeMap')}>
                         <CustomText style={styles.mapButtonText}>내 기부 뱃지 맵 보기 🗺️</CustomText>
-                    </TouchableOpacity>
+                    </TouchableOpacity> */}
                 </ScrollView>
             </KeyboardAvoidingView>
         </SafeAreaView>
