@@ -1,8 +1,12 @@
 package com.akku.backend.domain.donation.dto;
 
+import java.util.UUID;
+
 public record ReceiveRewardResponse(
+        UUID itemId,
+        String category,
         String rewardItemName,
-        Integer customTicketCount,
+        String resourceUrl,
         Boolean isDuplicate
 ) {
 }

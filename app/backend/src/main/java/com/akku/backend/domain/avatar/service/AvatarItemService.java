@@ -54,7 +54,20 @@ public class AvatarItemService {
         List<AvatarItemResponse> itemResponses = items.stream()
                 .map(item -> {
                     boolean isLevelLocked = item.getRequiredLevel() > user.getLevel();
-                    boolean isOwned = !isLevelLocked || ownedItemIds.contains(item.getId());
+                    
+                    // 기부 아이템인지 일반 의상인지 구분
+                    boolean isCharityItem = !"HAT".equals(item.getCategory()) && 
+                                            !"TOP".equals(item.getCategory()) && 
+                                            !"BOTTOM".equals(item.getCategory());
+
+                    boolean isOwned;
+                    if (isCharityItem) {
+                        // 기부 아이템은 레벨과 상관없이 실제로 획득(ownedItemIds에 존재)해야만 소유한 것으로 간주
+                        isOwned = ownedItemIds.contains(item.getId());
+                    } else {
+                        // 일반 의상은 레벨만 충족하면 자동으로 소유 가능
+                        isOwned = !isLevelLocked || ownedItemIds.contains(item.getId());
+                    }
 
                     return new AvatarItemResponse(
                             item.getId(),
@@ -97,7 +110,13 @@ public class AvatarItemService {
 
         for (Item item : targetItems) {
             boolean isLevelLocked = item.getRequiredLevel() > user.getLevel();
-            boolean isOwned = !isLevelLocked || ownedItemIds.contains(item.getId());
+            boolean isCharityItem = !"HAT".equals(item.getCategory()) && 
+                                    !"TOP".equals(item.getCategory()) && 
+                                    !"BOTTOM".equals(item.getCategory());
+
+            boolean isOwned = isCharityItem 
+                    ? ownedItemIds.contains(item.getId()) 
+                    : (!isLevelLocked || ownedItemIds.contains(item.getId()));
 
             if (!isOwned) {
                 // 내 레벨로도 못 입고, 뽑기로도 못 뽑은 템을 입으려고 시도함 (해킹 방어)

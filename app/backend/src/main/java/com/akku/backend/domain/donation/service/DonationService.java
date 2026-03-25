@@ -69,7 +69,8 @@ public class DonationService {
                 .map(charity -> new CharityResponse(
                         charity.getId(),
                         charity.getName(),
-                        charity.getDescription()
+                        charity.getDescription(),
+                        charity.getCategory()
                 ))
                 .toList();
         return new CharityListResponse(charities);
@@ -156,13 +157,21 @@ public class DonationService {
                 .orElseThrow(() -> new ApiException(UserErrorCode.USER_NOT_FOUND));
 
         // 랜덤 아이템 보상 (이미 보유한 아이템도 지급 가능)
-        List<Item> allItems = itemRepository.findAll();
+        // 기부처의 카테고리에 해당하는 아이템들만 필터링
+        String charityCategory = activeCharity.getCharity().getCategory();
+        List<Item> rewardPool = (charityCategory != null && !charityCategory.isBlank())
+                ? itemRepository.findByCategory(charityCategory)
+                : itemRepository.findAll();
+
         String rewardItemName = "준비된 아이템이 없습니다.";
+        String rewardCategory = null;
+        String rewardResourceUrl = null;
+        UUID rewardItemId = null;
         boolean isDuplicate = false;
 
-        if (!allItems.isEmpty()) {
-            int randomIndex = (int) (Math.random() * allItems.size());
-            Item pickedItem = allItems.get(randomIndex);
+        if (!rewardPool.isEmpty()) {
+            int randomIndex = (int) (Math.random() * rewardPool.size());
+            Item pickedItem = rewardPool.get(randomIndex);
 
             // 이미 보유 중인지 확인하여 중복 여부 체크 및 신규 보상 지급
             List<UserItem> userItems = userItemRepository.findAllByUserIdWithItem(userId);
@@ -176,21 +185,14 @@ public class DonationService {
                         .isEquipped(false)
                         .build());
             }
+            rewardItemId = pickedItem.getId();
             rewardItemName = pickedItem.getName();
+            rewardCategory = pickedItem.getCategory();
+            rewardResourceUrl = pickedItem.getResourceUrl();
         }
-        // 커스텀 티켓 보상 (나중에 아바타 도메인의 UserItem.quantity와 연결할 로직)
-        /*
-        // Avatar 도메인 완료 시 교체할 로직 (UserItem.quantity 사용)
-        Item ticketItem = itemRepository.findByName("커스텀 티켓").orElseThrow();
-        UserItem userTicket = userItemRepository.findByUserIdAndItemId(userId, ticketItem.getId())
-                .orElseGet(() -> userItemRepository.save(new UserItem(user, ticketItem, false, 0)));
-        userTicket.addQuantity(1);
-        */
-        int ticketCount = 0; // 아직 티켓 기능이 비활성화 상태이므로 0 반환
-
         // 저금통 상태 변경 (REWARDED)
         activeCharity.markRewarded();
 
-        return new ReceiveRewardResponse(rewardItemName, ticketCount, isDuplicate);
+        return new ReceiveRewardResponse(rewardItemId, rewardCategory, rewardItemName, rewardResourceUrl, isDuplicate);
     }
 }
