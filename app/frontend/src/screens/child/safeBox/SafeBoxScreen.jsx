@@ -7,25 +7,25 @@ import api from '../../../api/axios';
 
 const DONATION_OPTIONS = [
     {
+        id: 'arts-support',
+        name: '문화 예술',
+        description: '아이들을 위한 공연과 전시를 후원해요.',
+        targetAmount: 5,
+        emoji: '🎨',
+    },
+    {
         id: 'tree-planting',
         name: '나무심기',
         description: '도시 숲 조성과 나무 식재 활동에 기부해요.',
-        targetAmount: 300,
+        targetAmount: 10,
         emoji: '🌳',
     },
     {
         id: 'animal-shelter',
         name: '유기동물 보호소',
         description: '보호소 사료와 치료비를 지원해요.',
-        targetAmount: 500,
+        targetAmount: 15,
         emoji: '🐶',
-    },
-    {
-        id: 'arts-support',
-        name: '문화예술 기부',
-        description: '아이들을 위한 공연과 전시를 후원해요.',
-        targetAmount: 700,
-        emoji: '🎨',
     },
 ];
 
@@ -173,7 +173,7 @@ const SafeBoxScreen = ({ navigation }) => {
                                         <CustomText style={styles.targetDesc}>{charity.description}</CustomText>
                                     </View>
                                     <View style={styles.goalPill}>
-                                        <CustomText style={styles.goalPillText}>{charity.targetAmount} 💎</CustomText>
+                                        <CustomText style={styles.goalPillText}>{`💎 x ${charity.targetAmount}`}</CustomText>
                                     </View>
                                 </TouchableOpacity>
                             ))}
@@ -260,7 +260,7 @@ const styles = StyleSheet.create({
 
     charitySelectionBox: { backgroundColor: '#FFF', borderRadius: RFValue(20), padding: RFValue(20), marginBottom: RFValue(20) },
     charityItemCard: { backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#E5E7EB', padding: RFValue(16), borderRadius: RFValue(12), marginBottom: RFValue(12), flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-    goalPill: { backgroundColor: '#E0E7FF', paddingHorizontal: RFValue(10), paddingVertical: RFValue(6), borderRadius: RFValue(20) },
+    goalPill: { backgroundColor: '#E0E7FF', paddingHorizontal: RFValue(9), paddingVertical: RFValue(7), borderRadius: RFValue(20), marginLeft: RFValue(3) },
     goalPillText: { color: '#4F46E5', fontSize: RFValue(12), fontWeight: 'bold' },
 
     donationTargetBox: { backgroundColor: '#FFF', borderRadius: RFValue(20), padding: RFValue(20), marginBottom: RFValue(20), shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 3 },
@@ -268,9 +268,9 @@ const styles = StyleSheet.create({
 
     activeTargetCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F9FAFB', padding: RFValue(16), borderRadius: RFValue(16), marginBottom: RFValue(24) },
     targetEmoji: { fontSize: RFValue(36), marginRight: RFValue(16) },
-    targetInfo: { flex: 1 },
-    targetTitle: { fontSize: RFValue(16), fontWeight: 'bold', color: '#111', marginBottom: RFValue(4) },
-    targetDesc: { fontSize: RFValue(13), color: '#6B7280' },
+    targetInfo: { flex: 1, paddingRight: RFValue(8) },
+    targetTitle: { fontSize: RFValue(15), fontWeight: 'bold', color: '#111', marginBottom: RFValue(5) },
+    targetDesc: { fontSize: RFValue(10.4), color: '#6B7280', lineHeight: RFValue(12.5), paddingRight: RFValue(6) },
 
     gaugeContainer: { marginBottom: RFValue(24) },
     gaugeTexts: { flexDirection: 'row', alignItems: 'baseline', marginBottom: RFValue(8) },
