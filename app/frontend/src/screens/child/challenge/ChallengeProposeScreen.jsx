@@ -7,12 +7,21 @@ import api from '../../../api/axios';
 
 const CATEGORIES = ['간식', '쇼핑', '게임', '기타'];
 
-const ChallengeProposeScreen = ({ navigation }) => {
-    const [selectedCategory, setSelectedCategory] = useState(CATEGORIES[0]);
+const ChallengeProposeScreen = ({ navigation, route }) => {
+    const editingChallenge = route?.params?.challenge || null;
+    const isEditMode = Boolean(editingChallenge?.challengeId);
+
+    const [selectedCategory, setSelectedCategory] = useState(editingChallenge?.category || CATEGORIES[0]);
     const [goalAmount, setGoalAmount] = useState('');
-    const [memo, setMemo] = useState('');
+    const [rewardAmount, setRewardAmount] = useState('');
 
     useEffect(() => {
+        if (isEditMode) {
+            setSelectedCategory(editingChallenge?.category || CATEGORIES[0]);
+            setGoalAmount(String(editingChallenge?.targetSpending || ''));
+            setRewardAmount(String(editingChallenge?.rewardAmount || ''));
+        }
+
         // [UI 테스트용 임시 주석] 주말(토, 일)에만 제안 가능 로직
         // const today = new Date().getDay();
         // if (today !== 0 && today !== 6) {
@@ -20,7 +29,7 @@ const ChallengeProposeScreen = ({ navigation }) => {
         //         { text: '확인', onPress: () => navigation.goBack() }
         //     ]);
         // }
-    }, [navigation]);
+    }, [editingChallenge, isEditMode, navigation]);
 
     const handleSubmit = async () => { // Added async here
         if (!goalAmount || isNaN(goalAmount)) {
@@ -28,15 +37,33 @@ const ChallengeProposeScreen = ({ navigation }) => {
             return;
         }
 
+        if (!rewardAmount || isNaN(rewardAmount)) {
+            Alert.alert('알림', '보상 금액을 정확히 입력해주세요.');
+            return;
+        }
+
         try {
-            await api.post('/challenges/spending', {
-                subCategoryName: selectedCategory,
-                targetAmount: parseInt(goalAmount),
-            });
-            Alert.alert('제안 완료', `부모님께 "${selectedCategory}" 지출 줄이기 챌린지를 제안했어요!`, [{ text: '확인', onPress: () => navigation.goBack() }]);
+            const payload = {
+                category: selectedCategory,
+                targetSpending: parseInt(goalAmount, 10),
+                rewardAmount: parseInt(rewardAmount, 10),
+            };
+
+            if (isEditMode) {
+                await api.patch(`/challenges/spending/${editingChallenge.challengeId}`, payload);
+                Alert.alert('수정 완료', `"${selectedCategory}" 챌린지를 수정했어요!`, [{ text: '확인', onPress: () => navigation.goBack() }]);
+            } else {
+                await api.post('/challenges/spending', payload);
+                Alert.alert('제안 완료', `부모님께 "${selectedCategory}" 소비 목표 챌린지를 제안했어요!`, [{ text: '확인', onPress: () => navigation.goBack() }]);
+            }
         } catch (e) {
             console.error('Challenge Propose Error', e);
-            Alert.alert('오류', '챌린지 생성 중 문제가 발생했습니다.');
+            if (e.response?.status === 409) {
+                Alert.alert('안내', '이미 같은 카테고리의 챌린지를 요청했어요.');
+                return;
+            }
+
+            Alert.alert('오류', isEditMode ? '챌린지 수정 중 문제가 발생했습니다.' : '챌린지 생성 중 문제가 발생했습니다.');
         }
     };
 
@@ -46,7 +73,7 @@ const ChallengeProposeScreen = ({ navigation }) => {
                 <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
                     <CustomText style={styles.backButtonText}>←</CustomText>
                 </TouchableOpacity>
-                <CustomText style={styles.headerTitle}>용돈 미션 제안하기</CustomText>
+                <CustomText style={styles.headerTitle}>{isEditMode ? '용돈 미션 수정하기' : '용돈 미션 제안하기'}</CustomText>
                 <View style={{ width: scale(32) }} />
             </View>
 
@@ -54,8 +81,12 @@ const ChallengeProposeScreen = ({ navigation }) => {
                 <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
 
                     <View style={styles.instructionCard}>
-                        <CustomText style={styles.instructionTitle}>어떤 소비를 줄여볼까요?</CustomText>
-                        <CustomText style={styles.instructionDesc}>이번 주에 나의 용돈을 아낄 수 있는 카테고리와 목표를 부모님께 약속해보세요.</CustomText>
+                        <CustomText style={styles.instructionTitle}>{isEditMode ? '어떤 내용으로 다시 제안할까요?' : '어떤 소비 목표를 정할까요?'}</CustomText>
+                        <CustomText style={styles.instructionDesc}>
+                            {isEditMode
+                                ? '반려되었거나 승인 대기 중인 챌린지를 수정해서 다시 요청할 수 있어요.'
+                                : '이번 주에 내가 얼마까지 사용할지 카테고리와 목표 금액을 정해 부모님께 제안해보세요.'}
+                        </CustomText>
                     </View>
 
                     <CustomText style={styles.sectionLabel}>소비 카테고리</CustomText>
@@ -71,7 +102,7 @@ const ChallengeProposeScreen = ({ navigation }) => {
                         ))}
                     </View>
 
-                    <CustomText style={styles.sectionLabel}>얼마를 덜 쓸까요? (억제 목표 금액)</CustomText>
+                    <CustomText style={styles.sectionLabel}>얼마까지 쓸까요? (소비 목표 금액)</CustomText>
                     <View style={styles.inputContainer}>
                         <CustomTextInput
                             style={styles.amountInput}
@@ -84,20 +115,22 @@ const ChallengeProposeScreen = ({ navigation }) => {
                         <CustomText style={styles.currencyText}>원</CustomText>
                     </View>
 
-                    <CustomText style={styles.sectionLabel}>부모님께 한마디 (선택)</CustomText>
-                    <CustomTextInput
-                        style={styles.memoInput}
-                        placeholder="이만큼 아껴서 사고 싶은 게 있어요!"
-                        placeholderTextColor="#9CA3AF"
-                        multiline
-                        value={memo}
-                        onChangeText={setMemo}
-                    />
-
+                    <CustomText style={styles.sectionLabel}>성공하면 얼마를 받을까요? (보상 금액)</CustomText>
+                    <View style={styles.inputContainer}>
+                        <CustomTextInput
+                            style={styles.amountInput}
+                            placeholder="예: 1000"
+                            placeholderTextColor="#9CA3AF"
+                            keyboardType="numeric"
+                            value={rewardAmount}
+                            onChangeText={setRewardAmount}
+                        />
+                        <CustomText style={styles.currencyText}>원</CustomText>
+                    </View>
                 </ScrollView>
                 <View style={styles.footer}>
                     <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-                        <CustomText style={styles.submitButtonText}>부모님께 제안하기</CustomText>
+                        <CustomText style={styles.submitButtonText}>{isEditMode ? '챌린지 수정하기' : '부모님께 제안하기'}</CustomText>
                     </TouchableOpacity>
                 </View>
             </KeyboardAvoidingView>
@@ -140,12 +173,6 @@ const styles = StyleSheet.create({
     },
     amountInput: { flex: 1, fontSize: scale(18), fontWeight: 'bold', color: '#111', paddingVertical: verticalScale(16) },
     currencyText: { fontSize: scale(16), fontWeight: 'bold', color: '#111' },
-
-    memoInput: {
-        backgroundColor: '#FFFFFF', borderRadius: scale(12), padding: scale(16),
-        fontSize: scale(14), color: '#111', minHeight: verticalScale(100), textAlignVertical: 'top', borderWidth: 1, borderColor: '#E5E7EB'
-    },
-
     footer: { paddingHorizontal: scale(16), paddingBottom: verticalScale(24), paddingTop: verticalScale(12), backgroundColor: '#F3F4F6' },
     submitButton: { backgroundColor: '#A3E635', paddingVertical: verticalScale(16), borderRadius: scale(12), alignItems: 'center' },
     submitButtonText: { fontSize: scale(16), fontWeight: 'bold', color: '#111' }
