@@ -32,6 +32,8 @@ const getProgressRatio = (currentSpending, targetSpending) => {
 
 const ChallengeDetailScreen = ({ navigation, route }) => {
     const challengeId = route?.params?.challengeId;
+    const hideParentMessage = !!route?.params?.hideParentMessage;
+    const hideDday = !!route?.params?.hideDday;
     const [detail, setDetail] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -89,9 +91,11 @@ const ChallengeDetailScreen = ({ navigation, route }) => {
                         <View style={styles.card}>
                             <View style={styles.detailHeader}>
                                 <CustomText style={styles.categoryText}>{detail.category}</CustomText>
-                                <View style={styles.ddayBadge}>
-                                    <CustomText style={styles.ddayText}>{getDetailDdayLabel(detail.endDate)}</CustomText>
-                                </View>
+                                {!hideDday ? (
+                                    <View style={styles.ddayBadge}>
+                                        <CustomText style={styles.ddayText}>{getDetailDdayLabel(detail.endDate)}</CustomText>
+                                    </View>
+                                ) : null}
                             </View>
                             <View style={styles.infoRow}>
                                 <CustomText style={styles.infoLabel}>목표 금액</CustomText>
@@ -127,14 +131,24 @@ const ChallengeDetailScreen = ({ navigation, route }) => {
                                     />
                                 </View>
                                 {progressRatio > 0 ? (
-                                    <Image
-                                        source={PROGRESS_AVATAR_IMAGE}
-                                        style={[
-                                            styles.progressAvatar,
-                                            { left: `${Math.max(progressRatio * 100, 8)}%` },
-                                        ]}
-                                        resizeMode="contain"
-                                    />
+                                    hideParentMessage ? (
+                                        <View
+                                            style={[
+                                                styles.progressDot,
+                                                isOverWarning ? styles.progressDotDanger : styles.progressDotSafe,
+                                                { left: `${Math.max(progressRatio * 100, 8)}%` },
+                                            ]}
+                                        />
+                                    ) : (
+                                        <Image
+                                            source={PROGRESS_AVATAR_IMAGE}
+                                            style={[
+                                                styles.progressAvatar,
+                                                { left: `${Math.max(progressRatio * 100, 8)}%` },
+                                            ]}
+                                            resizeMode="contain"
+                                        />
+                                    )
                                 ) : null}
                             </View>
                             <View style={styles.progressMetaRow}>
@@ -147,7 +161,7 @@ const ChallengeDetailScreen = ({ navigation, route }) => {
                             </View>
                         </View>
 
-                        {detail.parentMessage ? (
+                        {!hideParentMessage && detail.parentMessage ? (
                             <View style={styles.messageSection}>
                                 <View style={styles.messageBubbleWrap}>
                                     <View style={styles.messageBubbleTail} />
@@ -305,6 +319,22 @@ const styles = StyleSheet.create({
         width: scale(66),
         height: scale(66),
         marginLeft: scale(-33),
+    },
+    progressDot: {
+        position: 'absolute',
+        top: verticalScale(8),
+        width: scale(14),
+        height: scale(14),
+        borderRadius: scale(999),
+        marginLeft: scale(-7),
+        borderWidth: 2,
+        borderColor: '#FFFFFF',
+    },
+    progressDotSafe: {
+        backgroundColor: '#84CC16',
+    },
+    progressDotDanger: {
+        backgroundColor: '#EF4444',
     },
     progressMetaRow: {
         flexDirection: 'row',
