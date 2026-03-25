@@ -14,7 +14,6 @@ const ChallengeProposeScreen = ({ navigation, route }) => {
     const [selectedCategory, setSelectedCategory] = useState(editingChallenge?.category || CATEGORIES[0]);
     const [goalAmount, setGoalAmount] = useState('');
     const [rewardAmount, setRewardAmount] = useState('');
-    const [memo, setMemo] = useState('');
 
     useEffect(() => {
         if (isEditMode) {
@@ -59,6 +58,11 @@ const ChallengeProposeScreen = ({ navigation, route }) => {
             }
         } catch (e) {
             console.error('Challenge Propose Error', e);
+            if (e.response?.status === 409) {
+                Alert.alert('안내', '이미 같은 카테고리의 챌린지를 요청했어요.');
+                return;
+            }
+
             Alert.alert('오류', isEditMode ? '챌린지 수정 중 문제가 발생했습니다.' : '챌린지 생성 중 문제가 발생했습니다.');
         }
     };
@@ -123,17 +127,6 @@ const ChallengeProposeScreen = ({ navigation, route }) => {
                         />
                         <CustomText style={styles.currencyText}>원</CustomText>
                     </View>
-
-                    <CustomText style={styles.sectionLabel}>부모님께 한마디 (선택)</CustomText>
-                    <CustomTextInput
-                        style={styles.memoInput}
-                        placeholder="이만큼 아껴서 사고 싶은 게 있어요!"
-                        placeholderTextColor="#9CA3AF"
-                        multiline
-                        value={memo}
-                        onChangeText={setMemo}
-                    />
-
                 </ScrollView>
                 <View style={styles.footer}>
                     <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
@@ -180,12 +173,6 @@ const styles = StyleSheet.create({
     },
     amountInput: { flex: 1, fontSize: scale(18), fontWeight: 'bold', color: '#111', paddingVertical: verticalScale(16) },
     currencyText: { fontSize: scale(16), fontWeight: 'bold', color: '#111' },
-
-    memoInput: {
-        backgroundColor: '#FFFFFF', borderRadius: scale(12), padding: scale(16),
-        fontSize: scale(14), color: '#111', minHeight: verticalScale(100), textAlignVertical: 'top', borderWidth: 1, borderColor: '#E5E7EB'
-    },
-
     footer: { paddingHorizontal: scale(16), paddingBottom: verticalScale(24), paddingTop: verticalScale(12), backgroundColor: '#F3F4F6' },
     submitButton: { backgroundColor: '#A3E635', paddingVertical: verticalScale(16), borderRadius: scale(12), alignItems: 'center' },
     submitButtonText: { fontSize: scale(16), fontWeight: 'bold', color: '#111' }

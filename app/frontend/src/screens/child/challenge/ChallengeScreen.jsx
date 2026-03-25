@@ -1,9 +1,11 @@
 import React, { useCallback, useState } from 'react';
-import { View, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { View, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Alert, Image } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { scale, verticalScale } from 'react-native-size-matters';
 import CustomText from '../../../components/common/CustomText';
 import api from '../../../api/axios';
+
+const CROCO_PARENTS_IMAGE = require('../../../assets/croco/croco_parents.png');
 
 const STATUS_UI = {
     PENDING: { label: '승인 대기', style: 'pending' },
@@ -160,6 +162,13 @@ const ChallengeScreen = ({ navigation }) => {
 
                 <CustomText style={styles.goalText}>목표 금액: {Number(item.targetSpending || 0).toLocaleString()}원</CustomText>
                 <CustomText style={styles.goalSubText}>보상 금액: {Number(item.rewardAmount || 0).toLocaleString()}원</CustomText>
+
+                {item.parentMessage ? (
+                    <View style={styles.parentMessageRow}>
+                        <Image source={CROCO_PARENTS_IMAGE} style={styles.parentMessageImage} resizeMode="contain" />
+                        <CustomText style={styles.parentMessageText}>{item.parentMessage}</CustomText>
+                    </View>
+                ) : null}
 
                 {canRequestReward && (
                     <TouchableOpacity
@@ -318,6 +327,25 @@ const styles = StyleSheet.create({
     categoryText: { fontSize: scale(14), fontWeight: '600', color: '#4B5563', marginLeft: scale(8) },
     goalText: { fontSize: scale(15), color: '#374151', marginBottom: verticalScale(8) },
     goalSubText: { fontSize: scale(14), color: '#6B7280' },
+    parentMessageRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: verticalScale(14),
+        paddingTop: verticalScale(12),
+        borderTopWidth: 1,
+        borderTopColor: '#E5E7EB',
+    },
+    parentMessageImage: {
+        width: scale(42),
+        height: scale(42),
+        marginRight: scale(10),
+    },
+    parentMessageText: {
+        flex: 1,
+        fontSize: scale(13),
+        color: '#374151',
+        lineHeight: scale(18),
+    },
 
     rewardBtn: { backgroundColor: '#3B82F6', paddingVertical: verticalScale(12), borderRadius: scale(12), alignItems: 'center', marginTop: verticalScale(16) },
     rewardBtnText: { color: '#FFF', fontSize: scale(14), fontWeight: 'bold' },
