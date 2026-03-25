@@ -150,7 +150,7 @@ const AvatarDictionaryScreen = ({ navigation }) => {
                                 </View>
                                 <CustomText style={[styles.itemName, isLocked && styles.lockedText]}>{item.name}</CustomText>
 
-                                {item.isOwned ? (
+                                {(item.isOwned || !isLocked) ? (
                                     <View style={[styles.statusButton, styles.ownedButton]}>
                                         <CustomText style={styles.ownedButtonText}>획득 완료</CustomText>
                                     </View>

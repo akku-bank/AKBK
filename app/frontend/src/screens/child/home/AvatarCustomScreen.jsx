@@ -28,11 +28,16 @@ const AvatarCustomScreen = ({ navigation }) => {
     const [isFacePaintingModalVisible, setFacePaintingModalVisible] = useState(false);
     const [ownedItemIds, setOwnedItemIds] = useState({});
     const [frontendToUuidMap, setFrontendToUuidMap] = useState({});
+    const [userLevel, setUserLevel] = useState(1);
 
-    // 백엔드 아이템 도감 페칭 및 보유 항목 필터링
+    // 백엔드 아이템 도감 페칭 및 레벨 조회
     React.useEffect(() => {
-        const fetchItems = async () => {
+        const fetchItemsAndLevel = async () => {
             try {
+                // 상단 아이템 조회를 위해 사용자 레벨부터 가져옴
+                const homeRes = await api.get('/home');
+                setUserLevel(homeRes.data?.data?.level || 1);
+
                 const res = await api.get('/avatars/items');
                 const items = res.data?.data?.items || [];
 
@@ -55,7 +60,7 @@ const AvatarCustomScreen = ({ navigation }) => {
                 setFrontendToUuidMap(mapF2U);
             } catch (e) { console.error('Avatar Items Fetch Error', e); }
         };
-        fetchItems();
+        fetchItemsAndLevel();
     }, []);
 
     const handleGenderChange = (gender) => {
@@ -103,11 +108,12 @@ const AvatarCustomScreen = ({ navigation }) => {
                 return true;
             });
         }
-        // 보유 중인 아이템만 필터링 (기본 얼굴/헤어 및 레벨 1인 기본장비, none은 무조건 표시)
+        // 보유 중인 아이템만 필터링 (기본템/none/획득아이템 + 자신의 레벨로 자동 해금된 아이템)
         items = items.filter(item => {
             const isEquipCat = ['upper', 'lower', 'hat', 'shoe', 'back', 'outfit', 'pet'].includes(selectedCategory);
             const isBaseOrNone = item.id.includes('base') || item.id === 'none' || item.level === 1;
-            return !isEquipCat || isBaseOrNone || ownedItemIds[item.id];
+            const isLevelUnlocked = item.level <= userLevel && item.level !== 99;
+            return !isEquipCat || isBaseOrNone || ownedItemIds[item.id] || isLevelUnlocked;
         });
 
         return (

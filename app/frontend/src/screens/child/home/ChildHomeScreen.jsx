@@ -1,5 +1,5 @@
 import React, { useState, useContext, useEffect } from 'react';
-import { View, StyleSheet, TouchableOpacity, SafeAreaView, Dimensions, Image, Modal, Platform, StatusBar } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, SafeAreaView, Dimensions, Image, ImageBackground, Modal, Platform, StatusBar } from 'react-native';
 import { scale, verticalScale } from 'react-native-size-matters';
 import ChildAvatar from '../../../components/child/avatar/ChildAvatar';
 import { AvatarContext } from '../../../components/child/avatar/AvatarContext';
@@ -111,51 +111,56 @@ const ChildHomeScreen = ({ navigation }) => {
 
                 <View style={styles.divider} />
 
-                {/* 친구, 알림 버튼 */}
-                <View style={styles.actionRow}>
-                    <TouchableOpacity style={styles.pillButton} onPress={() => navigation.navigate('FriendList')}>
-                        <CustomText style={styles.pillButtonText}>친구</CustomText>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.pillButton}>
-                        <CustomText style={styles.pillButtonText}>알림</CustomText>
-                        {homeData?.hasUnreadNotification && <View style={styles.redDot} />}
-                    </TouchableOpacity>
-                </View>
-
-                {/* 내가 기부한 장소 카드 */}
-                <TouchableOpacity style={styles.donationCard} activeOpacity={0.9} onPress={() => navigation.navigate('BadgeMap')}>
-                    <View style={styles.donationBadge}>
-                        <CustomText style={styles.donationBadgeText}>내가 기부한 장소</CustomText>
-                    </View>
-                    <CustomText style={styles.donationContentText}>준비 중</CustomText>
-                </TouchableOpacity>
-
-                {/* 아바타 영역 */}
-                <View style={styles.avatarSection}>
-                    <CustomText style={styles.levelText}>LV.{homeData ? homeData.level : 1} | 소비점수 {homeData ? homeData.score : 0}점</CustomText>
-                    <CustomText style={styles.nameText}>{user ? user.name : '김싸피'}</CustomText>
-
-                    <View style={styles.avatarActionRow}>
-                        <TouchableOpacity style={styles.avatarActionBtn} onPress={() => navigation.navigate('AvatarDictionaryScreen')}>
-                            <CustomText style={styles.avatarActionText}>내 도감</CustomText>
+                <ImageBackground
+                    source={require('../../../assets/background.png')}
+                    style={styles.contentBackground}
+                    resizeMode="cover"
+                >
+                    {/* 친구, 알림 버튼 */}
+                    <View style={styles.actionRow}>
+                        <TouchableOpacity style={styles.pillButton} onPress={() => navigation.navigate('FriendList')}>
+                            <CustomText style={styles.pillButtonText}>친구</CustomText>
                         </TouchableOpacity>
-                        <TouchableOpacity style={styles.avatarActionBtn} onPress={() => navigation.navigate('Wardrobe')}>
-                            <CustomText style={styles.avatarActionText}>꾸미기</CustomText>
+                        <TouchableOpacity style={styles.pillButton}>
+                            <CustomText style={styles.pillButtonText}>알림</CustomText>
+                            {homeData?.hasUnreadNotification && <View style={styles.redDot} />}
                         </TouchableOpacity>
                     </View>
 
-                    <View style={styles.avatarWrapper}>
-                        <ChildAvatar equipState={equipState} size={avatarSize} />
+                    {/* 내가 기부한 장소 카드 */}
+                    <TouchableOpacity style={styles.donationCard} activeOpacity={0.9} onPress={() => navigation.navigate('BadgeMap')}>
+                        <View style={styles.donationBadge}>
+                            <CustomText style={styles.donationBadgeText}>내가 기부한 장소</CustomText>
+                        </View>
+                        <CustomText style={styles.donationContentText}>준비 중</CustomText>
+                    </TouchableOpacity>
 
-                        {/* 펫 배치 (백엔드 펫 데이터가 있을 때만 렌더링되도록 사전 준비) */}
-                        {homeData?.pet && (
-                            <View style={{ position: 'absolute', right: scale(-120), bottom: verticalScale(-115) }}>
-                                <Pet petType={homeData.pet.type || 'shiba'} size={scale(350)} />
-                            </View>
-                        )}
+                    {/* 아바타 영역 */}
+                    <View style={styles.avatarSection}>
+                        <CustomText style={styles.levelText}>LV.{homeData ? homeData.level : 1} | 소비점수 {homeData ? homeData.score : 0}점</CustomText>
+                        <CustomText style={styles.nameText}>{user ? user.name : '김싸피'}</CustomText>
+
+                        <View style={styles.avatarActionRow}>
+                            <TouchableOpacity style={styles.avatarActionBtn} onPress={() => navigation.navigate('AvatarDictionaryScreen')}>
+                                <CustomText style={styles.avatarActionText}>내 도감</CustomText>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.avatarActionBtn} onPress={() => navigation.navigate('Wardrobe')}>
+                                <CustomText style={styles.avatarActionText}>꾸미기</CustomText>
+                            </TouchableOpacity>
+                        </View>
+
+                        <View style={styles.avatarWrapper}>
+                            <ChildAvatar equipState={equipState} size={avatarSize} />
+
+                            {/* 펫 배치 (백엔드 펫 데이터가 있을 때만 렌더링되도록 사전 준비) */}
+                            {homeData?.pet && (
+                                <View style={{ position: 'absolute', right: scale(-120), bottom: verticalScale(-115) }}>
+                                    <Pet petType={homeData.pet.type || 'shiba'} size={scale(350)} />
+                                </View>
+                            )}
+                        </View>
                     </View>
-                </View>
-
+                </ImageBackground>
             </View>
 
             {/* QR 결제 모달 */}
@@ -190,10 +195,14 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#FFFFFF',
     },
+    contentBackground: {
+        flex: 1,
+        width: '100%',
+        paddingTop: verticalScale(16),
+    },
     container: {
         flex: 1,
         paddingTop: verticalScale(16),
-        paddingBottom: verticalScale(10),
     },
     headerRow: {
         flexDirection: 'row',
@@ -242,7 +251,6 @@ const styles = StyleSheet.create({
         height: 1,
         backgroundColor: '#F3F4F6',
         width: '100%',
-        marginBottom: verticalScale(20),
     },
     actionRow: {
         flexDirection: 'row',
