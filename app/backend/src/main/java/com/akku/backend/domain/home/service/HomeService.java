@@ -99,14 +99,18 @@ public class HomeService {
                     long childBalance = 0L;
                     long weeklySpending = 0L;
 
+                    UUID accountId = null;
                     String bankCode = null;
                     String accountNumber = null;
 
                     if (childId != null) {
                         Account childAccount = accountService.getPrimaryAccount(childId);
-                        childBalance = childAccount.getBalance();
-                        bankCode = childAccount.getBankCode();
-                        accountNumber = childAccount.getAccountNumber();
+                        if (childAccount != null) {
+                            childBalance = childAccount.getBalance();
+                            accountId = childAccount.getId();
+                            bankCode = childAccount.getBankCode();
+                            accountNumber = childAccount.getAccountNumber();
+                        }
 
                         weeklySpending = weeklyReportRepository.findByIdUserIdAndIdStartDay(childId, weekStart)
                                 .stream()
@@ -120,6 +124,7 @@ public class HomeService {
                             profile.getName(),
                             childBalance,
                             weeklySpending,
+                            accountId,
                             bankCode,
                             accountNumber
                     );
