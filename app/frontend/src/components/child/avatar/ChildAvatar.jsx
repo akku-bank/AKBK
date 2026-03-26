@@ -51,16 +51,16 @@ const ChildAvatar = ({
     }, [isSmiling]);
 
     const renderFace = () => {
-        let faceImg = null;
-        if (equipState.face && AVATAR_ASSETS.face[equipState.face]) {
-            faceImg = AVATAR_ASSETS.face[equipState.face];
+        let faceImg = AVATAR_ASSETS.face.base.boy1; // Default fallback
+        if (equipState.face && AVATAR_ASSETS.face.base[equipState.face]) {
+            faceImg = AVATAR_ASSETS.face.base[equipState.face];
         }
 
-        // 터치 시 웃기
+        // 터치 시 웃기 (기본값인 boy1 기준으로만 임시 매핑 - 표정 분기 나중에 확장 가능)
         if (isSmiling) {
-            faceImg = AVATAR_ASSETS.face.base_smile;
+            faceImg = AVATAR_ASSETS.face.smile[equipState.face] || AVATAR_ASSETS.face.smile.boy1;
         } else if (isBlinking) {
-            faceImg = AVATAR_ASSETS.face.base_closed;
+            faceImg = AVATAR_ASSETS.face.closed[equipState.face] || AVATAR_ASSETS.face.closed.boy1;
         }
 
         if (!faceImg) return null;
@@ -74,42 +74,71 @@ const ChildAvatar = ({
 
     const renderDefaultAvatar = () => (
         <View style={[styles.canvasContainer, { width: responsiveSize, height: responsiveSize }]}>
-            {/* 1. 호흡 시 날개도 상체 따라 움직이기 */}
+            {/* 1. 호흡 시 날개도 상체 따라 움직이기 (자율 등 장식 - 바보는 제외) */}
             <View style={[styles.layer, { transform: [{ translateY: bodyOffsetY }] }]}>
-                {equipState.wing !== 'none' && AVATAR_ASSETS.acc[equipState.wing] && (
-                    <Image source={AVATAR_ASSETS.acc[equipState.wing]} style={styles.layer} />
+                {equipState.back !== 'none' && equipState.back !== 'babo' && AVATAR_ASSETS.decoration[equipState.back] && (
+                    <Image source={AVATAR_ASSETS.decoration[equipState.back]} style={styles.layer} />
                 )}
             </View>
 
-            {/* 2. 하체 고정 */}
-            <Image source={AVATAR_ASSETS.body_lower} style={styles.layer} />
-            {equipState.lower !== 'none' && AVATAR_ASSETS.lower[equipState.lower] && (
-                <Image source={AVATAR_ASSETS.lower[equipState.lower]} style={styles.layer} />
-            )}
-            {equipState.shoe !== 'none' && AVATAR_ASSETS.acc[equipState.shoe] && (
-                <Image source={AVATAR_ASSETS.acc[equipState.shoe]} style={styles.layer} />
+            {/* 2. 상체 기본 뼈대 (가장 뒤에 깔림, 숨쉬기 연동) */}
+            <View style={[styles.layer, { transform: [{ translateY: bodyOffsetY }] }]}>
+                <Image source={AVATAR_ASSETS.body.upper_base} style={styles.layer} />
+            </View>
+
+            {/* 하체 기본 뼈대 (상체 뼈대 위로 올라옴) */}
+            <Image source={AVATAR_ASSETS.body.lower_base} style={styles.layer} />
+
+            {/* 하의 장착 (바지가 상체보다 앞에 그려짐) */}
+            {equipState.outfit && equipState.outfit !== 'none' && AVATAR_ASSETS.outfit[equipState.outfit] ? (
+                <Image source={AVATAR_ASSETS.outfit[equipState.outfit].lower} style={styles.layer} />
+            ) : (
+                equipState.lower !== 'none' && AVATAR_ASSETS.lower[equipState.lower] && (
+                    <Image source={AVATAR_ASSETS.lower[equipState.lower]} style={styles.layer} />
+                )
             )}
 
-            {/* 3. 상체 이동 */}
+            {/* 3. 상의 장착 (가장 위에서 덮음, 숨쉬기 연동) */}
             <View style={[styles.layer, { transform: [{ translateY: bodyOffsetY }] }]}>
-                <Image source={AVATAR_ASSETS.body_upper} style={styles.layer} />
-                {equipState.upper !== 'none' && AVATAR_ASSETS.upper[equipState.upper] && (
-                    <Image source={AVATAR_ASSETS.upper[equipState.upper]} style={styles.layer} />
+                {/* 상의 장착 (한벌옷이 있으면 한벌옷 상의 우선 렌더링) */}
+                {equipState.outfit && equipState.outfit !== 'none' && AVATAR_ASSETS.outfit[equipState.outfit] ? (
+                    <Image source={AVATAR_ASSETS.outfit[equipState.outfit].upper} style={styles.layer} />
+                ) : (
+                    equipState.upper !== 'none' && AVATAR_ASSETS.upper[equipState.upper] && (
+                        <Image source={AVATAR_ASSETS.upper[equipState.upper]} style={styles.layer} />
+                    )
                 )}
             </View>
+
+            {/* 신발 장착 (한벌옷이 있으면 한벌옷 신발 우선 렌더링) */}
+            {equipState.outfit && equipState.outfit !== 'none' && AVATAR_ASSETS.outfit[equipState.outfit] && AVATAR_ASSETS.outfit[equipState.outfit].shoe ? (
+                <Image source={AVATAR_ASSETS.outfit[equipState.outfit].shoe} style={styles.layer} />
+            ) : (
+                equipState.shoe !== 'none' && AVATAR_ASSETS.shoe[equipState.shoe] && (
+                    <Image source={AVATAR_ASSETS.shoe[equipState.shoe]} style={styles.layer} />
+                )
+            )}
+
 
             {/* 4. 얼굴 */}
             {renderFace()}
 
-            {/* 5. 헤어 및 모자 -> 모자 장착 시 헤어 X */}
+            {/* 5. 헤어 및 모자 -> 모자 장착 시 다시 헤어 가리기 (User Request) */}
             <View style={[styles.layer, { transform: [{ translateY: faceOffsetY }] }]}>
                 {equipState.hair !== 'none' && equipState.hat === 'none' && AVATAR_ASSETS.hair[equipState.hair] && (
                     <Image source={AVATAR_ASSETS.hair[equipState.hair]} style={styles.layer} />
                 )}
-                {equipState.hat !== 'none' && AVATAR_ASSETS.acc[equipState.hat] && (
-                    <Image source={AVATAR_ASSETS.acc[equipState.hat]} style={styles.layer} />
+                {equipState.hat !== 'none' && AVATAR_ASSETS.hat[equipState.hat] && (
+                    <Image source={AVATAR_ASSETS.hat[equipState.hat]} style={styles.layer} />
                 )}
             </View>
+
+            {/* 6. 바보 딱지 (상체에 바짝 붙은 가장 앞 레이어) */}
+            {equipState.back === 'babo' && AVATAR_ASSETS.decoration.babo && (
+                <View style={[styles.layer, { transform: [{ translateY: bodyOffsetY }] }]}>
+                    <Image source={AVATAR_ASSETS.decoration.babo} style={styles.layer} />
+                </View>
+            )}
         </View>
     );
 

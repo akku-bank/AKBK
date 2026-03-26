@@ -1,9 +1,10 @@
 ﻿import React, { useContext, useState } from 'react';
 import { View, StyleSheet, TouchableOpacity, ScrollView, Image, Dimensions, Alert } from 'react-native';
 import { AvatarContext } from '../../../components/child/avatar/AvatarContext';
-import { AVATAR_ITEMS } from '../../../components/child/avatar/AvatarAssets';
+import { AVATAR_ITEMS, AVATAR_ASSETS } from '../../../components/child/avatar/AvatarAssets';
 import ChildAvatar from '../../../components/child/avatar/ChildAvatar';
-import FacePaintingModal from '../../../components/child/modals/FacePaintingModal';
+import Pet from '../../../components/child/avatar/Pet';
+import { scale, verticalScale } from 'react-native-size-matters';
 import CustomText from '../../../components/common/CustomText';
 import api from '../../../api/axios';
 
@@ -11,26 +12,34 @@ const CATEGORIES = [
     { id: 'gender', label: '성별' },
     { id: 'face', label: '얼굴' },
     { id: 'hair', label: '헤어' },
+    { id: 'outfit', label: '한벌옷' },
     { id: 'upper', label: '상의' },
     { id: 'lower', label: '하의' },
     { id: 'hat', label: '모자' },
     { id: 'shoe', label: '신발' },
-    { id: 'wing', label: '날개' },
+    { id: 'back', label: '등' },
+    { id: 'pet', label: '펫' },
+    { id: 'art1', label: '미술품' },
+    { id: 'art2', label: '나무' },
 ];
 
 const { width } = Dimensions.get('window');
 
 const AvatarCustomScreen = ({ navigation }) => {
-    const { equipState, updateEquip, setEquipState, facePaintPaths, setFacePaintPaths } = useContext(AvatarContext);
+    const { equipState, updateEquip, setEquipState } = useContext(AvatarContext);
     const [selectedCategory, setSelectedCategory] = useState('hair');
-    const [isFacePaintingModalVisible, setFacePaintingModalVisible] = useState(false);
     const [ownedItemIds, setOwnedItemIds] = useState({});
     const [frontendToUuidMap, setFrontendToUuidMap] = useState({});
+    const [userLevel, setUserLevel] = useState(1);
 
-    // 백엔드 아이템 도감 페칭 및 보유 항목 필터링
+    // 백엔드 아이템 도감 페칭 및 레벨 조회
     React.useEffect(() => {
-        const fetchItems = async () => {
+        const fetchItemsAndLevel = async () => {
             try {
+                // 상단 아이템 조회를 위해 사용자 레벨부터 가져옴
+                const homeRes = await api.get('/home');
+                setUserLevel(homeRes.data?.data?.level || 1);
+
                 const res = await api.get('/avatars/items');
                 const items = res.data?.data?.items || [];
 
@@ -38,20 +47,14 @@ const AvatarCustomScreen = ({ navigation }) => {
                 const mapF2U = {};
 
                 items.forEach(backendItem => {
-                    // 카테고리 매핑 (백엔드 -> 프론트엔드)
-                    let frontendCat = null;
-                    if (backendItem.category === 'HAT') frontendCat = 'hat';
-                    else if (backendItem.category === 'TOP') frontendCat = 'upper';
-                    else if (backendItem.category === 'BOTTOM') frontendCat = 'lower';
-
-                    if (frontendCat) {
-                        // 프론트의 AVATAR_ITEMS에서 name으로 일치하는 항목 찾기
-                        const matchingFrontendItem = AVATAR_ITEMS[frontendCat]?.find(i => i.name === backendItem.name);
+                    for (const cat in AVATAR_ITEMS) {
+                        const matchingFrontendItem = AVATAR_ITEMS[cat].find(i => i.name === backendItem.name);
                         if (matchingFrontendItem) {
                             if (backendItem.isOwned) {
                                 owned[matchingFrontendItem.id] = true;
                             }
                             mapF2U[matchingFrontendItem.id] = backendItem.itemId;
+                            break;
                         }
                     }
                 });
@@ -59,15 +62,15 @@ const AvatarCustomScreen = ({ navigation }) => {
                 setFrontendToUuidMap(mapF2U);
             } catch (e) { console.error('Avatar Items Fetch Error', e); }
         };
-        fetchItems();
+        fetchItemsAndLevel();
     }, []);
 
     const handleGenderChange = (gender) => {
         setEquipState(prev => ({
             ...prev,
             gender: gender,
-            face: `base_${gender}`,
-            hair: `hair_${gender}`,
+            face: gender === 'boy' ? 'boy1' : 'girl1',
+            hair: gender === 'boy' ? 'boy1' : 'girl1',
         }));
     };
 
@@ -107,17 +110,20 @@ const AvatarCustomScreen = ({ navigation }) => {
                 return true;
             });
         }
-        // 보유 중인 아이템만 필터링 (기본 얼굴/헤어/none은 통과)
+        // 보유 중인 아이템만 필터링 (기본템/none/획득아이템 + 자신의 레벨로 자동 해금된 아이템)
         items = items.filter(item => {
-            const isEquipCat = ['upper', 'lower', 'hat'].includes(selectedCategory);
-            const isBaseOrNone = item.id.includes('base') || item.id === 'none';
-            return !isEquipCat || isBaseOrNone || ownedItemIds[item.id];
+            const isEquipCat = ['upper', 'lower', 'hat', 'shoe', 'back', 'outfit', 'pet', 'art1', 'art2'].includes(selectedCategory);
+            const isBaseOrNone = item.id.includes('base') || item.id === 'none' || item.level === 1;
+            const isLevelUnlocked = item.level <= userLevel && item.level !== 99;
+            const isForcedArt = selectedCategory === 'art1' || selectedCategory === 'art2'; // 강제 해금(테스트용)
+            return !isEquipCat || isBaseOrNone || ownedItemIds[item.id] || isLevelUnlocked || isForcedArt;
         });
 
         return (
             <ScrollView contentContainerStyle={styles.gridContainer}>
                 {items.map((item) => {
                     const isSelected = equipState[selectedCategory] === item.id;
+
                     const isOwned = true; // 필터링을 거쳤으므로 전부 owned
 
                     return (
@@ -132,8 +138,14 @@ const AvatarCustomScreen = ({ navigation }) => {
                             }}
                         >
                             <View style={styles.itemImageContainer}>
-                                {item.img ? (
-                                    <Image source={item.img} style={styles.itemThumbnail} resizeMode="contain" />
+                                {Array.isArray(item.img) ? (
+                                    <View style={{ width: item.id.includes('akku') ? 45 : 60, height: item.id.includes('akku') ? 45 : 60, position: 'relative', marginTop: -20 }}>
+                                        {item.img.map((imgSrc, idx) => (
+                                            <Image key={idx} source={imgSrc} style={[{ width: '100%', height: '100%' }, { position: 'absolute' }]} resizeMode="contain" />
+                                        ))}
+                                    </View>
+                                ) : item.img ? (
+                                    <Image source={item.img} style={[styles.itemThumbnail, item.id.includes('akku') ? { width: 45, height: 45, marginTop: -20 } : { marginTop: -20 }]} resizeMode="contain" />
                                 ) : (
                                     <CustomText style={styles.noneText}>X</CustomText>
                                 )}
@@ -154,13 +166,13 @@ const AvatarCustomScreen = ({ navigation }) => {
                     // 백엔드에 아바타 장착 옷차림 저장
                     try {
                         const equippedUUIDs = [];
-                        if (equipState.hat && frontendToUuidMap[equipState.hat]) equippedUUIDs.push(frontendToUuidMap[equipState.hat]);
-                        if (equipState.upper && frontendToUuidMap[equipState.upper]) equippedUUIDs.push(frontendToUuidMap[equipState.upper]);
-                        if (equipState.lower && frontendToUuidMap[equipState.lower]) equippedUUIDs.push(frontendToUuidMap[equipState.lower]);
+                        ['hat', 'upper', 'lower', 'shoe', 'back', 'outfit', 'pet'].forEach(cat => {
+                            if (equipState[cat] && equipState[cat] !== 'none' && frontendToUuidMap[equipState[cat]]) {
+                                equippedUUIDs.push(frontendToUuidMap[equipState[cat]]);
+                            }
+                        });
 
-                        if (equippedUUIDs.length >= 0) {
-                            await api.patch('/avatars/me/equipment', { equippedItemIds: equippedUUIDs });
-                        }
+                        await api.patch('/avatars/me/equipment', { equippedItemIds: equippedUUIDs });
                     } catch (e) { console.error('Avatar Save Error', e); }
                     navigation.goBack();
                 }}>
@@ -174,21 +186,26 @@ const AvatarCustomScreen = ({ navigation }) => {
             <View style={styles.previewSection}>
                 <View style={styles.avatarWrapper}>
                     <ChildAvatar equipState={equipState} size={280} />
-                </View>
 
-                <TouchableOpacity
-                    style={styles.paintLaunchButton}
-                    onPress={() => setFacePaintingModalVisible(true)}
-                >
-                    <CustomText style={styles.paintLaunchIcon}>🎨</CustomText>
-                    <CustomText style={styles.paintLaunchText}>페이스 페인팅</CustomText>
-                </TouchableOpacity>
-                <TouchableOpacity
-                    style={styles.paintClearButton}
-                    onPress={() => setFacePaintPaths([])}
-                >
-                    <CustomText style={styles.paintLaunchText}>초기화 🗑️</CustomText>
-                </TouchableOpacity>
+                    {/* 꾸미기 전용 펫 미리보기 */}
+                    {equipState.pet && equipState.pet !== 'none' && (
+                        <View style={{ position: 'absolute', right: scale(-210), bottom: verticalScale(-155) }} pointerEvents="none">
+                            <Pet petType={equipState.pet} size={scale(400)} />
+                        </View>
+                    )}
+
+                    {/* 꾸미기 전용 나무(ART_2) 미리보기 */}
+                    {equipState.art2 && equipState.art2 !== 'none' && (() => {
+                        const treeItem = AVATAR_ITEMS.art2.find(a => a.id === equipState.art2);
+                        if (!treeItem || !treeItem.img) return null;
+                        return (
+                            <View style={{ position: 'absolute', left: scale(-70), bottom: verticalScale(-65) }} pointerEvents="none">
+                                <Image source={treeItem.img} style={{ width: scale(140), height: scale(190) }} resizeMode="contain" />
+                            </View>
+                        );
+                    })()}
+
+                </View>
             </View>
 
             {/* 인벤토리 영역 */}
@@ -218,15 +235,6 @@ const AvatarCustomScreen = ({ navigation }) => {
                     {renderItemGrid()}
                 </View>
             </View>
-
-            {/* 페이스 페인팅 모달 */}
-            <FacePaintingModal
-                visible={isFacePaintingModalVisible}
-                onClose={() => setFacePaintingModalVisible(false)}
-                onSave={(paths) => setFacePaintPaths(paths)}
-                initialPaths={facePaintPaths}
-                equipState={equipState}
-            />
         </View>
     );
 };
