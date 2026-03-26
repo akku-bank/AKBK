@@ -7,10 +7,15 @@ const useAuthStore = create((set) => ({
     login: (user, token) => set({ user, token, isAuthenticated: true }),
     logout: () => set({ user: null, token: null, isAuthenticated: false, cachedLevel: null }),
     setUser: (user) => set({ user }),
-    setAuthInfo: (token, role, name, id) => set((state) => {
-        // id가 새로 안들어오면 기존 state.user의 id 유지
+    setAuthInfo: (token, role, name, id, extra = {}) => set((state) => {
         const newId = id !== undefined ? id : state.user?.id;
-        const newUser = role ? { ...(state.user || {}), role, name, id: newId } : state.user;
+        const newUser = role ? {
+            ...(state.user || {}),
+            role,
+            name,
+            id: newId,
+            ...extra
+        } : state.user;
         return {
             token,
             user: newUser,

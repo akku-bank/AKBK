@@ -12,3 +12,4 @@ class ChatResponse(BaseModel):
     message: str
     ai_reply: str
     deducted_credits: int
+    chat_json: str | None = None

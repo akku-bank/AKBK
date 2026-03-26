@@ -1,12 +1,38 @@
-﻿import React from 'react';
+﻿import React, { useCallback } from 'react';
 import { View, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView, Switch, Alert, Image } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { scale, verticalScale } from 'react-native-size-matters';
 import CustomText from '../../../components/common/CustomText';
 import useAuthStore from '../../../store/useAuthStore';
 import api from '../../../api/axios';
 
 const ChildMyPageScreen = ({ navigation }) => {
-    const { user, logout } = useAuthStore();
+    const { user, setUser, logout } = useAuthStore();
+
+    useFocusEffect(
+        useCallback(() => {
+            const fetchProfile = async () => {
+                try {
+                    const res = await api.get('/users/me');
+                    const profile = res.data?.data;
+                    if (profile) {
+                        // user 객체 동기화 (기존 필드 유지하며 덮어쓰기)
+                        setUser({
+                            ...user,
+                            id: profile.userId,
+                            role: profile.role,
+                            name: profile.name,
+                            familyId: profile.familyId,
+                            level: profile.level
+                        });
+                    }
+                } catch (e) {
+                    console.error('Profile Fetch Error', e);
+                }
+            };
+            fetchProfile();
+        }, [])
+    );
 
     const handleLogout = () => {
         Alert.alert('로그아웃', '정말 로그아웃 하시겠습니까?', [
@@ -62,7 +88,9 @@ const ChildMyPageScreen = ({ navigation }) => {
                     </View>
                     <View style={styles.profileInfo}>
                         <CustomText style={styles.profileName}>{user?.name || '...'}</CustomText>
-                        <CustomText style={styles.profileCode}>가족 아이디 연동 중</CustomText>
+                        <CustomText style={styles.profileCode}>
+                            {user?.familyId ? '가족 연동 완료' : '가족 아이디 연동 중'}
+                        </CustomText>
                     </View>
                     <TouchableOpacity style={styles.editButton} onPress={() => navigation.navigate('ChildEditProfile')}>
                         <CustomText style={styles.editButtonText}>수정</CustomText>

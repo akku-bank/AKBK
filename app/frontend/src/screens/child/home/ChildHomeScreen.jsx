@@ -1,5 +1,6 @@
-import React, { useState, useContext, useEffect } from 'react';
-import { View, StyleSheet, TouchableOpacity, SafeAreaView, Dimensions, Image, ImageBackground, Modal, Platform, StatusBar, ScrollView } from 'react-native';
+import React, { useState, useContext, useEffect, useCallback } from 'react';
+import { View, StyleSheet, TouchableOpacity, SafeAreaView, Dimensions, Image, Modal, Platform, StatusBar, ImageBackground } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { scale, verticalScale } from 'react-native-size-matters';
 import ChildAvatar from '../../../components/child/avatar/ChildAvatar';
 import { AvatarContext } from '../../../components/child/avatar/AvatarContext';
@@ -19,82 +20,76 @@ const ChildHomeScreen = ({ navigation }) => {
     const [homeData, setHomeData] = useState(null);
     const [realBalance, setRealBalance] = useState(null);
 
-    useEffect(() => {
-        const fetchHomeData = async () => {
-            try {
-                const [res, accRes] = await Promise.all([
-                    api.get('/home'),
-                    api.get('/bank/accounts/me').catch(() => null) // fail gracefully
-                ]);
+    useFocusEffect(
+        useCallback(() => {
+            const fetchHomeData = async () => {
+                try {
+                    const [res, accRes] = await Promise.all([
+                        api.get('/home'),
+                        api.get('/bank/accounts/me').catch(() => null)
+                    ]);
 
-                const homeDataResult = res.data?.data;
-                if (!homeDataResult) return;
+                    const homeDataResult = res.data?.data;
+                    if (!homeDataResult) return;
 
-                setHomeData(homeDataResult);
+                    setHomeData(homeDataResult);
 
-                // 프론트엔드 레벨업 감지 (Zustand 메모리 캐싱)
-                const currentLevel = homeDataResult.level || 1;
+                    const currentLevel = homeDataResult.level || 1;
+                    if (cachedLevel !== null && currentLevel > cachedLevel) {
+                        setLevelUpModalVisible(true);
+                        setCachedLevel(currentLevel);
+                    } else if (cachedLevel === null) {
+                        setCachedLevel(currentLevel);
+                    }
 
-                if (cachedLevel !== null && currentLevel > cachedLevel) {
-                    setLevelUpModalVisible(true);
-                    setCachedLevel(currentLevel);
-                } else if (cachedLevel === null) {
-                    setCachedLevel(currentLevel);
-                }
-
-                // 실제 계좌 데이터 있으면 덮어쓰기
-                if (accRes && accRes.data?.data?.accounts && accRes.data.data.accounts.length > 0) {
-                    setRealBalance(accRes.data.data.accounts[0].balance);
-                }
-
-                // 백엔드 아바타 장착 상태 동기화
-                if (homeDataResult.avatar && homeDataResult.avatar.equippedItems) {
-                    try {
-                        const dictRes = await api.get('/avatars/items');
-                        const backendItems = dictRes.data?.data?.items || [];
-                        const equippedDTOs = homeDataResult.avatar.equippedItems;
-
-                        let newEquip = { ...equipState };
-                        let hasChanges = false;
-
-                        equippedDTOs.forEach(eq => {
-                            const dictItem = backendItems.find(i => i.itemId === eq.itemId);
-                            if (!dictItem) return;
-
-                            let frontendCat = null;
-                            if (eq.category === 'HAT') frontendCat = 'hat';
-                            else if (eq.category === 'TOP') frontendCat = 'upper';
-                            else if (eq.category === 'BOTTOM') frontendCat = 'lower';
-                            else if (eq.category === 'SHOE') frontendCat = 'shoe';
-                            else if (eq.category === 'BACK' || eq.category === 'ACC' || eq.category === 'DECORATION') frontendCat = 'back';
-                            else if (eq.category === 'OUTFIT') frontendCat = 'outfit';
-                            else if (eq.category === 'PET') frontendCat = 'pet';
-                            else if (eq.category === 'ART_1') frontendCat = 'art1';
-                            else if (eq.category === 'ART_2') frontendCat = 'art2';
-
-                            if (frontendCat) {
-                                // back, pet, outfit 등 명칭 불일치 대응
-                                const assetList = AVATAR_ITEMS[frontendCat] || AVATAR_ITEMS.decoration || AVATAR_ITEMS.pet || [];
-                                const assetItem = assetList.find(a => a.name === dictItem.name);
-                                if (assetItem) {
-                                    hasChanges = true;
-                                    newEquip[frontendCat] = assetItem.id;
-                                }
-                            }
-                        });
-
-                        if (hasChanges) {
-                            setEquipState(newEquip);
+                    if (accRes && accRes.data?.data?.accounts) {
+                        const accounts = accRes.data.data.accounts;
+                        if (accounts.length > 0) {
+                            const primaryAcc = accounts.find(a => a.isPrimary) || accounts[0];
+                            setRealBalance(primaryAcc.balance);
                         }
-                    } catch (dictErr) { console.error('Dictionary Fetch Error on Home', dictErr); }
-                }
+                    }
 
-            } catch (e) {
-                console.error('Child Home Fetch Error', e);
-            }
-        };
-        fetchHomeData();
-    }, []);
+                    // 아바타 장착 상태 동기화
+                    if (homeDataResult.avatar && homeDataResult.avatar.equippedItems) {
+                        try {
+                            const dictRes = await api.get('/avatars/items');
+                            const backendItems = dictRes.data?.data?.items || [];
+                            const equippedDTOs = homeDataResult.avatar.equippedItems;
+
+                            let newEquip = null;
+
+                            equippedDTOs.forEach(eq => {
+                                const dictItem = backendItems.find(i => i.itemId === eq.itemId);
+                                if (!dictItem) return;
+
+                                let frontendCat = null;
+                                if (eq.category === 'HAT') frontendCat = 'hat';
+                                else if (eq.category === 'TOP') frontendCat = 'upper';
+                                else if (eq.category === 'BOTTOM') frontendCat = 'lower';
+
+                                if (frontendCat) {
+                                    const assetItem = AVATAR_ITEMS[frontendCat]?.find(a => a.name === dictItem.name);
+                                    if (assetItem) {
+                                        if (!newEquip) newEquip = { ...equipState };
+                                        newEquip[frontendCat] = assetItem.id;
+                                    }
+                                }
+                            });
+
+                            if (newEquip) {
+                                setEquipState(newEquip);
+                            }
+                        } catch (dictErr) { console.error('Dictionary Fetch Error on Home', dictErr); }
+                    }
+
+                } catch (e) {
+                    console.error('Child Home Fetch Error', e);
+                }
+            };
+            fetchHomeData();
+        }, [cachedLevel, setCachedLevel])
+    );
 
     const avatarSize = height > 750 ? 270 : 200;
 

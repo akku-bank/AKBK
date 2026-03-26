@@ -5,8 +5,11 @@ import com.akku.backend.domain.auth.repository.UserRepository;
 import com.akku.backend.domain.avatar.entity.Item;
 import com.akku.backend.domain.avatar.entity.UserItem;
 import com.akku.backend.domain.avatar.repository.UserItemRepository;
+import com.akku.backend.domain.bank.service.AccountService;
 import com.akku.backend.domain.family.entity.FamilyProfileEntity;
 import com.akku.backend.domain.family.repository.FamilyProfileRepository;
+import com.akku.backend.domain.report.entity.WeeklyReport;
+import com.akku.backend.domain.report.repository.WeeklyReportRepository;
 import com.akku.backend.domain.home.dto.ChildHomeResponse;
 import com.akku.backend.domain.home.dto.ParentHomeResponse;
 import com.akku.backend.domain.user.exception.UserErrorCode;
@@ -43,6 +46,12 @@ class HomeServiceTest {
     @Mock
     private FamilyProfileRepository familyProfileRepository;
 
+    @Mock
+    private WeeklyReportRepository weeklyReportRepository;
+
+    @Mock
+    private AccountService accountService;
+
     // =====================================================================================
     // 1. getChildHome — 자녀 홈 화면 데이터 조회
     // =====================================================================================
@@ -72,6 +81,8 @@ class HomeServiceTest {
             given(equippedUserItem.getItem()).willReturn(mockItem);
 
             given(userItemRepository.findEquippedItemsByUserId(userId)).willReturn(List.of(equippedUserItem));
+            
+            given(accountService.getPrimaryAccountBalance(userId)).willReturn(50000L);
 
             // when
             ChildHomeResponse response = homeService.getChildHome(userId);
@@ -94,6 +105,7 @@ class HomeServiceTest {
             given(mockUser.getLevel()).willReturn(3);
             given(userRepository.findById(userId)).willReturn(Optional.of(mockUser));
             given(userItemRepository.findEquippedItemsByUserId(userId)).willReturn(Collections.emptyList());
+            given(accountService.getPrimaryAccountBalance(userId)).willReturn(0L);
 
             // when
             ChildHomeResponse response = homeService.getChildHome(userId);
@@ -149,6 +161,10 @@ class HomeServiceTest {
             given(familyProfileRepository.findAllByFamilyId(familyId))
                     .willReturn(List.of(childProfile1, childProfile2));
 
+            given(accountService.getPrimaryAccountBalance(any(UUID.class))).willReturn(500000L);
+            given(weeklyReportRepository.findByIdUserIdAndIdStartDay(any(UUID.class), any(java.time.LocalDate.class)))
+                    .willReturn(Collections.emptyList());
+
             // when
             ParentHomeResponse response = homeService.getParentHome(userId);
 
@@ -173,6 +189,8 @@ class HomeServiceTest {
             given(parentProfile.getRole()).willReturn("PARENT"); // CHILD가 없음
 
             given(familyProfileRepository.findAllByFamilyId(familyId)).willReturn(List.of(parentProfile));
+            
+            given(accountService.getPrimaryAccountBalance(userId)).willReturn(500000L);
 
             // when
             ParentHomeResponse response = homeService.getParentHome(userId);
@@ -199,6 +217,8 @@ class HomeServiceTest {
             given(unlinkedChild.getName()).willReturn("미연동 자녀");
 
             given(familyProfileRepository.findAllByFamilyId(familyId)).willReturn(List.of(unlinkedChild));
+
+            given(accountService.getPrimaryAccountBalance(userId)).willReturn(500000L);
 
             // when
             ParentHomeResponse response = homeService.getParentHome(userId);
@@ -232,6 +252,8 @@ class HomeServiceTest {
             given(mockParent.getFamilyId()).willReturn(expectedFamilyId);
             given(userRepository.findById(userId)).willReturn(Optional.of(mockParent));
             given(familyProfileRepository.findAllByFamilyId(expectedFamilyId)).willReturn(Collections.emptyList());
+
+            given(accountService.getPrimaryAccountBalance(userId)).willReturn(500000L);
 
             // when
             homeService.getParentHome(userId);

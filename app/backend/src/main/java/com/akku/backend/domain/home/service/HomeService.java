@@ -9,12 +9,18 @@ import com.akku.backend.domain.home.dto.ChildHomeResponse;
 import com.akku.backend.domain.home.dto.ChildHomeResponse.AvatarDto;
 import com.akku.backend.domain.home.dto.ChildHomeResponse.EquippedItemDto;
 import com.akku.backend.domain.home.dto.ParentHomeResponse;
+import com.akku.backend.domain.bank.entity.Account;
+import com.akku.backend.domain.bank.repository.AccountRepository;
+import com.akku.backend.domain.report.entity.WeeklyReport;
+import com.akku.backend.domain.report.repository.WeeklyReportRepository;
 import com.akku.backend.domain.user.exception.UserErrorCode;
 import com.akku.backend.global.error.ApiException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -26,6 +32,9 @@ public class HomeService {
     private final UserRepository userRepository;
     private final UserItemRepository userItemRepository;
     private final FamilyProfileRepository familyProfileRepository;
+    private final AccountRepository accountRepository;
+    private final WeeklyReportRepository weeklyReportRepository;
+    private final com.akku.backend.domain.bank.service.AccountService accountService;
 
     public ChildHomeResponse getChildHome(UUID userId) {
 
@@ -51,8 +60,10 @@ public class HomeService {
         );
 
         // 4. 최종 홈 데이터 반환 (나머지 도메인 데이터는 프론트 작업용 더미)
+        long currentBalance = accountService.getPrimaryAccountBalance(userId);
+
         return new ChildHomeResponse(
-                50000L,          // TODO: WalletService 연동 시 교체 (현금 잔액)
+                currentBalance,  // Real 데이터 (현금 잔액)
                 1500L,           // TODO: WalletService 연동 시 교체 (젤링 잔액)
                 user.getLevel(), // Real 데이터 (현재 레벨)
                 450,             // TODO: UserService/LevelService 연동 시 교체 (현재 점수)
@@ -66,6 +77,7 @@ public class HomeService {
     /**
      * 부모 대시보드 홈 데이터 조회
      */
+    @Transactional
     public ParentHomeResponse getParentHome(UUID userId) {
 
         // 1. 부모 유저 정보 조회
@@ -78,21 +90,49 @@ public class HomeService {
         List<FamilyProfileEntity> familyProfiles = familyProfileRepository.findAllByFamilyId(familyId);
 
         // 3. 자녀(CHILD) 프로필만 필터링하여 DTO 변환 (Real + Mock 하이브리드)
+        LocalDate weekStart = LocalDate.now().with(DayOfWeek.MONDAY);
+
         List<ParentHomeResponse.ChildSummaryDto> children = familyProfiles.stream()
-                .filter(profile -> "CHILD".equals(profile.getRole())) // 자녀 역할만 필터링
-                .map(profile -> new ParentHomeResponse.ChildSummaryDto(
-                        profile.getLinkedUserId(), // 연동 전이면 null이 들어감 (명세에 맞게 프론트와 협의 가능)
-                        profile.getName(),         // Real 데이터 (자녀 이름)
-                        50000L,                    // TODO: WalletService 연동 시 교체 (자녀별 잔액)
-                        15000L                     // TODO: ReportService 연동 시 교체 (주간 지출 누적액)
-                ))
+                .filter(profile -> "CHILD".equals(profile.getRole()))
+                .map(profile -> {
+                    UUID childId = profile.getLinkedUserId();
+                    long childBalance = 0L;
+                    long weeklySpending = 0L;
+
+                    String bankCode = null;
+                    String accountNumber = null;
+
+                    if (childId != null) {
+                        Account childAccount = accountService.getPrimaryAccount(childId);
+                        childBalance = childAccount.getBalance();
+                        bankCode = childAccount.getBankCode();
+                        accountNumber = childAccount.getAccountNumber();
+
+                        weeklySpending = weeklyReportRepository.findByIdUserIdAndIdStartDay(childId, weekStart)
+                                .stream()
+                                .filter(r -> "SPEND".equals(r.getId().getType()))
+                                .mapToLong(WeeklyReport::getTotalAmount)
+                                .sum();
+                    }
+
+                    return new ParentHomeResponse.ChildSummaryDto(
+                            childId,
+                            profile.getName(),
+                            childBalance,
+                            weeklySpending,
+                            bankCode,
+                            accountNumber
+                    );
+                })
                 .toList();
 
         // 4. 최종 부모 대시보드 데이터 반환
+        long parentBalance = accountService.getPrimaryAccountBalance(userId);
+
         return new ParentHomeResponse(
-                500000L, // TODO: WalletService 연동 시 교체 (부모 잔액)
-                2,       // TODO: ChallengeService 연동 시 교체 (대기 중인 챌린지 수)
-                children // Real + Mock 조합 데이터
+                parentBalance, // Real 데이터 (부모 잔액)
+                2,             // TODO: ChallengeService 연동 시 교체 (대기 중인 챌린지 수)
+                children       // Real 데이터
         );
     }
 

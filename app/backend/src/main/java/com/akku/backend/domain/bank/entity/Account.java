@@ -66,6 +66,10 @@ public class Account {
         this.balance -= amount;
     }
 
+    public void updateBalance(long balance) {
+        this.balance = balance;
+    }
+
     public void addBalance(long amount) {
         if (amount <= 0) {
             throw new IllegalArgumentException("Amount must be positive");

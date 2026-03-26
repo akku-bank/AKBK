@@ -1,5 +1,7 @@
 package com.akku.backend.domain.bank.service;
 
+import java.util.*;
+
 import com.akku.backend.domain.auth.entity.User;
 import com.akku.backend.domain.auth.repository.UserRepository;
 import com.akku.backend.domain.auth.exception.AuthErrorCode;
@@ -17,18 +19,27 @@ import com.akku.backend.global.error.ApiException;
 import com.akku.backend.global.finance.dto.FinanceAccountAuthCheckResponse;
 import com.akku.backend.global.finance.dto.FinanceAccountAuthResponse;
 import com.akku.backend.global.finance.dto.FinanceAccountCreateResponse;
+import com.akku.backend.global.finance.dto.FinanceAccountHolderNameResponse;
 import com.akku.backend.global.finance.dto.FinanceAccountListResponse;
 import com.akku.backend.global.finance.dto.FinanceTransferResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import com.akku.backend.global.finance.dto.FinanceTransactionHistoryResponse;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AccountService {
@@ -38,8 +49,9 @@ public class AccountService {
     private final AccountRepository accountRepository;
     private final AccountVerificationRepository accountVerificationRepository;
     private final SsafyFinanceService ssafyFinanceService;
+    private final PasswordEncoder passwordEncoder;
  
-    private static final String DEFAULT_ACCOUNT_TYPE_UNIQUE_NO = "001-1-85a431ad30cd43";
+    private static final String DEFAULT_ACCOUNT_TYPE_UNIQUE_NO = "999-1-98000e5fd8024b";
 
     /**
      * 계좌 생성 (부모가 자녀의 계좌를 생성)
@@ -77,6 +89,7 @@ public class AccountService {
                 .bankCode(rec.bankCode())
                 .type("CASH")
                 .balance(0L)
+                .isPrimary(true)
                 .build();
         
         Account savedAccount = accountRepository.save(account);
@@ -91,8 +104,13 @@ public class AccountService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ApiException(UserErrorCode.USER_NOT_FOUND));
 
+        // 금융망 계좌 목록 조회
         List<FinanceAccountListResponse.AccountDetails> finAccounts = ssafyFinanceService.getAccounts(user.getUserKey());
         
+        // 우리 DB에 등록된 계좌 목록 조회
+        List<Account> localAccounts = accountRepository.findAllByUserId(userId);
+
+        // 금융망 계좌와 우리 DB 계좌 매칭하여 DTO 생성
         List<AccountInfo> accounts = finAccounts.stream()
                 .map(acc -> {
                     String bankName = acc.bankName();
@@ -100,17 +118,127 @@ public class AccountService {
                     if ("001".equals(acc.bankCode())) {
                         bankName = "싸피은행";
                     }
+
+                    // 우리 DB에서 매칭되는 계좌 및 주계좌 여부 확인 (계좌번호 매칭 우선)
+                    Account matchingLocal = localAccounts.stream()
+                            .filter(la -> la.getAccountNumber().equals(acc.accountNo()))
+                            .findFirst()
+                            .orElse(null);
+
+                    UUID accountId = matchingLocal != null ? matchingLocal.getId() : null;
+                    boolean isPrimary = matchingLocal != null && (matchingLocal.getIsPrimary() || localAccounts.size() == 1);
+                    long balance = (matchingLocal != null) ? matchingLocal.getBalance() : acc.accountBalance();
+
+                    log.info("[GetMyAccounts] Matching - AccNo: {}, FoundInLocal: {}, Balance: {}, isPrimary: {}", 
+                            acc.accountNo(), matchingLocal != null, balance, isPrimary);
+
                     return new AccountInfo(
+                        accountId,
                         acc.bankCode(),
                         bankName,
                         acc.accountNo(),
                         acc.accountName(),
-                        acc.accountBalance()
+                        balance,
+                        isPrimary
                     );
                 })
+                .sorted((a, b) -> Boolean.compare(b.isPrimary(), a.isPrimary())) // 주계좌 우선 정렬
                 .collect(Collectors.toList());
-        
+
+        log.info("[GetMyAccounts] Return {} accounts for user: {}", accounts.size(), userId);
+        if (!accounts.isEmpty()) {
+            log.info("[GetMyAccounts] Top Account - No: {}, Balance: {}, isPrimary: {}", 
+                    accounts.get(0).accountNumber(), accounts.get(0).balance(), accounts.get(0).isPrimary());
+        }
         return new AccountListResponse(accounts);
+    }
+
+    /**
+     * 주계좌 객체 조회 (없으면 자동 생성/등록)
+     */
+    @Transactional
+    public Account getPrimaryAccount(UUID userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ApiException(UserErrorCode.USER_NOT_FOUND));
+
+        return accountRepository.findByUserIdAndIsPrimaryTrue(userId)
+                .orElseGet(() -> {
+                    List<Account> allLocal = accountRepository.findAllByUserId(userId);
+                    if (allLocal.isEmpty()) {
+                        List<Account> discovered = discoverAndRegisterAccounts(user);
+                        return discovered.isEmpty() ? null : discovered.get(0);
+                    }
+                    Account firstAcc = allLocal.get(0);
+                    firstAcc.designateAsPrimary();
+                    return accountRepository.save(firstAcc);
+                });
+    }
+
+    /**
+     * 주계좌 잔액 조회
+     */
+    @Transactional
+    public long getPrimaryAccountBalance(UUID userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ApiException(UserErrorCode.USER_NOT_FOUND));
+
+        // 주계좌 조회
+        Account account = getPrimaryAccount(userId);
+
+        if (account == null) {
+            return 0L;
+        }
+
+        // 금융망과 잔액 동기화
+        try {
+            List<FinanceAccountListResponse.AccountDetails> finAccounts = ssafyFinanceService.getAccounts(user.getUserKey());
+            long balance = finAccounts.stream()
+                    .filter(a -> a.accountNo().equals(account.getAccountNumber()))
+                    .findFirst()
+                    .map(FinanceAccountListResponse.AccountDetails::accountBalance)
+                    .orElse(account.getBalance());
+            
+            // CASH 계좌의 경우, 금융망 밸런스가 0인데 로컬은 양수인 경우 로컬을 우선적으로 신뢰한다. (Sandbox 환경 대응)
+            if (account.getType().equals("CASH") && balance == 0 && account.getBalance() > 0) {
+                return account.getBalance();
+            }
+
+            account.updateBalance(balance);
+            return balance;
+        } catch (Exception e) {
+            log.warn("금융망 잔액 조회 실패 (UserId: {}, Account: {}): {}", userId, account.getAccountNumber(), e.getMessage());
+            return account.getBalance();
+        }
+    }
+
+    /**
+     * 금융망에서 계좌를 조회하여 우리 DB에 등록되어 있지 않으면 자동 등록한다.
+     */
+    @Transactional
+    public List<Account> discoverAndRegisterAccounts(User user) {
+        try {
+            List<FinanceAccountListResponse.AccountDetails> finAccounts = ssafyFinanceService.getAccounts(user.getUserKey());
+            List<Account> registered = new ArrayList<>();
+            
+            for (FinanceAccountListResponse.AccountDetails fin : finAccounts) {
+                boolean exists = accountRepository.existsByAccountNumberAndBankCode(fin.accountNo(), fin.bankCode());
+                if (!exists) {
+                    Account newAcc = Account.builder()
+                            .userId(user.getId())
+                            .accountNumber(fin.accountNo())
+                            .bankCode(fin.bankCode())
+                            .type("CASH")
+                            .balance(fin.accountBalance())
+                            .isPrimary(registered.isEmpty() && !accountRepository.existsByUserId(user.getId()))
+                            .build();
+                    registered.add(accountRepository.save(newAcc));
+                }
+            }
+            return registered;
+        } catch (Exception e) {
+            log.warn("계좌 자동 조회/등록 실패 (UserId: {}): {}", user.getId(), e.getMessage());
+            return Collections.emptyList();
+        }
     }
 
 
@@ -194,7 +322,7 @@ public class AccountService {
                 .orElseThrow(() -> new ApiException(UserErrorCode.USER_NOT_FOUND));
 
         // PIN 검증
-        if (user.getPinPassword() == null || !user.getPinPassword().equals(request.pin())) {
+        if (user.getPinPassword() == null || !passwordEncoder.matches(request.pin(), user.getPinPassword())) {
             throw new ApiException(AuthErrorCode.PIN_MISMATCH);
         }
 
@@ -206,33 +334,59 @@ public class AccountService {
             throw new ApiException(AuthErrorCode.ACCESS_DENIED);
         }
 
-        // 입금 계좌 조회
-        Account depositAccount = accountRepository.findById(UUID.fromString(request.targetAccountId()))
-                .orElseThrow(() -> new ApiException(BankErrorCode.ACCOUNT_NOT_FOUND));
+        // 잔액 확인 (금융망 실시간 잔액 조회 루틴 추가)
+        long currentBalance = withdrawalAccount.getBalance();
+        // 실시간 잔액 동기화 (금융망 API 호출)
+        try {
+            List<FinanceAccountListResponse.AccountDetails> finAccounts = ssafyFinanceService.getAccounts(user.getUserKey());
+            currentBalance = finAccounts.stream()
+                    .filter(a -> a.accountNo().equals(withdrawalAccount.getAccountNumber()))
+                    .findFirst()
+                    .map(FinanceAccountListResponse.AccountDetails::accountBalance)
+                    .orElse(withdrawalAccount.getBalance());
+            withdrawalAccount.updateBalance(currentBalance);
+        } catch (Exception e) {
+            log.warn("금융망 잔액 동기화 실패: {}", e.getMessage());
+        }
 
-        // 잔액 확인
-        if (withdrawalAccount.getBalance() < request.amount()) {
+        if (currentBalance < request.amount()) {
             throw new ApiException(BankErrorCode.INSUFFICIENT_BALANCE);
         }
+
+        // 입금 계좌 여부 확인
+        Account depositAccount = accountRepository.findByAccountNumberAndBankCode(request.targetAccountNumber(), request.targetBankCode())
+                .orElse(null);
+
+        // 적요 설정 (이름 기반)
+        String depositMemo = user.getName(); // 입금자(나)의 이름이 상대방 통장에 찍힘
+        String withdrawalMemo = request.targetName(); // 수금자(상대)의 이름이 내 통장에 찍힘
 
         // 금융망 API 호출
         FinanceTransferResponse.Rec finRec = ssafyFinanceService.transfer(
                 user.getUserKey(),
                 withdrawalAccount.getBankCode(),
                 withdrawalAccount.getAccountNumber(),
-                depositAccount.getBankCode(),
-                depositAccount.getAccountNumber(),
-                request.amount()
+                request.targetBankCode(),
+                request.targetAccountNumber(),
+                request.amount(),
+                depositMemo,
+                withdrawalMemo
         );
 
-        return new TransferResponse(finRec.transactionUniqueNo(), withdrawalAccount.getBalance() - request.amount());
+        // 우리 DB 잔액 업데이트
+        withdrawalAccount.deductBalance(request.amount());
+        if (depositAccount != null) {
+            depositAccount.addBalance(request.amount());
+        }
+
+        return new TransferResponse(finRec.transactionUniqueNo(), withdrawalAccount.getBalance());
     }
 
     /**
      * 1원 송금 인증 요청
      */
     @Transactional
-    public void request1WonVerification(UUID userId, AccountVerifyRequest request) {
+    public AccountVerifyResponse request1WonVerification(UUID userId, AccountVerifyRequest request) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ApiException(UserErrorCode.USER_NOT_FOUND));
 
@@ -245,27 +399,61 @@ public class AccountService {
         // 기존 동일 계좌 인증 정보 삭제 (새로운 요청으로 갱신)
         accountVerificationRepository.deleteAllByUserIdAndAccountNumberAndBankCode(user.getId(), request.accountNumber(), request.bankCode());
 
-        // 인증코드 생성 (4자리 숫자)
-        String authCode = String.format("%04d", ThreadLocalRandom.current().nextInt(10000));
-        
-        // 송금 메시지: "SSAFY {code}"
-        String authText = "SSAFY " + authCode;
+        // 1원 송급 요청 (기업명 "SSAFY"로 고정하여 요청)
+        String authText = "SSAFY";
+        ssafyFinanceService.openAccountAuth(user.getUserKey(), request.accountNumber(), authText);
 
-        // 인증 정보 저장 (5분 유효)
+        // 거래 내역 조회를 통해 금융 API가 생성한 인증 코드 추출 (폴링 로직)
+        String authCode = null;
+        String dateStr = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        
+        for (int i = 0; i < 3; i++) {
+            try {
+                // 약간의 지연 후 거래 내역 조회 (금융망 반영 시간 고려)
+                Thread.sleep(300); 
+                
+                List<FinanceTransactionHistoryResponse.TransactionDetails> history = 
+                    ssafyFinanceService.getTransactionHistory(user.getUserKey(), request.accountNumber(), dateStr, dateStr);
+                
+                // 최근 거래 내역 중 기업명으로 시작하는 1원 입금 건 찾기
+                authCode = history.stream()
+                    .filter(tx -> "1".equals(tx.transactionBalance())) // 1원 입금
+                    .filter(tx -> tx.transactionSummary().startsWith(authText)) // 기업명 일치
+                    .map(tx -> {
+                        // "SSAFY1234" 등에서 숫자 4자리 추출
+                        Pattern pattern = Pattern.compile("\\d{4}");
+                        Matcher matcher = pattern.matcher(tx.transactionSummary());
+                        return matcher.find() ? matcher.group() : null;
+                    })
+                    .filter(code -> code != null)
+                    .findFirst()
+                    .orElse(null);
+
+                if (authCode != null) break;
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
+            }
+        }
+
+        if (authCode == null) {
+            throw new ApiException(BankErrorCode.INVALID_AUTH_CODE);
+        }
+
+        // 3. 인증 정보 저장 (실제 금융 API 코드로 저장)
         AccountVerification verification = AccountVerification.builder()
                 .userId(user.getId())
                 .accountNumber(request.accountNumber())
                 .bankCode(request.bankCode())
                 .authCode(authCode)
-                .authText("SSAFY") // 검증 시 사용할 접두어
+                .authText(authText)
                 .status("PENDING")
                 .expiresAt(LocalDateTime.now().plusMinutes(5))
                 .build();
         
         accountVerificationRepository.save(verification);
 
-        // 금융망 API 호출
-        ssafyFinanceService.openAccountAuth(user.getUserKey(), request.accountNumber(), authText);
+        return new AccountVerifyResponse(authCode);
     }
 
     /**
@@ -303,13 +491,22 @@ public class AccountService {
             throw new ApiException(BankErrorCode.ALREADY_EXISTS_ACCOUNT);
         }
 
+        // 초기 잔액 조회 (금융망)
+        List<FinanceAccountListResponse.AccountDetails> finAccounts = ssafyFinanceService.getAccounts(user.getUserKey());
+        long initialBalance = finAccounts.stream()
+                .filter(a -> a.accountNo().equals(request.accountNumber()))
+                .findFirst()
+                .map(FinanceAccountListResponse.AccountDetails::accountBalance)
+                .orElse(0L);
+
         // 인증 성공 시 계좌 연동 (우리 DB 저장)
         Account account = Account.builder()
                 .userId(user.getId())
                 .accountNumber(request.accountNumber())
                 .bankCode(request.bankCode())
                 .type("EXTERNAL")
-                .balance(0L)
+                .balance(initialBalance)
+                .isPrimary(true) // 부모의 경우 첫 연동 계좌를 주계좌로 설정
                 .build();
 
         Account savedAccount = accountRepository.save(account);
@@ -323,9 +520,32 @@ public class AccountService {
         return new AccountLinkResponse(savedAccount.getId(), bankName);
     }
 
+    /**
+     * 계좌 실명 조회
+     */
+    public String getAccountHolderName(String bankCode, String accountNumber) {
+        // 우리 DB에서 검색
+        Optional<Account> localAccount = accountRepository.findByAccountNumberAndBankCode(accountNumber, bankCode);
+        if (localAccount.isPresent()) {
+            return userRepository.findById(localAccount.get().getUserId())
+                    .map(User::getName)
+                    .orElse("알 수 없음");
+        }
+
+        // 금융망 API 조회
+        try {
+            String systemUserKey = userRepository.findAll().get(0).getUserKey(); 
+            FinanceAccountHolderNameResponse res = ssafyFinanceService.inquireDemandDepositAccountHolderName(systemUserKey, accountNumber);
+            return res.userName();
+        } catch (Exception e) {
+            log.error("금융망 계좌 실명 조회 실패: {}", e.getMessage());
+            return "외부 계좌 사용자"; 
+        }
+    }
+
     private String getBankName(String bankCode) {
         return switch (bankCode) {
-            case "001" -> "싸피은행";
+            case "001" -> "한국은행";
             case "002" -> "산업은행";
             case "003" -> "기업은행";
             case "004" -> "국민은행";

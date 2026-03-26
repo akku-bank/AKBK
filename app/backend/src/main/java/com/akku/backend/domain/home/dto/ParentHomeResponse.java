@@ -12,6 +12,8 @@ public record ParentHomeResponse(
             UUID childId,
             String name,
             long balance,
-            long weeklySpending
+            long weeklySpending,
+            String bankCode,
+            String accountNumber
     ) {}
 }
