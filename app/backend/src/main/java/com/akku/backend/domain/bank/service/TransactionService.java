@@ -8,8 +8,10 @@ import com.akku.backend.domain.bank.dto.TransactionHistoryResponse;
 import com.akku.backend.domain.bank.dto.TransactionVisibilityRequest;
 import com.akku.backend.domain.bank.dto.TransactionVisibilityResponse;
 import com.akku.backend.domain.bank.entity.Account;
+import com.akku.backend.domain.bank.entity.Merchant;
 import com.akku.backend.domain.bank.entity.Transaction;
 import com.akku.backend.domain.bank.repository.AccountRepository;
+import com.akku.backend.domain.bank.repository.MerchantRepository;
 import com.akku.backend.domain.bank.repository.TransactionRepository;
 import com.akku.backend.domain.bank.service.AccountService;
 import com.akku.backend.domain.bank.exception.BankErrorCode;
@@ -18,6 +20,8 @@ import com.akku.backend.domain.user.exception.UserErrorCode;
 import com.akku.backend.global.finance.dto.FinanceTransactionHistoryResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import com.akku.backend.domain.bank.event.TransactionEvent;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,6 +41,8 @@ public class TransactionService {
     private final TransactionRepository transactionRepository;
     private final SsafyFinanceService ssafyFinanceService;
     private final AccountService accountService;
+    private final KafkaTemplate<String, TransactionEvent> kafkaTemplate;
+    private final MerchantRepository merchantRepository;
 
     public TransactionHistoryResponse getTransactionHistory(UUID userId, Integer year, Integer month) {
         User user = userRepository.findById(userId)
@@ -69,7 +75,8 @@ public class TransactionService {
             for (FinanceTransactionHistoryResponse.TransactionDetails h : finHistory) {
                 if (!transactionRepository.existsByTransactionUniqueNo(h.transactionUniqueNo())) {
                     String place = (h.transactionMemo() != null && !h.transactionMemo().trim().isEmpty()) 
-                            ? h.transactionMemo() : h.transactionSummary();
+                            ? h.transactionMemo().trim() : h.transactionSummary().trim();
+                    Optional<Merchant> merchantOpt = merchantRepository.findByMerchantName(place);
 
                     Transaction tx = Transaction.builder()
                             .accountId(account.getId())
@@ -77,11 +84,15 @@ public class TransactionService {
                             .amount(Long.parseLong(h.transactionBalance()))
                             .balanceAfter(Long.parseLong(h.transactionAfterBalance()))
                             .transactionType(h.transactionType())
+                            .merchantId(merchantOpt.map(Merchant::getMerchantId).orElse(null))
+                            .subCategoryId(merchantOpt.map(Merchant::getSubCategoryId).orElse(null))
+                            .subCategoryName(merchantOpt.map(Merchant::getSubCategoryName).orElse(place))
                             .merchantName(place)
                             .date(h.transactionDate() + h.transactionTime())
                             .isHidden(false) // 초기값
                             .build();
                     transactionRepository.save(tx);
+                    publishTransactionEvent(tx, userId, account);
                 }
             }
 
@@ -140,7 +151,7 @@ public class TransactionService {
                         return new TransactionHistoryResponse.TransactionInfo(
                                 t.id(),
                                 t.date(),
-                                "비공개 내역 🤫",
+                                "********",
                                 t.amount(),
                                 t.isIncome(),
                                 t.balanceAfter(),
@@ -199,6 +210,48 @@ public class TransactionService {
         userRepository.save(user);
 
         return new TransactionVisibilityResponse(user.getIsHidden());
+    }
+
+    /**
+     * Kafka로 거래 이벤트 발행
+     */
+    private void publishTransactionEvent(Transaction tx, UUID userId, Account account) {
+        try {
+            String mappedTransactionType = mapTransactionType(tx.getTransactionType());
+
+            TransactionEvent event = new TransactionEvent(
+                    "TRANSACTION_COMPLETED",
+                    new TransactionEvent.Data(
+                            tx.getId().toString(),
+                            userId.toString(),
+                            account.getId().toString(),
+                            tx.getMerchantId(),
+                            tx.getAmount(),
+                            mappedTransactionType,
+                            tx.getSubCategoryId(),
+                            tx.getSubCategoryName(),
+                            tx.getMerchantName(),
+                            tx.getCreatedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss"))
+                    )
+            );
+
+            kafkaTemplate.send("transaction", tx.getId().toString(), event);
+            log.info("✅ Kafka transaction event published: {} | Type: {} | Amount: {}",
+                    tx.getId(), mappedTransactionType, tx.getAmount());
+
+        } catch (Exception e) {
+            log.error("❌ Failed to publish transaction event to Kafka", e);
+        }
+    }
+
+    private String mapTransactionType(String financialType) {
+        if (financialType == null) {
+            return "SPEND";
+        }
+        if ("1".equals(financialType)) {
+            return "INCOME";
+        }
+        return "SPEND";
     }
 }
 
