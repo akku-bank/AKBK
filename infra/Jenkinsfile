@@ -2,8 +2,10 @@ pipeline {
     agent any
 
     environment {
-        MM_WEBHOOK  = credentials('mattermost-webhook-url')
-        DEPLOY_PATH = '/home/ubuntu/S14P21B101'
+        MM_WEBHOOK              = credentials('mattermost-webhook-url')
+        DEPLOY_PATH             = '/home/ubuntu/S14P21B101'
+        DOCKER_BUILDKIT         = '0'
+        COMPOSE_DOCKER_CLI_BUILD = '0'
     }
 
     stages {

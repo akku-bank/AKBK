@@ -28,15 +28,13 @@ const ParentHomeScreen = ({ navigation }) => {
                         familyMembers
                             .filter(member =>
                                 member.role === 'CHILD' &&
-                                member.userId &&
-                                Array.isArray(member.accountIds) &&
-                                member.accountIds.length > 0
+                                member.userId
                             )
                             .map(member => [
                                 String(member.userId),
                                 {
                                     profileId: member.profileId,
-                                    accountId: member.accountIds[0]
+                                    accountId: (member.accountIds && member.accountIds.length > 0) ? member.accountIds[0] : null
                                 }
                             ])
                     );
@@ -53,7 +51,7 @@ const ParentHomeScreen = ({ navigation }) => {
                                 childId: child.childId,
                                 accountId: matchedMember.accountId,
                                 name: child.name,
-                                balance: child.balance || 0,
+                                balance: matchedMember.accountId ? (child.balance || 0) : null,
                                 bankCode: child.bankCode,
                                 accountNumber: child.accountNumber,
                                 avatar: require('../../../assets/croco/croco_face.png')
@@ -124,17 +122,29 @@ const ParentHomeScreen = ({ navigation }) => {
                             </View>
                             <View style={styles.childTextInfo}>
                                 <CustomText style={styles.childName}>{child.name}</CustomText>
-                                <CustomText style={styles.childBalance}>{child.balance.toLocaleString()}원</CustomText>
+                                {child.accountId ? (
+                                    <CustomText style={styles.childBalance}>{child.balance.toLocaleString()}원</CustomText>
+                                ) : (
+                                    <CustomText style={styles.unlinkedText}>계좌 연동을 완료해 주세요</CustomText>
+                                )}
                             </View>
-                            <TouchableOpacity style={styles.historyBtn} onPress={() => navigation.navigate('ParentHistoryScreen', { child })}>
-                                <CustomText style={styles.historyBtnText}>내역조회</CustomText>
-                            </TouchableOpacity>
+                            {child.accountId && (
+                                <TouchableOpacity style={styles.historyBtn} onPress={() => navigation.navigate('ParentHistoryScreen', { child })}>
+                                    <CustomText style={styles.historyBtnText}>내역조회</CustomText>
+                                </TouchableOpacity>
+                            )}
                         </View>
 
                         <View style={styles.actionRow}>
-                            <TouchableOpacity style={styles.actionBtn} onPress={() => navigation.navigate('ParentTransferScreen', { child })}>
-                                <CustomText style={styles.actionBtnText}>용돈 송금</CustomText>
-                            </TouchableOpacity>
+                            {child.accountId ? (
+                                <TouchableOpacity style={styles.actionBtn} onPress={() => navigation.navigate('ParentTransferScreen', { child })}>
+                                    <CustomText style={styles.actionBtnText}>용돈 송금</CustomText>
+                                </TouchableOpacity>
+                            ) : (
+                                <TouchableOpacity style={styles.actionBtnPrimary} onPress={() => navigation.navigate('ParentAccountCreate')}>
+                                    <CustomText style={styles.actionBtnPrimaryText}>계좌 개설</CustomText>
+                                </TouchableOpacity>
+                            )}
                             <TouchableOpacity style={styles.actionBtnOutline} onPress={() => navigation.navigate('ParentChildEdit', { child })}>
                                 <CustomText style={styles.actionBtnOutlineText}>정보 수정</CustomText>
                             </TouchableOpacity>
@@ -240,6 +250,9 @@ const styles = StyleSheet.create({
     actionBtnOutlineText: { fontSize: scale(13), fontWeight: 'bold', color: '#4B5563' },
     actionBtnDanger: { flex: 1, backgroundColor: '#FEE2E2', paddingVertical: verticalScale(10), borderRadius: scale(8), alignItems: 'center' },
     actionBtnDangerText: { fontSize: scale(13), fontWeight: 'bold', color: '#DC2626' },
+    unlinkedText: { fontSize: scale(13), color: '#EF4444', fontWeight: 'bold' },
+    actionBtnPrimary: { flex: 1.5, backgroundColor: '#3B82F6', paddingVertical: verticalScale(10), borderRadius: scale(8), alignItems: 'center' },
+    actionBtnPrimaryText: { fontSize: scale(13), fontWeight: 'bold', color: '#FFFFFF' },
 
     addBabyCard: {
         flexDirection: 'row',
