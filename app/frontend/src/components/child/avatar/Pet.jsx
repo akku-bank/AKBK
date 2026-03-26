@@ -1,21 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Animated, StyleSheet } from 'react-native';
 import { scale } from 'react-native-size-matters';
-
-// 새 펫 추가시 에셋 경로만 추가하면 자동 연동
-const PET_ASSETS = {
-    shiba: {
-        leg: require('../../../assets/pet/shiba-leg.png'),
-        body: require('../../../assets/pet/shiba-body.png'),
-        base: require('../../../assets/pet/shiba-base.png'),
-    },
-    // ex)
-    // cat: {
-    //     leg: require('../../../assets/pet/cat-leg.png'),
-    //     body: require('../../../assets/pet/cat-body.png'),
-    //     base: require('../../../assets/pet/cat-base.png'),
-    // }
-};
+import { AVATAR_ASSETS } from './AvatarAssets';
 
 const Pet = ({ petType = 'shiba', size = 100 }) => {
     // 0: (가만히)
@@ -55,35 +41,41 @@ const Pet = ({ petType = 'shiba', size = 100 }) => {
         outputRange: [0, stepSize, stepSize * 2, stepSize] // 머리는 2단계
     });
 
-    // 펫 타입에 해당하는 이미지 세트 가져오기 (없으면 렌더링 X)
-    const assets = PET_ASSETS[petType];
+    // 펫 타입에 해당하는 이미지 가져오기
+    const assets = AVATAR_ASSETS.pet[petType];
     if (!assets) return null;
 
     return (
         <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'flex-end' }}>
-            {/* 1. 다리 (바닥에 고정) */}
-            <View style={[styles.absoluteImage, { width: size, height: size }]}>
-                <Animated.Image
-                    source={assets.leg}
-                    style={{ width: '100%', height: '100%', resizeMode: 'contain' }}
-                />
-            </View>
+            {/* 1. 다리 (바닥에 고정, 아꾸는 다리가 없음) */}
+            {assets.leg && (
+                <View style={[styles.absoluteImage, { width: size, height: size }]}>
+                    <Animated.Image
+                        source={assets.leg}
+                        style={{ width: '100%', height: '100%', resizeMode: 'contain' }}
+                    />
+                </View>
+            )}
 
-            {/* 2. 몸통 (프레임 1,2,3에서 1단계 아래로 이동) */}
-            <Animated.View style={[styles.absoluteImage, { width: size, height: size, transform: [{ translateY: bodyTranslateY }] }]}>
-                <Animated.Image
-                    source={assets.body}
-                    style={{ width: '100%', height: '100%', resizeMode: 'contain' }}
-                />
-            </Animated.View>
+            {/* 2. 몸통 (프레임 1,2,3에서 1단계 아래로 이동, 단 아꾸는 바닥 고정) */}
+            {assets.body && (
+                <Animated.View style={[styles.absoluteImage, { width: size, height: size, transform: [{ translateY: petType === 'akku' ? 0 : bodyTranslateY }] }]}>
+                    <Animated.Image
+                        source={assets.body}
+                        style={{ width: '100%', height: '100%', resizeMode: 'contain' }}
+                    />
+                </Animated.View>
+            )}
 
-            {/* 3. 머리상단(base) (프레임 단위로 1단계 -> 2단계 -> 1단계 내려감) */}
-            <Animated.View style={[styles.absoluteImage, { width: size, height: size, transform: [{ translateY: headTranslateY }] }]}>
-                <Animated.Image
-                    source={assets.base}
-                    style={{ width: '100%', height: '100%', resizeMode: 'contain' }}
-                />
-            </Animated.View>
+            {/* 3. 머리상단(base) (프레임 단위로 1단계 -> 2단계 -> 1단계 내려감, 아꾸는 머리만 1단계 이동) */}
+            {assets.base && (
+                <Animated.View style={[styles.absoluteImage, { width: size, height: size, transform: [{ translateY: petType === 'akku' ? bodyTranslateY : headTranslateY }] }]}>
+                    <Animated.Image
+                        source={assets.base}
+                        style={{ width: '100%', height: '100%', resizeMode: 'contain' }}
+                    />
+                </Animated.View>
+            )}
         </View>
     );
 };

@@ -4,14 +4,20 @@ import { scale, verticalScale } from 'react-native-size-matters';
 import CustomText from '../../../components/common/CustomText';
 import api from '../../../api/axios';
 
+import { AVATAR_ITEMS } from '../../../components/child/avatar/AvatarAssets';
+
 // 초기 빈 도감 상태
 const INITIAL_INVENTORY = {
+    '한벌옷': [],
     '모자': [],
     '상의': [],
-    '하의': []
+    '하의': [],
+    '신발': [],
+    '등': [],
+    '펫': []
 };
 
-const CATEGORIES = ['모자', '상의', '하의'];
+const CATEGORIES = ['한벌옷', '모자', '상의', '하의', '신발', '등', '펫', '미술품', '나무'];
 
 const AvatarDictionaryScreen = ({ navigation }) => {
     const [selectedCategory, setSelectedCategory] = useState(CATEGORIES[0]);
@@ -31,25 +37,55 @@ const AvatarDictionaryScreen = ({ navigation }) => {
                 const res = await api.get('/avatars/items');
                 const items = res.data?.data?.items || [];
 
-                const grouped = { '모자': [], '상의': [], '하의': [] };
+                const grouped = {
+                    '한벌옷': [],
+                    '모자': [],
+                    '상의': [],
+                    '하의': [],
+                    '신발': [],
+                    '등': [],
+                    '장식품': [],
+                    '펫': [],
+                    '미술품': [],
+                    '나무': []
+                };
 
-                items.forEach(item => {
-                    let catStr = '';
-                    if (item.category === 'HAT') catStr = '모자';
-                    else if (item.category === 'TOP') catStr = '상의';
-                    else if (item.category === 'BOTTOM') catStr = '하의';
-
-                    if (catStr && grouped[catStr]) {
-                        grouped[catStr].push({
-                            id: item.itemId,
-                            name: item.name,
-                            requiredLevel: item.requiredLevel,
-                            image: item.resourceUrl ? { uri: item.resourceUrl } : require('../../../assets/avatar/acc/hat.png'),
-                            isOwned: item.isOwned,
-                            isLevelLocked: item.isLevelLocked
-                        });
+                // 백엔드에서 획득했다고 알려준 아이템 이름 맵핑
+                const ownedMap = {};
+                items.forEach(backendItem => {
+                    if (backendItem.isOwned) {
+                        ownedMap[backendItem.name] = true;
                     }
                 });
+
+                // 카테고리별 공통 아이템 변환 헬퍼
+                const createItemObj = (localItem, isForcedUnlock = false) => {
+                    const isOwned = !!ownedMap[localItem.name];
+                    // 레벨 1 기본템은 무조건 보유 처리 (백엔드에 없어도), 강제 해금(isForcedUnlock) 추가
+                    const finalOwned = isOwned || localItem.level === 1 || isForcedUnlock;
+                    // 가챠 등 특수(level 99)는 미보유시 잠김. 일반템은 유저레벨이 낮으면 잠김.
+                    const isLocked = !finalOwned && (localItem.level > level || localItem.level === 99);
+
+                    return {
+                        id: localItem.id,
+                        name: localItem.name,
+                        requiredLevel: localItem.level,
+                        image: localItem.img,
+                        isOwned: finalOwned,
+                        isLevelLocked: isLocked
+                    };
+                };
+
+                // 프론트엔드 에셋(AVATAR_ITEMS)을 순회하며 빈 도감을 채움
+                (AVATAR_ITEMS.outfit || []).forEach(i => { if (i.id !== 'none') grouped['한벌옷'].push(createItemObj(i)); });
+                (AVATAR_ITEMS.hat || []).forEach(i => { if (i.id !== 'none') grouped['모자'].push(createItemObj(i)); });
+                (AVATAR_ITEMS.upper || []).forEach(i => { if (i.id !== 'none') grouped['상의'].push(createItemObj(i)); });
+                (AVATAR_ITEMS.lower || []).forEach(i => { if (i.id !== 'none') grouped['하의'].push(createItemObj(i)); });
+                (AVATAR_ITEMS.shoe || []).forEach(i => { if (i.id !== 'none') grouped['신발'].push(createItemObj(i)); });
+                (AVATAR_ITEMS.back || []).forEach(i => { if (i.id !== 'none') grouped['등'].push(createItemObj(i)); });
+                (AVATAR_ITEMS.pet || []).forEach(i => { if (i.id !== 'none') grouped['펫'].push(createItemObj(i)); });
+                (AVATAR_ITEMS.art1 || []).forEach(i => { if (i.id !== 'none') grouped['미술품'].push(createItemObj(i, true)); }); // 강제 해금
+                (AVATAR_ITEMS.art2 || []).forEach(i => { if (i.id !== 'none') grouped['나무'].push(createItemObj(i, true)); }); // 강제 해금
 
                 setInventoryItems(grouped);
             } catch (e) { console.error('Inventory Fetch Error:', e); }
@@ -69,16 +105,18 @@ const AvatarDictionaryScreen = ({ navigation }) => {
                 </View>
             </View>
 
-            <View style={styles.categoryRow}>
-                {CATEGORIES.map(cat => (
-                    <TouchableOpacity
-                        key={cat}
-                        style={[styles.categoryBtn, selectedCategory === cat && styles.categoryBtnActive]}
-                        onPress={() => setSelectedCategory(cat)}
-                    >
-                        <CustomText style={[styles.categoryText, selectedCategory === cat && styles.categoryTextActive]}>{cat}</CustomText>
-                    </TouchableOpacity>
-                ))}
+            <View style={styles.categoryRowWrapper}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryRow}>
+                    {CATEGORIES.map(cat => (
+                        <TouchableOpacity
+                            key={cat}
+                            style={[styles.categoryBtn, selectedCategory === cat && styles.categoryBtnActive]}
+                            onPress={() => setSelectedCategory(cat)}
+                        >
+                            <CustomText style={[styles.categoryText, selectedCategory === cat && styles.categoryTextActive]}>{cat}</CustomText>
+                        </TouchableOpacity>
+                    ))}
+                </ScrollView>
             </View>
 
             <ScrollView contentContainerStyle={styles.gridContainer} showsVerticalScrollIndicator={false}>
@@ -90,11 +128,24 @@ const AvatarDictionaryScreen = ({ navigation }) => {
                         return (
                             <View key={item.id} style={[styles.itemCard, isLocked && styles.lockedCard]}>
                                 <View style={styles.imageBox}>
-                                    <Image
-                                        source={item.image}
-                                        style={[styles.itemImage, isLocked && styles.lockedImage]}
-                                        resizeMode="contain"
-                                    />
+                                    {Array.isArray(item.image) ? (
+                                        <View style={{ width: item.id.includes('akku') ? '100%' : '130%', height: item.id.includes('akku') ? '100%' : '130%', position: 'relative', marginTop: -20 }}>
+                                            {item.image.map((imgSrc, idx) => (
+                                                <Image
+                                                    key={idx}
+                                                    source={imgSrc}
+                                                    style={[{ width: '100%', height: '100%', position: 'absolute' }, isLocked && styles.lockedImage]}
+                                                    resizeMode="contain"
+                                                />
+                                            ))}
+                                        </View>
+                                    ) : (
+                                        <Image
+                                            source={item.image}
+                                            style={[styles.itemImage, item.id.includes('akku') ? { width: '70%', height: '70%', marginTop: -20 } : { marginTop: -20 }, isLocked && styles.lockedImage]}
+                                            resizeMode="contain"
+                                        />
+                                    )}
                                     {isLocked && (
                                         <View style={styles.lockOverlay}>
                                             <CustomText style={styles.lockIcon}>🔒</CustomText>
@@ -103,17 +154,13 @@ const AvatarDictionaryScreen = ({ navigation }) => {
                                 </View>
                                 <CustomText style={[styles.itemName, isLocked && styles.lockedText]}>{item.name}</CustomText>
 
-                                {item.isOwned ? (
+                                {(item.isOwned || !isLocked) ? (
                                     <View style={[styles.statusButton, styles.ownedButton]}>
                                         <CustomText style={styles.ownedButtonText}>획득 완료</CustomText>
                                     </View>
-                                ) : isGachaOnly ? (
-                                    <View style={[styles.statusButton, styles.gachaButton]}>
-                                        <CustomText style={styles.gachaButtonText}>기부 보상 전용</CustomText>
-                                    </View>
                                 ) : (
                                     <View style={[styles.statusButton, styles.lockedButton]}>
-                                        <CustomText style={styles.lockedButtonText}>Lv.{item.requiredLevel} 해금</CustomText>
+                                        <CustomText style={styles.lockedButtonText}>잠김</CustomText>
                                     </View>
                                 )}
                             </View>
@@ -137,7 +184,8 @@ const styles = StyleSheet.create({
     levelBox: { backgroundColor: '#F3E8FF', paddingHorizontal: scale(12), paddingVertical: verticalScale(6), borderRadius: scale(12) },
     levelText: { fontSize: scale(14), fontWeight: 'bold', color: '#7E22CE' },
 
-    categoryRow: { flexDirection: 'row', paddingHorizontal: scale(16), paddingVertical: verticalScale(12), backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
+    categoryRowWrapper: { backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
+    categoryRow: { flexDirection: 'row', paddingHorizontal: scale(16), paddingVertical: verticalScale(12) },
     categoryBtn: { paddingHorizontal: scale(16), paddingVertical: verticalScale(8), marginRight: scale(8), borderRadius: scale(20), backgroundColor: '#F9FAFB' },
     categoryBtnActive: { backgroundColor: '#A3E635' },
     categoryText: { fontSize: scale(14), fontWeight: 'bold', color: '#6B7280' },

@@ -1,5 +1,5 @@
 import React, { useState, useContext, useEffect } from 'react';
-import { View, StyleSheet, TouchableOpacity, SafeAreaView, Dimensions, Image, Modal, Platform, StatusBar } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, SafeAreaView, Dimensions, Image, ImageBackground, Modal, Platform, StatusBar, ScrollView } from 'react-native';
 import { scale, verticalScale } from 'react-native-size-matters';
 import ChildAvatar from '../../../components/child/avatar/ChildAvatar';
 import { AvatarContext } from '../../../components/child/avatar/AvatarContext';
@@ -54,7 +54,8 @@ const ChildHomeScreen = ({ navigation }) => {
                         const backendItems = dictRes.data?.data?.items || [];
                         const equippedDTOs = homeDataResult.avatar.equippedItems;
 
-                        let newEquip = null;
+                        let newEquip = { ...equipState };
+                        let hasChanges = false;
 
                         equippedDTOs.forEach(eq => {
                             const dictItem = backendItems.find(i => i.itemId === eq.itemId);
@@ -64,17 +65,25 @@ const ChildHomeScreen = ({ navigation }) => {
                             if (eq.category === 'HAT') frontendCat = 'hat';
                             else if (eq.category === 'TOP') frontendCat = 'upper';
                             else if (eq.category === 'BOTTOM') frontendCat = 'lower';
+                            else if (eq.category === 'SHOE') frontendCat = 'shoe';
+                            else if (eq.category === 'BACK' || eq.category === 'ACC' || eq.category === 'DECORATION') frontendCat = 'back';
+                            else if (eq.category === 'OUTFIT') frontendCat = 'outfit';
+                            else if (eq.category === 'PET') frontendCat = 'pet';
+                            else if (eq.category === 'ART_1') frontendCat = 'art1';
+                            else if (eq.category === 'ART_2') frontendCat = 'art2';
 
                             if (frontendCat) {
-                                const assetItem = AVATAR_ITEMS[frontendCat]?.find(a => a.name === dictItem.name);
+                                // back, pet, outfit 등 명칭 불일치 대응
+                                const assetList = AVATAR_ITEMS[frontendCat] || AVATAR_ITEMS.decoration || AVATAR_ITEMS.pet || [];
+                                const assetItem = assetList.find(a => a.name === dictItem.name);
                                 if (assetItem) {
-                                    if (!newEquip) newEquip = { ...equipState };
+                                    hasChanges = true;
                                     newEquip[frontendCat] = assetItem.id;
                                 }
                             }
                         });
 
-                        if (newEquip) {
+                        if (hasChanges) {
                             setEquipState(newEquip);
                         }
                     } catch (dictErr) { console.error('Dictionary Fetch Error on Home', dictErr); }
@@ -111,51 +120,71 @@ const ChildHomeScreen = ({ navigation }) => {
 
                 <View style={styles.divider} />
 
-                {/* 친구, 알림 버튼 */}
-                <View style={styles.actionRow}>
-                    <TouchableOpacity style={styles.pillButton} onPress={() => navigation.navigate('FriendList')}>
-                        <CustomText style={styles.pillButtonText}>친구</CustomText>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.pillButton}>
-                        <CustomText style={styles.pillButtonText}>알림</CustomText>
-                        {homeData?.hasUnreadNotification && <View style={styles.redDot} />}
-                    </TouchableOpacity>
-                </View>
-
-                {/* 내가 기부한 장소 카드 */}
-                <TouchableOpacity style={styles.donationCard} activeOpacity={0.9} onPress={() => navigation.navigate('BadgeMap')}>
-                    <View style={styles.donationBadge}>
-                        <CustomText style={styles.donationBadgeText}>내가 기부한 장소</CustomText>
-                    </View>
-                    <CustomText style={styles.donationContentText}>준비 중</CustomText>
-                </TouchableOpacity>
-
-                {/* 아바타 영역 */}
-                <View style={styles.avatarSection}>
-                    <CustomText style={styles.levelText}>LV.{homeData ? homeData.level : 1} | 소비점수 {homeData ? homeData.score : 0}점</CustomText>
-                    <CustomText style={styles.nameText}>{user ? user.name : '김싸피'}</CustomText>
-
-                    <View style={styles.avatarActionRow}>
-                        <TouchableOpacity style={styles.avatarActionBtn} onPress={() => navigation.navigate('AvatarDictionaryScreen')}>
-                            <CustomText style={styles.avatarActionText}>내 도감</CustomText>
+                <ImageBackground
+                    source={require('../../../assets/background.png')}
+                    style={styles.contentBackground}
+                    imageStyle={{ left: -21, width: width + 30 }}
+                    resizeMode="cover"
+                >
+                    {/* 친구, 알림 버튼 */}
+                    <View style={styles.actionRow}>
+                        <TouchableOpacity style={styles.pillButton} onPress={() => navigation.navigate('FriendList')}>
+                            <CustomText style={styles.pillButtonText}>친구</CustomText>
                         </TouchableOpacity>
-                        <TouchableOpacity style={styles.avatarActionBtn} onPress={() => navigation.navigate('Wardrobe')}>
-                            <CustomText style={styles.avatarActionText}>꾸미기</CustomText>
+                        <TouchableOpacity style={styles.pillButton}>
+                            <CustomText style={styles.pillButtonText}>알림</CustomText>
+                            {homeData?.hasUnreadNotification && <View style={styles.redDot} />}
                         </TouchableOpacity>
                     </View>
 
-                    <View style={styles.avatarWrapper}>
-                        <ChildAvatar equipState={equipState} size={avatarSize} />
-
-                        {/* 펫 배치 (백엔드 펫 데이터가 있을 때만 렌더링되도록 사전 준비) */}
-                        {homeData?.pet && (
-                            <View style={{ position: 'absolute', right: scale(-120), bottom: verticalScale(-115) }}>
-                                <Pet petType={homeData.pet.type || 'shiba'} size={scale(350)} />
-                            </View>
-                        )}
+                    {/* ART_1 (벽그림 갤러리) - 구 기부처 카드 자리 */}
+                    <View style={{ paddingHorizontal: scale(20), marginBottom: verticalScale(14), height: verticalScale(90), width: '100%', alignItems: 'flex-start', justifyContent: 'center' }}>
+                        {equipState.art1 && equipState.art1 !== 'none' && (() => {
+                            const artItem = AVATAR_ITEMS.art1.find(a => a.id === equipState.art1);
+                            if (!artItem || !artItem.img) return null;
+                            return (
+                                <Image source={artItem.img} style={{ width: scale(85), height: verticalScale(85) }} resizeMode="contain" />
+                            );
+                        })()}
                     </View>
-                </View>
 
+                    {/* 아바타 영역 */}
+                    <View style={styles.avatarSection}>
+                        <CustomText style={styles.levelText}>LV.{homeData ? homeData.level : 1} | 소비점수 {homeData ? homeData.score : 0}점</CustomText>
+                        <CustomText style={styles.nameText}>{user ? user.name : '김싸피'}</CustomText>
+
+                        <View style={styles.avatarActionRow}>
+                            <TouchableOpacity style={styles.avatarActionBtn} onPress={() => navigation.navigate('AvatarDictionaryScreen')}>
+                                <CustomText style={styles.avatarActionText}>내 도감</CustomText>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.avatarActionBtn} onPress={() => navigation.navigate('Wardrobe')}>
+                                <CustomText style={styles.avatarActionText}>꾸미기</CustomText>
+                            </TouchableOpacity>
+                        </View>
+
+                        <View style={styles.avatarWrapper}>
+                            <ChildAvatar equipState={equipState} size={avatarSize} />
+
+                            {/* 펫 배치 (우측 하단) */}
+                            {equipState.pet && equipState.pet !== 'none' && (
+                                <View style={{ position: 'absolute', right: scale(-150), bottom: verticalScale(-110), zIndex: 1 }}>
+                                    <Pet petType={equipState.pet} size={scale(400)} />
+                                </View>
+                            )}
+
+                            {/* ART_2 (나무들) 좌측 여백 배치 */}
+                            {equipState.art2 && equipState.art2 !== 'none' && (() => {
+                                const treeItem = AVATAR_ITEMS.art2.find(a => a.id === equipState.art2);
+                                if (!treeItem || !treeItem.img) return null;
+                                return (
+                                    <View style={{ position: 'absolute', left: scale(-10), bottom: verticalScale(-15), zIndex: 0 }}>
+                                        <Image source={treeItem.img} style={{ width: scale(140), height: scale(190) }} resizeMode="contain" />
+                                    </View>
+                                );
+                            })()}
+                        </View>
+                    </View>
+                </ImageBackground>
             </View>
 
             {/* QR 결제 모달 */}
@@ -190,10 +219,14 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#FFFFFF',
     },
+    contentBackground: {
+        flex: 1,
+        width: '100%',
+        paddingTop: verticalScale(16),
+    },
     container: {
         flex: 1,
         paddingTop: verticalScale(16),
-        paddingBottom: verticalScale(10),
     },
     headerRow: {
         flexDirection: 'row',
@@ -242,7 +275,6 @@ const styles = StyleSheet.create({
         height: 1,
         backgroundColor: '#F3F4F6',
         width: '100%',
-        marginBottom: verticalScale(20),
     },
     actionRow: {
         flexDirection: 'row',
@@ -322,6 +354,8 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         gap: scale(10),
         marginBottom: verticalScale(10),
+        zIndex: 10,
+        elevation: 10,
     },
     avatarActionBtn: {
         backgroundColor: '#F3F4F6',
@@ -339,6 +373,7 @@ const styles = StyleSheet.create({
         width: '100%',
         alignItems: 'center',
         justifyContent: 'flex-end',
+        paddingBottom: verticalScale(15),
     },
     qrModalBackground: {
         flex: 1,
