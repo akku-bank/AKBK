@@ -118,7 +118,7 @@ pipeline {
                                 git reset --hard origin/develop
 
                                 echo "[Deploy] 변경 파일 목록 추출"
-                                CHANGED_FILES=$(git diff-tree --no-commit-id --name-only -r HEAD || true)
+                                CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD || true)
                                 echo "===== CHANGED FILES ====="
                                 echo "$CHANGED_FILES"
                                 echo "========================="
@@ -191,11 +191,13 @@ pipeline {
                                 fi
 
                                 if [ -n "$SERVICES" ]; then
-                                  echo "[Deploy] 대상 서비스 빌드 시작: $SERVICES"
-                                  docker-compose -f docker-compose.yml build $SERVICES
+                                echo "[Deploy] 대상 서비스 빌드 시작: $SERVICES"
+                                docker-compose -f docker-compose.yml build $SERVICES
 
-                                  echo "[Deploy] 대상 서비스 재기동 시작: $SERVICES"
-                                  docker-compose -f docker-compose.yml up -d $SERVICES
+                                echo "[Deploy] 대상 서비스 재기동 시작: $SERVICES"
+                                for svc in $SERVICES; do
+                                    docker-compose -f docker-compose.yml up -d --no-deps $svc
+                                done
                                 fi
 
                                 if [ "$RUN_KAFKA_INIT" = "true" ]; then
