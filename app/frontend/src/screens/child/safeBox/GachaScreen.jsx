@@ -25,22 +25,18 @@ const REWARD_IMAGE_MAP = {
     'app/frontend/src/assets/tree/maple.png': require('../../../assets/tree/maple.png'),
     'app/frontend/src/assets/tree/palm.png': require('../../../assets/tree/palm.png'),
     'app/frontend/src/assets/tree/tree.png': require('../../../assets/tree/tree.png'),
-    'app/frontend/src/assets/pet/akku-base.png': require('../../../assets/pet/akku-base.png'),
-    'app/frontend/src/assets/pet/akku-body.png': require('../../../assets/pet/akku-body.png'),
-    'app/frontend/src/assets/pet/cat-base.png': require('../../../assets/pet/cat-base.png'),
-    'app/frontend/src/assets/pet/cat-body.png': require('../../../assets/pet/cat-body.png'),
-    'app/frontend/src/assets/pet/cat-leg.png': require('../../../assets/pet/cat-leg.png'),
+    'app/frontend/src/assets/pet/akku.png': require('../../../assets/pet/akku.png'),
+    'app/frontend/src/assets/pet/cat.png': require('../../../assets/pet/cat.png'),
     'app/frontend/src/assets/pet/kdh.png': require('../../../assets/pet/kdh.png'),
     'app/frontend/src/assets/pet/kdh_special.png': require('../../../assets/pet/kdh_special.png'),
-    'app/frontend/src/assets/pet/shiba-base.png': require('../../../assets/pet/shiba-base.png'),
-    'app/frontend/src/assets/pet/shiba-body.png': require('../../../assets/pet/shiba-body.png'),
-    'app/frontend/src/assets/pet/shiba-leg.png': require('../../../assets/pet/shiba-leg.png'),
+    'app/frontend/src/assets/pet/shiba.png': require('../../../assets/pet/shiba.png'),
+    'app/frontend/src/assets/pet/akku-base.png': require('../../../assets/pet/akku-base.png'),
 };
 
 const CATEGORY_LABEL_MAP = {
     art: '문화 예술 보상',
     tree: '나무심기 보상',
-    pet: '유기동물 보상',
+    pet: '유기동물 지원 보상',
 };
 
 const CATEGORY_EMOJI_MAP = {
@@ -107,9 +103,8 @@ const GachaScreen = ({ navigation, route }) => {
     const rewardCategoryEmoji = reward?.category
         ? CATEGORY_EMOJI_MAP[String(reward.category).toLowerCase()] || '🎁'
         : '🎁';
-    const rewardDescription = reward?.isDuplicate
-        ? '이미 가지고 있는 아이템이에요.'
-        : '새 보상을 획득했어요.';
+    const rewardName = reward?.name || reward?.rewardItemName || '알 수 없는 보상';
+    const donationCompleteText = '기부가 완료되었어요!';
 
     const handleConfirm = () => {
         navigation.goBack();
@@ -135,14 +130,12 @@ const GachaScreen = ({ navigation, route }) => {
                         <CustomText style={styles.boxEmoji}>🎁</CustomText>
                     </Animated.View>
 
-                    <CustomText style={styles.capsuleText}>
-                        보상을 준비하고 있어요
-                    </CustomText>
+                    <CustomText style={styles.capsuleText}>보상을 준비하고 있어요</CustomText>
                 </View>
             ) : (
                 <View style={styles.revealContainer}>
                     <CustomText style={styles.tadaEmoji}>{rewardCategoryEmoji}</CustomText>
-                    <CustomText style={styles.titleText}>보상을 획득했어요</CustomText>
+                    <CustomText style={styles.titleText}>{donationCompleteText}</CustomText>
 
                     <View style={styles.rewardCard}>
                         {rewardImage ? (
@@ -151,10 +144,7 @@ const GachaScreen = ({ navigation, route }) => {
                             <CustomText style={styles.rewardFallbackEmoji}>{rewardCategoryEmoji}</CustomText>
                         )}
                         <CustomText style={styles.rewardCategory}>{rewardCategoryLabel}</CustomText>
-                        <CustomText style={styles.rewardName}>
-                            {reward?.rewardItemName || '알 수 없는 보상'}
-                        </CustomText>
-                        <CustomText style={styles.rewardDesc}>{rewardDescription}</CustomText>
+                        <CustomText style={styles.rewardName}>{rewardName}</CustomText>
                     </View>
 
                     <TouchableOpacity style={styles.confirmButton} onPress={handleConfirm}>
@@ -241,12 +231,6 @@ const styles = StyleSheet.create({
         fontSize: scale(22),
         fontWeight: 'bold',
         color: '#3B82F6',
-        marginBottom: verticalScale(8),
-        textAlign: 'center',
-    },
-    rewardDesc: {
-        fontSize: scale(14),
-        color: '#6B7280',
         textAlign: 'center',
     },
     confirmButton: {

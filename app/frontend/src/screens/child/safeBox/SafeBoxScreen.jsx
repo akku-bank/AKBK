@@ -95,7 +95,6 @@ const SafeBoxScreen = ({ navigation }) => {
                                 charityId: charity.charityId,
                             });
                             await fetchHubInfo();
-                            Alert.alert('성공', '기부 목표가 설정되었습니다.');
                         } catch (error) {
                             console.error('Set Active Charity Error:', error);
                             Alert.alert('오류', '기부 목표 설정에 실패했습니다.');
