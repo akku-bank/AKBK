@@ -13,6 +13,7 @@ public record ParentHomeResponse(
             String name,
             long balance,
             long weeklySpending,
+            UUID accountId,
             String bankCode,
             String accountNumber
     ) {}

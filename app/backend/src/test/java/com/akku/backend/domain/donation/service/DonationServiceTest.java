@@ -39,6 +39,12 @@ class DonationServiceTest {
     private UserRepository userRepository;
     @Mock
     private JellingRepository jellingRepository;
+    @Mock
+    private JellingTransactionRepository jellingTransactionRepository;
+    @Mock
+    private ItemRepository itemRepository;
+    @Mock
+    private UserItemRepository userItemRepository;
 
     @InjectMocks
     private DonationService donationService;
@@ -53,7 +59,6 @@ class DonationServiceTest {
         ActiveCharity activeCharity = ActiveCharity.builder()
                 .id(UUID.randomUUID())
                 .charity(charity)
-                .currentAmount(200L)
                 .targetAmount(500)
                 .status("IN_PROGRESS")
                 .build();
@@ -68,7 +73,7 @@ class DonationServiceTest {
         assertThat(response.remainJelling()).isEqualTo(100L);
         assertThat(response.activeCharity()).isNotNull();
         assertThat(response.activeCharity().name()).isEqualTo("Test Charity");
-        assertThat(response.activeCharity().currentAmount()).isEqualTo(200L);
+        assertThat(response.activeCharity().targetAmount()).isEqualTo(500);
     }
 
     @Test
@@ -139,5 +144,57 @@ class DonationServiceTest {
         assertThatThrownBy(() -> donationService.setTargetCharity(userId, charityId))
                 .isInstanceOf(ApiException.class)
                 .hasMessageContaining(DonationErrorCode.CHARITY_NOT_FOUND.getDefaultMessage());
+    }
+
+    @Test
+    @DisplayName("보상을 성공적으로 수령하고 젤링이 차감된다.")
+    void receiveReward_success() {
+        // given
+        UUID userId = UUID.randomUUID();
+        User user = User.builder().id(userId).userKey("test-key").build();
+        Charity charity = Charity.builder().name("Test Charity").build();
+        ActiveCharity activeCharity = ActiveCharity.builder()
+                .id(UUID.randomUUID())
+                .user(user)
+                .charity(charity)
+                .targetAmount(500)
+                .status("IN_PROGRESS")
+                .build();
+        Jelling jelling = Jelling.builder().userId(userId).user(user).balance(600L).build();
+
+        given(activeCharityRepository.findByUserIdAndStatus(userId, "IN_PROGRESS")).willReturn(Optional.of(activeCharity));
+        given(jellingRepository.findByUserIdWithLock(userId)).willReturn(Optional.of(jelling));
+        given(userRepository.findById(userId)).willReturn(Optional.of(user));
+        given(itemRepository.count()).willReturn(1L);
+        given(itemRepository.findAll()).willReturn(List.of(Item.builder().id(UUID.randomUUID()).build()));
+
+        // when
+        ReceiveRewardResponse response = donationService.receiveReward(userId);
+
+        // then
+        assertThat(jelling.getBalance()).isEqualTo(100L);
+        assertThat(activeCharity.getStatus()).isEqualTo("REWARDED");
+        verify(jellingTransactionRepository).save(any());
+        verify(userItemRepository).save(any());
+    }
+
+    @Test
+    @DisplayName("젤링 잔액이 부족하면 보상 수령에 실패한다.")
+    void receiveReward_insufficientBalance() {
+        // given
+        UUID userId = UUID.randomUUID();
+        ActiveCharity activeCharity = ActiveCharity.builder()
+                .targetAmount(500)
+                .status("IN_PROGRESS")
+                .build();
+        Jelling jelling = Jelling.builder().balance(300L).build();
+
+        given(activeCharityRepository.findByUserIdAndStatus(userId, "IN_PROGRESS")).willReturn(Optional.of(activeCharity));
+        given(jellingRepository.findByUserIdWithLock(userId)).willReturn(Optional.of(jelling));
+
+        // when & then
+        assertThatThrownBy(() -> donationService.receiveReward(userId))
+                .isInstanceOf(ApiException.class)
+                .hasMessageContaining(DonationErrorCode.INSUFFICIENT_JELLING.getDefaultMessage());
     }
 }

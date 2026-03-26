@@ -46,12 +46,6 @@ public class DonationController {
         return ApiResponse.success("기부 목표 설정이 완료되었습니다.", new SetTargetCharityResponse(activeCharityId));
     }
 
-    @PostMapping("/donations")
-    public ApiResponse<ExecuteDonationResponse> donate(
-            @AuthenticationPrincipal UUID userId,
-            @Valid @RequestBody ExecuteDonationRequest request) {
-        return ApiResponse.success("기부가 성공적으로 완료되었습니다.", donationService.executeDonation(userId, request.amount()));
-    }
 
     /**
      * 완료된 저금통에 대해 보상 수령
