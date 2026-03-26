@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { scale, verticalScale } from 'react-native-size-matters';
 import useTransactionStore from '../../../store/transactionStore';
 import CustomText from '../../../components/common/CustomText';
@@ -16,40 +17,45 @@ const TransactionCalendarScreen = ({ navigation }) => {
     const [selectedDate, setSelectedDate] = useState(today.getDate());
     const [transactionsByDate, setTransactionsByDate] = useState({});
 
-    const hiddenTransactionIds = useTransactionStore(state => state.hiddenTransactionIds);
 
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
 
-    useEffect(() => {
-        const fetchMonthlyTransactions = async () => {
-            try {
-                const res = await api.get(`/bank/transactions?year=${year}&month=${month + 1}`);
-                const txList = res.data?.data?.transactions || [];
+    useFocusEffect(
+        useCallback(() => {
+            const fetchMonthlyTransactions = async () => {
+                try {
+                    const res = await api.get(`/bank/transactions?year=${year}&month=${month + 1}`);
+                    const txList = res.data?.data?.transactions || [];
 
-                const grouped = {};
-                txList.forEach(tx => {
-                    if (!tx.date || tx.date.length < 14) return;
+                    const grouped = {};
+                    txList.forEach(tx => {
+                        const dateStr = tx.date;
+                        if (!dateStr || dateStr.length < 8) return;
 
-                    const dateKey = `${tx.date.substring(0, 4)}-${tx.date.substring(4, 6)}-${tx.date.substring(6, 8)}`;
-                    const timeStr = `${tx.date.substring(8, 10)}:${tx.date.substring(10, 12)}`;
+                        const dateKey = `${dateStr.substring(0, 4)}-${dateStr.substring(4, 6)}-${dateStr.substring(6, 8)}`;
+                        const timeStr = dateStr.length >= 12
+                            ? `${dateStr.substring(8, 10)}:${dateStr.substring(10, 12)}`
+                            : '';
 
-                    if (!grouped[dateKey]) grouped[dateKey] = [];
+                        if (!grouped[dateKey]) grouped[dateKey] = [];
 
-                    grouped[dateKey].push({
-                        id: tx.id || Math.random().toString(),
-                        time: timeStr,
-                        title: tx.merchantName || '결제 내역',
-                        amount: tx.amount,
-                        type: tx.amount > 0 ? 'DEPOSIT' : 'PAYMENT',
-                        isHidden: tx.isHidden
+                        grouped[dateKey].push({
+                            id: tx.id || Math.random().toString(),
+                            time: timeStr,
+                            title: tx.place || tx.merchantName || '결제 내역',
+                            amount: tx.amount,
+                            type: tx.isIncome ? 'DEPOSIT' : 'PAYMENT',
+                            isHidden: tx.isHidden
+                        });
                     });
-                });
-                setTransactionsByDate(grouped);
-            } catch (e) { console.error('Transaction Fetch Error:', e); }
-        };
-        fetchMonthlyTransactions();
-    }, [year, month]);
+                    setTransactionsByDate(grouped);
+                } catch (e) { console.error('Transaction Fetch Error:', e); }
+            };
+            fetchMonthlyTransactions();
+        }, [year, month])
+    );
+
 
     const prevMonth = () => {
         setCurrentDate(new Date(year, month - 1, 1));
@@ -98,7 +104,7 @@ const TransactionCalendarScreen = ({ navigation }) => {
 
     const renderTransactionItem = (item) => {
         const isDeposit = item.amount > 0;
-        const isHidden = item.isHidden || hiddenTransactionIds.includes(item.id);
+        const isHidden = item.isHidden;
 
         return (
             <TouchableOpacity
@@ -107,13 +113,20 @@ const TransactionCalendarScreen = ({ navigation }) => {
                 activeOpacity={0.7}
                 onPress={() => navigation.navigate('TransactionDetail', { transaction: item })}
             >
-                <View style={[styles.transactionIconBox, isHidden && { opacity: 0.5 }]}>
+                <View style={[styles.transactionIconBox, isHidden && { opacity: 0.6 }]}>
                     <CustomText style={styles.transactionIcon}>{isDeposit ? '💰' : '🏪'}</CustomText>
                 </View>
                 <View style={styles.transactionInfo}>
-                    <CustomText style={[styles.transactionTitle, isHidden && styles.hiddenText]}>
-                        {item.title} {isHidden && '(비공개)'}
-                    </CustomText>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <CustomText style={styles.transactionTitle}>
+                            {item.title}
+                        </CustomText>
+                        {isHidden && (
+                            <CustomText style={{ fontSize: scale(10), marginLeft: scale(4), color: '#9CA3AF' }}>
+                                (비공개 🔒)
+                            </CustomText>
+                        )}
+                    </View>
                     <CustomText style={styles.transactionTime}>{item.time}</CustomText>
                 </View>
                 <View style={styles.transactionAmountWrapper}>
@@ -297,7 +310,7 @@ const styles = StyleSheet.create({
         width: scale(4),
         height: scale(4),
         borderRadius: scale(2),
-        backgroundColor: '#3B82F6',
+        backgroundColor: '#84CC16',
         position: 'absolute',
         bottom: scale(6),
     },
@@ -334,7 +347,7 @@ const styles = StyleSheet.create({
     transactionItem: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingVertical: verticalScale(12),
+        paddingVertical: verticalScale(14),
         borderBottomWidth: 1,
         borderBottomColor: '#F3F4F6',
     },
@@ -371,7 +384,7 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
     },
     depositColor: {
-        color: '#3B82F6',
+        color: '#84CC16',
     },
     withdrawColor: {
         color: '#111',

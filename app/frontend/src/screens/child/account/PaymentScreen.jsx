@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, StyleSheet, TouchableOpacity, SafeAreaView, Alert, ActivityIndicator } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { scale, verticalScale } from 'react-native-size-matters';
 import CustomText from '../../../components/common/CustomText';
 import api from '../../../api/axios';
@@ -10,23 +11,33 @@ const PaymentScreen = ({ navigation }) => {
     const expectedCashback = 50;
 
     const [myCardId, setMyCardId] = useState(null);
+    const [bankBalance, setBankBalance] = useState(null);
     const [isPaying, setIsPaying] = useState(false);
 
-    useEffect(() => {
-        // 내 카드 조회 (결제할 카드 식별 목적)
-        const fetchMyCard = async () => {
-            try {
-                const res = await api.get('/bank/cards/my');
-                const cards = res.data?.data || [];
-                if (cards.length > 0) {
-                    setMyCardId(cards[0].id);
+    useFocusEffect(
+        useCallback(() => {
+            const fetchData = async () => {
+                try {
+                    const [cardRes, accRes] = await Promise.all([
+                        api.get('/bank/cards/my'),
+                        api.get('/bank/accounts/me')
+                    ]);
+
+                    const cards = cardRes.data?.data || [];
+                    if (cards.length > 0) setMyCardId(cards[0].id);
+
+                    const accounts = accRes.data?.data?.accounts || [];
+                    if (accounts.length > 0) {
+                        const primary = accounts.find(a => a.isPrimary) || accounts[0];
+                        setBankBalance(primary.balance);
+                    }
+                } catch (error) {
+                    console.error('Payment Screen Fetch Error:', error);
                 }
-            } catch (error) {
-                console.error('Card Fetch Error (PaymentScreen):', error);
-            }
-        };
-        fetchMyCard();
-    }, []);
+            };
+            fetchData();
+        }, [])
+    );
 
     const handleMockPayment = async () => {
         if (!myCardId) {
@@ -65,6 +76,10 @@ const PaymentScreen = ({ navigation }) => {
 
             <View style={styles.container}>
                 <View style={styles.jellingBadgeSection}>
+                    <CustomText style={styles.jellingBadgeText}>
+                        보유 잔액 <CustomText style={styles.bankBalanceAmount}>{bankBalance !== null ? `${bankBalance.toLocaleString()}원` : '조회 중...'}</CustomText>
+                    </CustomText>
+                    <View style={styles.badgeDivider} />
                     <CustomText style={styles.jellingBadgeText}>
                         보유 젤링 <CustomText style={styles.jellingAmount}>🍬 {currentJellings}</CustomText>
                     </CustomText>
@@ -149,20 +164,32 @@ const styles = StyleSheet.create({
         paddingTop: verticalScale(20),
     },
     jellingBadgeSection: {
+        flexDirection: 'row',
         backgroundColor: '#374151',
-        paddingVertical: verticalScale(8),
-        paddingHorizontal: scale(16),
-        borderRadius: scale(20),
+        paddingVertical: verticalScale(10),
+        paddingHorizontal: scale(20),
+        borderRadius: scale(25),
         marginBottom: verticalScale(24),
+        alignItems: 'center',
     },
     jellingBadgeText: {
         fontSize: scale(14),
         color: '#D1D5DB',
         fontWeight: '600',
     },
+    bankBalanceAmount: {
+        color: '#A3E635',
+        fontWeight: 'bold',
+    },
     jellingAmount: {
         color: '#F9A8D4', // 핑크색 포인트
         fontWeight: 'bold',
+    },
+    badgeDivider: {
+        width: 1,
+        height: scale(14),
+        backgroundColor: '#4B5563',
+        marginHorizontal: scale(12),
     },
     paymentCard: {
         width: '100%',
