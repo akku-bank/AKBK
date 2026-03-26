@@ -15,12 +15,14 @@ import com.akku.backend.domain.report.entity.WeeklyReport;
 import com.akku.backend.domain.report.repository.WeeklyReportRepository;
 import com.akku.backend.domain.user.exception.UserErrorCode;
 import com.akku.backend.global.error.ApiException;
+import java.time.Clock;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -35,6 +37,7 @@ public class HomeService {
     private final AccountRepository accountRepository;
     private final WeeklyReportRepository weeklyReportRepository;
     private final com.akku.backend.domain.bank.service.AccountService accountService;
+    private final Clock clock;
 
     public ChildHomeResponse getChildHome(UUID userId) {
 
@@ -90,7 +93,7 @@ public class HomeService {
         List<FamilyProfileEntity> familyProfiles = familyProfileRepository.findAllByFamilyId(familyId);
 
         // 3. 자녀(CHILD) 프로필만 필터링하여 DTO 변환 (Real + Mock 하이브리드)
-        LocalDate weekStart = LocalDate.now().with(DayOfWeek.MONDAY);
+        LocalDate weekStart = LocalDate.now(clock).with(DayOfWeek.MONDAY);
 
         List<ParentHomeResponse.ChildSummaryDto> children = familyProfiles.stream()
                 .filter(profile -> "CHILD".equals(profile.getRole()))

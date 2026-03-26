@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.infrastructure.item.ItemProcessor;
 import org.springframework.stereotype.Component;
 
+import java.time.Clock;
 import java.time.DayOfWeek;
 import java.util.UUID;
 import java.time.LocalDate;
@@ -25,6 +26,7 @@ public class WeeklyLevelProcessor implements ItemProcessor<User, User> {
     private final WeeklyReportRepository weeklyReportRepository;
     private final AccountRepository accountRepository;
     private final UserQuizRepository userQuizRepository;
+    private final Clock clock;
 
     @Override
     public User process(User user) {
@@ -34,7 +36,7 @@ public class WeeklyLevelProcessor implements ItemProcessor<User, User> {
         }
 
         // 정산 기간 (지난주 월요일 ~ 일요일)
-        LocalDate now = LocalDate.now();
+        LocalDate now = LocalDate.now(clock);
         LocalDate lastMonday = now.minusWeeks(1).with(DayOfWeek.MONDAY);
         LocalDate lastSunday = lastMonday.plusDays(6);
 

@@ -22,6 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.UUID;
@@ -37,6 +38,7 @@ public class AuthService {
     private final LogoutTokenRepository logoutTokenRepository;
     private final JwtProvider jwtProvider;
     private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
+    private final Clock clock;
 
     /**
      * 카카오 소셜 로그인 처리
@@ -180,14 +182,14 @@ public class AuthService {
         Claims claims = jwtProvider.parseToken(accessToken);
         LocalDateTime expiredAt = claims.getExpiration()
                 .toInstant()
-                .atZone(ZoneId.systemDefault())
+                .atZone(clock.getZone())
                 .toLocalDateTime();
 
         LogoutToken logoutToken = LogoutToken.builder()
                 .token(accessToken)
                 .userId(userId)
                 .expiredAt(expiredAt)
-                .createdAt(LocalDateTime.now())
+                .createdAt(LocalDateTime.now(clock))
                 .build();
 
         logoutTokenRepository.save(logoutToken);
