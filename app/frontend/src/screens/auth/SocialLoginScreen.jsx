@@ -188,19 +188,6 @@ const SocialLoginScreen = ({ navigation }) => {
 
                 {/* 로그인 버튼 영역 */}
                 <View style={[styles.buttonSection, { gap: 10 }]}>
-                    <TouchableOpacity
-                        style={[styles.kakaoButton, { backgroundColor: '#FEE500' }]}
-                        onPress={handleKakaoLogin}
-                        disabled={isLoading}
-                        activeOpacity={0.8}
-                    >
-                        {isLoading ? (
-                            <ActivityIndicator color="#000000" />
-                        ) : (
-                            <CustomText style={[styles.kakaoButtonText, { color: '#000000' }]}>카카오로 시작하기</CustomText>
-                        )}
-                    </TouchableOpacity>
-
                     {/* 개발 연동 테스트 전용 섹션 */}
                     <View style={styles.testLoginBox}>
                         <CustomText style={styles.testLoginLabel}>[테스트용] 우회 계정 UUID</CustomText>
@@ -216,6 +203,19 @@ const SocialLoginScreen = ({ navigation }) => {
                             </TouchableOpacity>
                         </View>
                     </View>
+
+                    <TouchableOpacity
+                        style={[styles.kakaoButton, { backgroundColor: '#FEE500' }]}
+                        onPress={handleKakaoLogin}
+                        disabled={isLoading}
+                        activeOpacity={0.8}
+                    >
+                        {isLoading ? (
+                            <ActivityIndicator color="#000000" />
+                        ) : (
+                            <CustomText style={[styles.kakaoButtonText, { color: '#000000' }]}>카카오로 시작하기</CustomText>
+                        )}
+                    </TouchableOpacity>
                 </View>
             </View>
         </SafeAreaView>
@@ -245,6 +245,7 @@ const styles = StyleSheet.create({
         width: RFValue(180),
         height: RFValue(180),
         marginBottom: 0,
+        transform: [{ translateY: 70 }],
     },
     subtitle: {
         fontSize: RFValue(15),

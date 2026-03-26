@@ -21,7 +21,8 @@ const TUTORIAL_DATA = [
         id: '3',
         title: '아이를 위한 첫 지갑,\n쉽고 빠른 결제',
         subtitle: '어디서나 아꾸뱅꾸를 통해 결제하고,\n스스로 소비 목표를 세워 실천해요.',
-        image: require('../../assets/qr.png'),
+        image: require('../../assets/croco/akku-cheers.png'),
+        imageStyle: { width: '55%' }, // 이미지 축소용
     },
     {
         id: '4',
@@ -71,7 +72,7 @@ const OnboardingTutorialScreen = ({ navigation }) => {
             <View style={styles.imageSection}>
                 <Image
                     source={item.image}
-                    style={styles.heroImage}
+                    style={[styles.heroImage, item.imageStyle]} // 개별 스타일 덮어쓰기 지원
                     resizeMode="contain"
                 />
             </View>
