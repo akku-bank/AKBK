@@ -2,6 +2,7 @@
 # ChatService는 채팅 API 요청을 받아 응답 오케스트레이션 전체를 수행하는 진입 서비스다.
 # README 기준에 맞춰 정책 검사, 의도 분류, 라우팅, Guard 재작성 루프를 서비스 계층에서 담당한다.
 
+import json
 import logging
 from datetime import date
 from typing import Any
@@ -52,6 +53,9 @@ class ChatService:
             request.message,
         )
 
+        # 백엔드가 조회해서 전달한 기존 대화 이력을 파싱한다.
+        existing_messages = self._parse_chat_json(request.chat_json)
+
         # 외부 요청 스키마를 내부 상태 객체로 변환한다.
         state = ChatContextState(
             user_id=request.user_id,
@@ -81,6 +85,7 @@ class ChatService:
                 request=request,
                 ai_reply=policy_result.message or "",
                 deducted_credits=0,
+                chat_json=self._serialize_messages(existing_messages),
             )
 
         try:
@@ -91,10 +96,12 @@ class ChatService:
                 request=request,
                 ai_reply="지금은 응답을 생성할 수 없습니다. 잠시 후 다시 시도해 주세요.",
                 deducted_credits=0,
+                chat_json=self._serialize_messages(existing_messages),
             )
 
         state.route = result["route"]
         state.hint_level = result["hint_level"]
+        ai_reply = result["answer"]
         deducted_credits = self._calculate_deducted_credits(state.route)
         logger.info(
             "chat.response_ready event_id=%s route=%s hint_level=%s deducted_credits=%s answer_length=%s",
@@ -102,12 +109,20 @@ class ChatService:
             state.route,
             state.hint_level,
             deducted_credits,
-            len(result["answer"]),
+            len(ai_reply),
         )
+
+        # 대화 이력에 이번 턴을 누적한다. DB 저장은 백엔드가 담당한다.
+        updated_messages = existing_messages + [
+            {"role": "user", "content": request.message},
+            {"role": "assistant", "content": ai_reply},
+        ]
+
         return self._build_response(
             request=request,
-            ai_reply=result["answer"],
+            ai_reply=ai_reply,
             deducted_credits=deducted_credits,
+            chat_json=self._serialize_messages(updated_messages),
         )
 
     async def _run_workflow(self, state: ChatContextState) -> dict[str, Any]:
@@ -421,11 +436,28 @@ intent={state.intent}
         }
 
     @staticmethod
+    def _parse_chat_json(chat_json: str | None) -> list[dict]:
+        if not chat_json:
+            return []
+        try:
+            return json.loads(chat_json)
+        except Exception:
+            logger.warning("chat_json 파싱 실패 — 빈 이력으로 진행")
+            return []
+
+    @staticmethod
+    def _serialize_messages(messages: list[dict]) -> str | None:
+        if not messages:
+            return None
+        return json.dumps(messages, ensure_ascii=False)
+
+    @staticmethod
     def _build_response(
         *,
         request: ChatRequest,
         ai_reply: str,
         deducted_credits: int,
+        chat_json: str | None = None,
     ) -> ChatResponse:
         return ChatResponse(
             event_type="CHAT_RESPONSE",
@@ -435,4 +467,5 @@ intent={state.intent}
             message=request.message,
             ai_reply=ai_reply,
             deducted_credits=deducted_credits,
+            chat_json=chat_json,
         )

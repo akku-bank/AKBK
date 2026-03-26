@@ -14,3 +14,4 @@ class ChatRequest(BaseModel):
     remaining_credits: int = Field(ge=0)
     difficulty: Literal["easy", "medium", "hard"]
     birth_date: date
+    chat_json: str | None = None
