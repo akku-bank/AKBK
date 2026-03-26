@@ -118,7 +118,7 @@ pipeline {
                                 git reset --hard origin/develop
 
                                 echo "[Deploy] 변경 파일 목록 추출"
-                                CHANGED_FILES=$(git diff-tree --no-commit-id --name-only -r HEAD || true)
+                                CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD || true)
                                 echo "===== CHANGED FILES ====="
                                 echo "$CHANGED_FILES"
                                 echo "========================="
