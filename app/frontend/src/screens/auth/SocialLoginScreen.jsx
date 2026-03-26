@@ -28,6 +28,7 @@ const SocialLoginScreen = ({ navigation }) => {
             let userRole = null;
             let userName = null;
             let userId = null;
+            let profile = {}; // Declare profile here
             let isAlreadyRegistered = false;
 
             try {
@@ -35,7 +36,7 @@ const SocialLoginScreen = ({ navigation }) => {
                 const userRes = await api.get('/users/me', {
                     headers: { Authorization: `Bearer ${jwt}` }
                 });
-                const profile = userRes.data?.data || userRes.data || {};
+                profile = userRes.data?.data || userRes.data || {}; // Assign to pre-declared profile
                 userRole = profile.role || null;
                 userName = profile.name || null;
                 userId = profile.userId || null;
@@ -46,8 +47,11 @@ const SocialLoginScreen = ({ navigation }) => {
                 console.log('신규 테스트 유저이거나 프로필 조회 실패:', e.message);
             }
 
-            // 전역 상태에 토큰 및 정보 저장 (카카오 로그인과 동일한 흐름)
-            await setAuthInfo(jwt, userRole, userName, userId);
+            // 전역 상태에 토큰 및 정보 저장
+            await setAuthInfo(jwt, userRole, userName, userId, {
+                familyId: profile.familyId,
+                level: profile.level
+            });
             await handleFcmRegistration(jwt);
 
             Alert.alert('테스트 로그인 성공', '임시/정식 토큰 발급 성공!', [
@@ -132,6 +136,7 @@ const SocialLoginScreen = ({ navigation }) => {
             let userRole = null;
             let userName = null;
             let userId = null;
+            let profile = {};
 
             if (isRegistered && jwt) {
                 try {
@@ -139,7 +144,7 @@ const SocialLoginScreen = ({ navigation }) => {
                     const userRes = await api.get('/users/me', {
                         headers: { Authorization: `Bearer ${jwt}` }
                     });
-                    const profile = userRes.data?.data || userRes.data || {};
+                    profile = userRes.data?.data || userRes.data || {};
                     userRole = profile.role || null;
                     userName = profile.name || null;
                     userId = profile.userId || null;
@@ -150,7 +155,10 @@ const SocialLoginScreen = ({ navigation }) => {
             }
 
             // authInfo (zustand) 에 jwt, role, name 함께 업데이트
-            await setAuthInfo(jwt, userRole, userName, userId);
+            await setAuthInfo(jwt, userRole, userName, userId, {
+                familyId: profile.familyId,
+                level: profile.level
+            });
 
             // 로그인 성공 시 백엔드로 FCM 토큰 전송 시도
             await handleFcmRegistration(jwt);

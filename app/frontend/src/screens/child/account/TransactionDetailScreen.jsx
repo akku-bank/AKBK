@@ -1,11 +1,9 @@
-﻿import React from 'react';
-import { View, StyleSheet, TouchableOpacity, SafeAreaView, Switch } from 'react-native';
+﻿import React, { useState } from 'react';
+import { View, StyleSheet, TouchableOpacity, SafeAreaView, Switch, Alert, Modal, TextInput } from 'react-native';
 import { scale, verticalScale } from 'react-native-size-matters';
-import useTransactionStore from '../../../store/transactionStore';
 import CustomText from '../../../components/common/CustomText';
 import api from '../../../api/axios';
 
-// 임시 단건 결제 내역 데이터 (나중에는 route.params로 전달받음)
 const FALLBACK_DETAIL = {
     id: '1',
     date: '2024.03.12 14:30',
@@ -21,23 +19,49 @@ const TransactionDetailScreen = ({ route, navigation }) => {
     const { transaction } = route?.params || {};
     const detailData = transaction || FALLBACK_DETAIL;
 
-    const hiddenTransactionIds = useTransactionStore(state => state.hiddenTransactionIds);
-    const toggleHideTransaction = useTransactionStore(state => state.toggleHideTransaction);
+    const [isPrivate, setIsPrivate] = useState(detailData.isHidden || false);
+    const [isMemoModalVisible, setMemoModalVisible] = useState(false);
+    const [memo, setMemo] = useState(detailData.memo || '');
+    const [tempMemo, setTempMemo] = useState('');
 
-    const isPrivate = hiddenTransactionIds.includes(detailData.id);
-    const isOver14 = true; // 서버 연동 시 유저 나이로 판단
-
+    const isOver14 = true;
     const isDeposit = detailData.amount > 0;
     const isSelfTransfer = detailData.is_self_transfer;
 
-    const displayTitle = (isDeposit || isSelfTransfer) ? detailData.title : (detailData.category || '결제 내역');
+    const displayTitle = detailData.place || '결제 내역';
     const displayAmount = isSelfTransfer
         ? `${detailData.amount.toLocaleString()}원`
         : `${isDeposit ? '+' : ''}${detailData.amount.toLocaleString()}원`;
 
+    const handleTogglePrivacy = async (value) => {
+        try {
+            await api.patch(`/bank/transactions/${detailData.id}/visibility`, { isHidden: value });
+            setIsPrivate(value);
+        } catch (e) {
+            console.error('Privacy Toggle Error:', e);
+            Alert.alert('오류', '프라이버시 설정을 변경하지 못했습니다.');
+        }
+    };
+
+    const handleSaveMemo = async () => {
+        try {
+            await api.patch(`/bank/transactions/${detailData.id}/memo`, { memo: tempMemo });
+            setMemo(tempMemo);
+            setMemoModalVisible(false);
+            Alert.alert('알림', '메모가 저장되었습니다.');
+        } catch (e) {
+            console.error('Memo Save Error:', e);
+            Alert.alert('오류', '메모를 저장하지 못했습니다.');
+        }
+    };
+
+    const openMemoModal = () => {
+        setTempMemo(memo);
+        setMemoModalVisible(true);
+    };
+
     return (
         <SafeAreaView style={styles.safeArea}>
-            {/* 상단 헤더 */}
             <View style={styles.header}>
                 <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
                     <CustomText style={styles.backButtonText}>←</CustomText>
@@ -47,7 +71,6 @@ const TransactionDetailScreen = ({ route, navigation }) => {
             </View>
 
             <View style={styles.container}>
-                {/* 메인 상세 카드 */}
                 <View style={[styles.detailCard, isSelfTransfer && styles.selfTransferCard]}>
                     <View style={styles.iconWrapper}>
                         <CustomText style={styles.mainIcon}>{isDeposit ? '💰' : (isSelfTransfer ? '🔄' : '🏪')}</CustomText>
@@ -67,18 +90,15 @@ const TransactionDetailScreen = ({ route, navigation }) => {
 
                     <View style={styles.infoRow}>
                         <CustomText style={styles.infoLabel}>카테고리</CustomText>
-                        <CustomText style={styles.infoValue}>{detailData.category || '기타'}</CustomText>
+                        <CustomText style={styles.infoValue}>{detailData.category || '기차'}</CustomText>
                     </View>
 
                     <View style={styles.infoRow}>
                         <CustomText style={styles.infoLabel}>메모</CustomText>
-                        <CustomText style={styles.infoValue}>{detailData.memo || '-'}</CustomText>
+                        <CustomText style={styles.infoValue}>{memo || '-'}</CustomText>
                     </View>
                 </View>
 
-
-
-                {/* 프라이버시 토글 (14세 이상 전용) */}
                 {isOver14 && (
                     <View style={styles.privacyCard}>
                         <View style={styles.privacyTextContent}>
@@ -87,22 +107,48 @@ const TransactionDetailScreen = ({ route, navigation }) => {
                         </View>
                         <Switch
                             value={isPrivate}
-                            onValueChange={() => {
-                                toggleHideTransaction(detailData.id);
-                                // TODO: await api.patch(`/bank/transactions/${detailData.id}/visibility`, { isHidden: !isPrivate })
-                            }}
-                            trackColor={{ false: '#E5E7EB', true: '#34D399' }}
+                            onValueChange={handleTogglePrivacy}
+                            trackColor={{ false: '#E5E7EB', true: '#10B981' }}
                             thumbColor="#FFFFFF"
                         />
                     </View>
                 )}
 
-                {/* 추가 액션 버튼 (명세 표기용) */}
-                <TouchableOpacity style={styles.memoButton}>
-                    <CustomText style={styles.memoButtonText}>메모 남기기</CustomText>
+                <TouchableOpacity style={styles.memoButton} onPress={openMemoModal}>
+                    <CustomText style={styles.memoButtonText}>{memo ? '메모 수정하기' : '메모 남기기'}</CustomText>
                 </TouchableOpacity>
-
             </View>
+
+            <Modal
+                visible={isMemoModalVisible}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => setMemoModalVisible(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        <CustomText style={styles.modalTitle}>메모 남기기</CustomText>
+                        <TextInput
+                            style={styles.memoInput}
+                            placeholder="이 거래에 대한 메모를 남겨주세요."
+                            placeholderTextColor="#9CA3AF"
+                            multiline
+                            maxLength={255}
+                            value={tempMemo}
+                            onChangeText={setTempMemo}
+                            autoFocus
+                        />
+                        <View style={styles.modalButtonRow}>
+                            <TouchableOpacity style={[styles.modalButton, styles.cancelButton]} onPress={() => setMemoModalVisible(false)}>
+                                <CustomText style={styles.cancelButtonText}>취소</CustomText>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={[styles.modalButton, styles.saveButton]} onPress={handleSaveMemo}>
+                                <CustomText style={styles.saveButtonText}>저장</CustomText>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
         </SafeAreaView>
     );
 };
@@ -251,6 +297,60 @@ const styles = StyleSheet.create({
         fontSize: scale(15),
         fontWeight: 'bold',
         color: '#4B5563',
+    },
+    // 모달 관련 스타일
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: scale(20),
+    },
+    modalContent: {
+        width: '100%',
+        backgroundColor: '#FFFFFF',
+        borderRadius: scale(20),
+        padding: scale(24),
+    },
+    modalTitle: {
+        fontSize: scale(18),
+        fontWeight: 'bold',
+        color: '#111',
+        marginBottom: verticalScale(16),
+    },
+    memoInput: {
+        backgroundColor: '#F3F4F6',
+        borderRadius: scale(12),
+        padding: scale(16),
+        height: verticalScale(100),
+        textAlignVertical: 'top',
+        fontSize: scale(14),
+        color: '#111',
+        marginBottom: verticalScale(20),
+    },
+    modalButtonRow: {
+        flexDirection: 'row',
+        justifyContent: 'flex-end',
+    },
+    modalButton: {
+        paddingVertical: verticalScale(10),
+        paddingHorizontal: scale(20),
+        borderRadius: scale(8),
+        marginLeft: scale(10),
+    },
+    cancelButton: {
+        backgroundColor: '#F3F4F6',
+    },
+    saveButton: {
+        backgroundColor: '#A3E635',
+    },
+    cancelButtonText: {
+        color: '#6B7280',
+        fontWeight: '600',
+    },
+    saveButtonText: {
+        color: '#FFFFFF',
+        fontWeight: 'bold',
     }
 });
 

@@ -1,12 +1,37 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { View, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView, Switch, Alert, Image } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { scale, verticalScale } from 'react-native-size-matters';
 import CustomText from '../../../components/common/CustomText';
 import useAuthStore from '../../../store/useAuthStore';
 import api from '../../../api/axios';
 
 const ParentMyPageScreen = ({ navigation }) => {
-    const { user, logout } = useAuthStore();
+    const { user, setUser, logout } = useAuthStore();
+
+    useFocusEffect(
+        useCallback(() => {
+            const fetchProfile = async () => {
+                try {
+                    const res = await api.get('/users/me');
+                    const profile = res.data?.data;
+                    if (profile) {
+                        setUser({
+                            ...user,
+                            id: profile.userId,
+                            role: profile.role,
+                            name: profile.name,
+                            familyId: profile.familyId,
+                            level: profile.level
+                        });
+                    }
+                } catch (e) {
+                    console.error('Profile Fetch Error', e);
+                }
+            };
+            fetchProfile();
+        }, [])
+    );
 
     const handleLogout = () => {
         Alert.alert('로그아웃', '정말 로그아웃 하시겠습니까?', [
@@ -62,6 +87,9 @@ const ParentMyPageScreen = ({ navigation }) => {
                     </View>
                     <View style={styles.profileInfo}>
                         <CustomText style={styles.profileName}>{user?.name || '부모님'}</CustomText>
+                        <CustomText style={styles.profileStatus}>
+                            {user?.familyId ? '가족 연동 완료' : '가족 연동 필요'}
+                        </CustomText>
                     </View>
                     <TouchableOpacity style={styles.editButton} onPress={() => navigation.navigate('ParentEditProfile')}>
                         <CustomText style={styles.editButtonText}>수정</CustomText>
@@ -156,7 +184,8 @@ const styles = StyleSheet.create({
     profileAvatarBox: { width: scale(56), height: scale(56), borderRadius: scale(28), backgroundColor: '#E5E7EB', justifyContent: 'center', alignItems: 'center', marginRight: scale(16), overflow: 'hidden' },
     profileAvatarImage: { width: '80%', height: '80%' },
     profileInfo: { flex: 1 },
-    profileName: { fontSize: scale(18), fontWeight: 'bold', color: '#111', marginBottom: verticalScale(4) },
+    profileName: { fontSize: scale(18), fontWeight: 'bold', color: '#111', marginBottom: verticalScale(2) },
+    profileStatus: { fontSize: scale(13), color: '#6B7280' },
 
     editButton: { backgroundColor: '#F3F4F6', paddingVertical: verticalScale(6), paddingHorizontal: scale(12), borderRadius: scale(8) },
     editButtonText: { fontSize: scale(13), fontWeight: '600', color: '#4B5563' },
