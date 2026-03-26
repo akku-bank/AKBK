@@ -6,7 +6,7 @@ import CustomText from '../../../components/common/CustomText';
 import api from '../../../api/axios';
 
 const CROCO_PARENTS_IMAGE = require('../../../assets/croco/croco_parents.png');
-const PROGRESS_AVATAR_IMAGE = require('../../../assets/avatar/face/smile/base_smile.png');
+const PROGRESS_AVATAR_IMAGE = require('../../../assets/avatar/face/smile/boy-1-smile.png');
 
 const formatDate = (value) => {
     if (!value) return '-';
@@ -88,96 +88,96 @@ const ChallengeDetailScreen = ({ navigation, route }) => {
 
                             return (
                                 <>
-                        <View style={styles.card}>
-                            <View style={styles.detailHeader}>
-                                <CustomText style={styles.categoryText}>{detail.category}</CustomText>
-                                {!hideDday ? (
-                                    <View style={styles.ddayBadge}>
-                                        <CustomText style={styles.ddayText}>{getDetailDdayLabel(detail.endDate)}</CustomText>
+                                    <View style={styles.card}>
+                                        <View style={styles.detailHeader}>
+                                            <CustomText style={styles.categoryText}>{detail.category}</CustomText>
+                                            {!hideDday ? (
+                                                <View style={styles.ddayBadge}>
+                                                    <CustomText style={styles.ddayText}>{getDetailDdayLabel(detail.endDate)}</CustomText>
+                                                </View>
+                                            ) : null}
+                                        </View>
+                                        <View style={styles.infoRow}>
+                                            <CustomText style={styles.infoLabel}>목표 금액</CustomText>
+                                            <CustomText style={styles.infoValue}>{Number(detail.targetSpending || 0).toLocaleString()}원</CustomText>
+                                        </View>
+                                        <View style={styles.infoRow}>
+                                            <CustomText style={styles.infoLabel}>현재 소비 금액</CustomText>
+                                            <CustomText style={styles.infoValue}>{Number(detail.currentSpending || 0).toLocaleString()}원</CustomText>
+                                        </View>
+                                        <View style={styles.infoRow}>
+                                            <CustomText style={styles.infoLabel}>보상 금액</CustomText>
+                                            <CustomText style={styles.infoValue}>{Number(detail.rewardAmount || 0).toLocaleString()}원</CustomText>
+                                        </View>
+                                        <View style={styles.infoRow}>
+                                            <CustomText style={styles.infoLabel}>기간</CustomText>
+                                            <CustomText style={styles.infoValue}>{formatDate(detail.startDate)} - {formatDate(detail.endDate)}</CustomText>
+                                        </View>
                                     </View>
-                                ) : null}
-                            </View>
-                            <View style={styles.infoRow}>
-                                <CustomText style={styles.infoLabel}>목표 금액</CustomText>
-                                <CustomText style={styles.infoValue}>{Number(detail.targetSpending || 0).toLocaleString()}원</CustomText>
-                            </View>
-                            <View style={styles.infoRow}>
-                                <CustomText style={styles.infoLabel}>현재 소비 금액</CustomText>
-                                <CustomText style={styles.infoValue}>{Number(detail.currentSpending || 0).toLocaleString()}원</CustomText>
-                            </View>
-                            <View style={styles.infoRow}>
-                                <CustomText style={styles.infoLabel}>보상 금액</CustomText>
-                                <CustomText style={styles.infoValue}>{Number(detail.rewardAmount || 0).toLocaleString()}원</CustomText>
-                            </View>
-                            <View style={styles.infoRow}>
-                                <CustomText style={styles.infoLabel}>기간</CustomText>
-                                <CustomText style={styles.infoValue}>{formatDate(detail.startDate)} - {formatDate(detail.endDate)}</CustomText>
-                            </View>
-                        </View>
 
-                        <View style={styles.progressCard}>
-                            <View style={styles.progressHeader}>
-                                <CustomText style={styles.progressTitle}>진행 상황</CustomText>
-                                <CustomText style={styles.progressPercent}>{progressPercent}% 사용</CustomText>
-                            </View>
-                            <View style={styles.progressTrackWrap}>
-                                <View style={styles.progressTrack}>
-                                    <View
-                                        style={[
-                                            styles.progressFill,
-                                            isOverWarning ? styles.progressFillDanger : styles.progressFillSafe,
-                                            { width: `${progressRatio * 100}%` },
-                                        ]}
-                                    />
-                                </View>
-                                {progressRatio > 0 ? (
-                                    hideParentMessage ? (
-                                        <View
-                                            style={[
-                                                styles.progressDot,
-                                                isOverWarning ? styles.progressDotDanger : styles.progressDotSafe,
-                                                { left: `${Math.max(progressRatio * 100, 8)}%` },
-                                            ]}
-                                        />
-                                    ) : (
-                                        <Image
-                                            source={PROGRESS_AVATAR_IMAGE}
-                                            style={[
-                                                styles.progressAvatar,
-                                                { left: `${Math.max(progressRatio * 100, 8)}%` },
-                                            ]}
-                                            resizeMode="contain"
-                                        />
-                                    )
-                                ) : null}
-                            </View>
-                            <View style={styles.progressMetaRow}>
-                                <CustomText style={styles.progressMetaText}>
-                                    {Number(detail.currentSpending || 0).toLocaleString()}원
-                                </CustomText>
-                                <CustomText style={[styles.progressMetaText, styles.progressMetaTextRight]}>
-                                    {Number(detail.targetSpending || 0).toLocaleString()}원
-                                </CustomText>
-                            </View>
-                        </View>
-
-                        {!hideParentMessage && detail.parentMessage ? (
-                            <View style={styles.messageSection}>
-                                <View style={styles.messageBubbleWrap}>
-                                    <View style={styles.messageBubbleTail} />
-                                    <View style={styles.messageBubble}>
-                                        <CustomText style={styles.messageText}>{detail.parentMessage}</CustomText>
+                                    <View style={styles.progressCard}>
+                                        <View style={styles.progressHeader}>
+                                            <CustomText style={styles.progressTitle}>진행 상황</CustomText>
+                                            <CustomText style={styles.progressPercent}>{progressPercent}% 사용</CustomText>
+                                        </View>
+                                        <View style={styles.progressTrackWrap}>
+                                            <View style={styles.progressTrack}>
+                                                <View
+                                                    style={[
+                                                        styles.progressFill,
+                                                        isOverWarning ? styles.progressFillDanger : styles.progressFillSafe,
+                                                        { width: `${progressRatio * 100}%` },
+                                                    ]}
+                                                />
+                                            </View>
+                                            {progressRatio > 0 ? (
+                                                hideParentMessage ? (
+                                                    <View
+                                                        style={[
+                                                            styles.progressDot,
+                                                            isOverWarning ? styles.progressDotDanger : styles.progressDotSafe,
+                                                            { left: `${Math.max(progressRatio * 100, 8)}%` },
+                                                        ]}
+                                                    />
+                                                ) : (
+                                                    <Image
+                                                        source={PROGRESS_AVATAR_IMAGE}
+                                                        style={[
+                                                            styles.progressAvatar,
+                                                            { left: `${Math.max(progressRatio * 100, 8)}%` },
+                                                        ]}
+                                                        resizeMode="contain"
+                                                    />
+                                                )
+                                            ) : null}
+                                        </View>
+                                        <View style={styles.progressMetaRow}>
+                                            <CustomText style={styles.progressMetaText}>
+                                                {Number(detail.currentSpending || 0).toLocaleString()}원
+                                            </CustomText>
+                                            <CustomText style={[styles.progressMetaText, styles.progressMetaTextRight]}>
+                                                {Number(detail.targetSpending || 0).toLocaleString()}원
+                                            </CustomText>
+                                        </View>
                                     </View>
-                                </View>
-                                <View style={styles.messageCharacterFrame}>
-                                    <Image
-                                        source={CROCO_PARENTS_IMAGE}
-                                        style={styles.messageCroco}
-                                        resizeMode="cover"
-                                    />
-                                </View>
-                            </View>
-                        ) : null}
+
+                                    {!hideParentMessage && detail.parentMessage ? (
+                                        <View style={styles.messageSection}>
+                                            <View style={styles.messageBubbleWrap}>
+                                                <View style={styles.messageBubbleTail} />
+                                                <View style={styles.messageBubble}>
+                                                    <CustomText style={styles.messageText}>{detail.parentMessage}</CustomText>
+                                                </View>
+                                            </View>
+                                            <View style={styles.messageCharacterFrame}>
+                                                <Image
+                                                    source={CROCO_PARENTS_IMAGE}
+                                                    style={styles.messageCroco}
+                                                    resizeMode="cover"
+                                                />
+                                            </View>
+                                        </View>
+                                    ) : null}
                                 </>
                             );
                         })()}
