@@ -25,6 +25,9 @@ public class Transaction {
     @Column(name = "merchant_id")
     private Long merchantId;
 
+    @Column(name = "sub_category_id")
+    private Integer subCategoryId;
+
     @Column(name = "sub_category_name", length = 50)
     private String subCategoryName;
 
