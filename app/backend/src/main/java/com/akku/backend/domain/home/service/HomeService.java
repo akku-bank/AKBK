@@ -77,6 +77,7 @@ public class HomeService {
     /**
      * 부모 대시보드 홈 데이터 조회
      */
+    @Transactional
     public ParentHomeResponse getParentHome(UUID userId) {
 
         // 1. 부모 유저 정보 조회
@@ -98,8 +99,14 @@ public class HomeService {
                     long childBalance = 0L;
                     long weeklySpending = 0L;
 
+                    String bankCode = null;
+                    String accountNumber = null;
+
                     if (childId != null) {
-                        childBalance = accountService.getPrimaryAccountBalance(childId);
+                        Account childAccount = accountService.getPrimaryAccount(childId);
+                        childBalance = childAccount.getBalance();
+                        bankCode = childAccount.getBankCode();
+                        accountNumber = childAccount.getAccountNumber();
 
                         weeklySpending = weeklyReportRepository.findByIdUserIdAndIdStartDay(childId, weekStart)
                                 .stream()
@@ -112,7 +119,9 @@ public class HomeService {
                             childId,
                             profile.getName(),
                             childBalance,
-                            weeklySpending
+                            weeklySpending,
+                            bankCode,
+                            accountNumber
                     );
                 })
                 .toList();

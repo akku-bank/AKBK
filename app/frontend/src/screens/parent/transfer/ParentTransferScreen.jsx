@@ -51,9 +51,16 @@ const ParentTransferScreen = ({ navigation, route }) => {
                     text: '보내기',
                     onPress: async () => {
                         try {
+                            console.log('[ParentTransferScreen] Submitting transfer:', {
+                                targetBankCode: child.bankCode,
+                                targetAccountNumber: child.accountNumber,
+                                targetName: child.name
+                            });
                             await api.post('/bank/accounts/transfers', {
                                 withdrawalAccountId: myAccount.accountId,
-                                targetAccountId: child.accountId,
+                                targetBankCode: child.bankCode,
+                                targetAccountNumber: child.accountNumber,
+                                targetName: child.name,
                                 amount: parseInt(amount),
                                 pin: pin
                             });

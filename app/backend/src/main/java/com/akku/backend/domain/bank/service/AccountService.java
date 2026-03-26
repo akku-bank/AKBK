@@ -154,15 +154,14 @@ public class AccountService {
     }
 
     /**
-     * 주계좌 잔액 조회
+     * 주계좌 객체 조회 (없으면 자동 생성/등록)
      */
     @Transactional
-    public long getPrimaryAccountBalance(UUID userId) {
+    public Account getPrimaryAccount(UUID userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ApiException(UserErrorCode.USER_NOT_FOUND));
 
-        // 주계좌 조회 (없으면 금융망 자동 조회 및 첫 번째 계좌 등록)
-        Account account = accountRepository.findByUserIdAndIsPrimaryTrue(userId)
+        return accountRepository.findByUserIdAndIsPrimaryTrue(userId)
                 .orElseGet(() -> {
                     List<Account> allLocal = accountRepository.findAllByUserId(userId);
                     if (allLocal.isEmpty()) {
@@ -173,6 +172,18 @@ public class AccountService {
                     firstAcc.designateAsPrimary();
                     return accountRepository.save(firstAcc);
                 });
+    }
+
+    /**
+     * 주계좌 잔액 조회
+     */
+    @Transactional
+    public long getPrimaryAccountBalance(UUID userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ApiException(UserErrorCode.USER_NOT_FOUND));
+
+        // 주계좌 조회
+        Account account = getPrimaryAccount(userId);
 
         if (account == null) {
             return 0L;
