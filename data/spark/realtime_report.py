@@ -59,12 +59,13 @@ def warm_up_redis(r, u_id, s_day, t_type):
                 print(f"✅ [Warm-up] weekly_report restored for {u_id}")
             
             cur.execute("""
-                SELECT sub_category_id, spending_amount FROM weekly_category_ratio 
+                SELECT sub_category_id, sub_category_name, spending_amount FROM weekly_category_ratio 
                 WHERE user_id = %s AND start_day = %s
             """, (u_id, s_day))
             rows = cur.fetchall()
-            for cat_id, amt in rows:
+            for cat_id, cat_name, amt in rows:
                 r.hset(category_key, str(cat_id), str(amt))
+                r.hset(f"category_names:{u_id}:{s_day}", str(cat_id), cat_name)
             
             if rows: print(f"✅ [Warm-up] category_ratio restored for {u_id}")
                 
@@ -115,12 +116,13 @@ def backup_to_postgres(r, u_id, s_day, t_type):
             total = int(weekly_data.get('total_amount', 1))
             for cat_id, amt in cat_data.items():
                 ratio = float(int(amt) / total) if total > 0 else 0
+                cat_name = r.hget(f"category_names:{u_id}:{s_day}", str(cat_id))
                 cur.execute("""
-                    INSERT INTO weekly_category_ratio (user_id, start_day, sub_category_id, spending_amount, ratio)
-                    VALUES (%s, %s, %s, %s, %s)
+                    INSERT INTO weekly_category_ratio (user_id, start_day, sub_category_id, sub_category_name, spending_amount, ratio)
+                    VALUES (%s, %s, %s, %s, %s, %s)
                     ON CONFLICT (user_id, start_day, sub_category_id)
-                    DO UPDATE SET spending_amount=EXCLUDED.spending_amount, ratio=EXCLUDED.ratio;
-                """, (u_id, s_day, cat_id, amt, ratio))
+                    DO UPDATE SET spending_amount=EXCLUDED.spending_amount, ratio=EXCLUDED.ratio, sub_category_name=EXCLUDED.sub_category_name;
+                """, (u_id, s_day, cat_id, cat_name, amt, ratio))
             
             conn.commit()
             r.set(sync_key, datetime.now().isoformat())
@@ -151,6 +153,7 @@ def process_batch(batch_df, batch_id):
         s_day = str(row['start_day'])
         t_type = "SPEND" if row['transaction_type'] in ['TRANSFER', 'SPEND'] else "INCOME"
         cat_id = row['sub_category_id']
+        cat_name = row['sub_category_name']
         amt = row['amount']
         dow = row['day_of_week'].lower()
 
@@ -162,6 +165,7 @@ def process_batch(batch_df, batch_id):
         pipe.hincrby(f"report:weekly:{u_id}:{s_day}:{t_type}", dow, amt)
         pipe.hincrby(f"report:weekly:{u_id}:{s_day}:{t_type}", "total_amount", amt)
         pipe.hincrby(f"report:category:{u_id}:{s_day}:{t_type}", str(cat_id), amt)
+        pipe.hset(f"category_names:{u_id}:{s_day}", str(cat_id), cat_name)
         pipe.execute()
         print(f"💾 [Redis] Increment Done for {u_id}")
         
