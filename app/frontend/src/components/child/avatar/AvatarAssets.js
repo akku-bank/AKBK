@@ -114,6 +114,26 @@ export const AVATAR_ASSETS = {
             body: require('../../../assets/pet/akku-body.png'),
             base: require('../../../assets/pet/akku-base.png'),
         }
+    },
+
+    // 8. 기부처 1 (ART_1) - 서양 미술품
+    art1: {
+        lastmeal: require('../../../assets/art/lastmeal.png'),
+        monalisa: require('../../../assets/art/monalisa.png'),
+        pearl: require('../../../assets/art/pearl.png'),
+        scream: require('../../../assets/art/scream.png'),
+        starnight: require('../../../assets/art/starnight.png'),
+    },
+
+    // 9. 기부처 2 (ART_2) - 나무
+    art2: {
+        apple: require('../../../assets/tree/apple.png'),
+        bamboo: require('../../../assets/tree/bamboo.png'),
+        blossom: require('../../../assets/tree/blossom.png'),
+        buddle: require('../../../assets/tree/buddle.png'),
+        maple: require('../../../assets/tree/maple.png'),
+        palm: require('../../../assets/tree/palm.png'),
+        tree: require('../../../assets/tree/tree.png'),
     }
 };
 
@@ -177,6 +197,24 @@ export const AVATAR_ITEMS = {
         { id: 'shiba', name: '시바견', img: [AVATAR_ASSETS.pet.shiba.leg, AVATAR_ASSETS.pet.shiba.body, AVATAR_ASSETS.pet.shiba.base], level: 2 },
         { id: 'cat', name: '고양이', img: [AVATAR_ASSETS.pet.cat.leg, AVATAR_ASSETS.pet.cat.body, AVATAR_ASSETS.pet.cat.base], level: 3 },
         { id: 'akku', name: '아꾸', img: [AVATAR_ASSETS.pet.akku.body, AVATAR_ASSETS.pet.akku.base], level: 4 }, // 아꾸 펫은 leg 없음
+        { id: 'none', name: '해제', img: null, level: 1 },
+    ],
+    art1: [
+        { id: 'lastmeal', name: '최후의 만찬', img: AVATAR_ASSETS.art1.lastmeal, level: 3 },
+        { id: 'monalisa', name: '모나리자', img: AVATAR_ASSETS.art1.monalisa, level: 3 },
+        { id: 'pearl', name: '진주귀걸이', img: AVATAR_ASSETS.art1.pearl, level: 3 },
+        { id: 'scream', name: '절규', img: AVATAR_ASSETS.art1.scream, level: 3 },
+        { id: 'starnight', name: '별이빛나는밤', img: AVATAR_ASSETS.art1.starnight, level: 3 },
+        { id: 'none', name: '해제', img: null, level: 1 },
+    ],
+    art2: [
+        { id: 'apple', name: '사과나무', img: AVATAR_ASSETS.art2.apple, level: 3 },
+        { id: 'bamboo', name: '대나무', img: AVATAR_ASSETS.art2.bamboo, level: 3 },
+        { id: 'blossom', name: '벚꽃나무', img: AVATAR_ASSETS.art2.blossom, level: 3 },
+        { id: 'buddle', name: '버드나무', img: AVATAR_ASSETS.art2.buddle, level: 3 },
+        { id: 'maple', name: '단풍나무', img: AVATAR_ASSETS.art2.maple, level: 3 },
+        { id: 'palm', name: '야자수', img: AVATAR_ASSETS.art2.palm, level: 3 },
+        { id: 'tree', name: '기본나무', img: AVATAR_ASSETS.art2.tree, level: 3 },
         { id: 'none', name: '해제', img: null, level: 1 },
     ]
 };

@@ -18,6 +18,8 @@ export const AvatarProvider = ({ children }) => {
         shoe: 'shoe1',
         back: 'none',
         pet: 'none',
+        art1: 'none', // 기부처 1 (월 데코 단일 장착)
+        art2: 'none', // 기부처 2 (트리 데코 단일 장착)
     });
 
     const updateEquip = (category, itemId) => {

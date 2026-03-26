@@ -19,6 +19,8 @@ const CATEGORIES = [
     { id: 'shoe', label: '신발' },
     { id: 'back', label: '등' },
     { id: 'pet', label: '펫' },
+    { id: 'art1', label: '미술품' },
+    { id: 'art2', label: '나무' },
 ];
 
 const { width } = Dimensions.get('window');
@@ -110,16 +112,18 @@ const AvatarCustomScreen = ({ navigation }) => {
         }
         // 보유 중인 아이템만 필터링 (기본템/none/획득아이템 + 자신의 레벨로 자동 해금된 아이템)
         items = items.filter(item => {
-            const isEquipCat = ['upper', 'lower', 'hat', 'shoe', 'back', 'outfit', 'pet'].includes(selectedCategory);
+            const isEquipCat = ['upper', 'lower', 'hat', 'shoe', 'back', 'outfit', 'pet', 'art1', 'art2'].includes(selectedCategory);
             const isBaseOrNone = item.id.includes('base') || item.id === 'none' || item.level === 1;
             const isLevelUnlocked = item.level <= userLevel && item.level !== 99;
-            return !isEquipCat || isBaseOrNone || ownedItemIds[item.id] || isLevelUnlocked;
+            const isForcedArt = selectedCategory === 'art1' || selectedCategory === 'art2'; // 강제 해금(테스트용)
+            return !isEquipCat || isBaseOrNone || ownedItemIds[item.id] || isLevelUnlocked || isForcedArt;
         });
 
         return (
             <ScrollView contentContainerStyle={styles.gridContainer}>
                 {items.map((item) => {
                     const isSelected = equipState[selectedCategory] === item.id;
+
                     const isOwned = true; // 필터링을 거쳤으므로 전부 owned
 
                     return (
@@ -189,6 +193,18 @@ const AvatarCustomScreen = ({ navigation }) => {
                             <Pet petType={equipState.pet} size={scale(400)} />
                         </View>
                     )}
+
+                    {/* 꾸미기 전용 나무(ART_2) 미리보기 */}
+                    {equipState.art2 && equipState.art2 !== 'none' && (() => {
+                        const treeItem = AVATAR_ITEMS.art2.find(a => a.id === equipState.art2);
+                        if (!treeItem || !treeItem.img) return null;
+                        return (
+                            <View style={{ position: 'absolute', left: scale(-70), bottom: verticalScale(-65) }} pointerEvents="none">
+                                <Image source={treeItem.img} style={{ width: scale(140), height: scale(190) }} resizeMode="contain" />
+                            </View>
+                        );
+                    })()}
+
                 </View>
             </View>
 

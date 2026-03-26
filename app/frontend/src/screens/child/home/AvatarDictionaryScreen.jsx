@@ -17,7 +17,7 @@ const INITIAL_INVENTORY = {
     '펫': []
 };
 
-const CATEGORIES = ['한벌옷', '모자', '상의', '하의', '신발', '등', '펫'];
+const CATEGORIES = ['한벌옷', '모자', '상의', '하의', '신발', '등', '펫', '미술품', '나무'];
 
 const AvatarDictionaryScreen = ({ navigation }) => {
     const [selectedCategory, setSelectedCategory] = useState(CATEGORIES[0]);
@@ -45,7 +45,9 @@ const AvatarDictionaryScreen = ({ navigation }) => {
                     '신발': [],
                     '등': [],
                     '장식품': [],
-                    '펫': []
+                    '펫': [],
+                    '미술품': [],
+                    '나무': []
                 };
 
                 // 백엔드에서 획득했다고 알려준 아이템 이름 맵핑
@@ -57,10 +59,10 @@ const AvatarDictionaryScreen = ({ navigation }) => {
                 });
 
                 // 카테고리별 공통 아이템 변환 헬퍼
-                const createItemObj = (localItem) => {
+                const createItemObj = (localItem, isForcedUnlock = false) => {
                     const isOwned = !!ownedMap[localItem.name];
-                    // 레벨 1 기본템은 무조건 보유 처리 (백엔드에 없어도)
-                    const finalOwned = isOwned || localItem.level === 1;
+                    // 레벨 1 기본템은 무조건 보유 처리 (백엔드에 없어도), 강제 해금(isForcedUnlock) 추가
+                    const finalOwned = isOwned || localItem.level === 1 || isForcedUnlock;
                     // 가챠 등 특수(level 99)는 미보유시 잠김. 일반템은 유저레벨이 낮으면 잠김.
                     const isLocked = !finalOwned && (localItem.level > level || localItem.level === 99);
 
@@ -82,6 +84,8 @@ const AvatarDictionaryScreen = ({ navigation }) => {
                 (AVATAR_ITEMS.shoe || []).forEach(i => { if (i.id !== 'none') grouped['신발'].push(createItemObj(i)); });
                 (AVATAR_ITEMS.back || []).forEach(i => { if (i.id !== 'none') grouped['등'].push(createItemObj(i)); });
                 (AVATAR_ITEMS.pet || []).forEach(i => { if (i.id !== 'none') grouped['펫'].push(createItemObj(i)); });
+                (AVATAR_ITEMS.art1 || []).forEach(i => { if (i.id !== 'none') grouped['미술품'].push(createItemObj(i, true)); }); // 강제 해금
+                (AVATAR_ITEMS.art2 || []).forEach(i => { if (i.id !== 'none') grouped['나무'].push(createItemObj(i, true)); }); // 강제 해금
 
                 setInventoryItems(grouped);
             } catch (e) { console.error('Inventory Fetch Error:', e); }

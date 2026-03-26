@@ -1,5 +1,5 @@
 import React, { useState, useContext, useEffect } from 'react';
-import { View, StyleSheet, TouchableOpacity, SafeAreaView, Dimensions, Image, ImageBackground, Modal, Platform, StatusBar } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, SafeAreaView, Dimensions, Image, ImageBackground, Modal, Platform, StatusBar, ScrollView } from 'react-native';
 import { scale, verticalScale } from 'react-native-size-matters';
 import ChildAvatar from '../../../components/child/avatar/ChildAvatar';
 import { AvatarContext } from '../../../components/child/avatar/AvatarContext';
@@ -54,7 +54,8 @@ const ChildHomeScreen = ({ navigation }) => {
                         const backendItems = dictRes.data?.data?.items || [];
                         const equippedDTOs = homeDataResult.avatar.equippedItems;
 
-                        let newEquip = null;
+                        let newEquip = { ...equipState };
+                        let hasChanges = false;
 
                         equippedDTOs.forEach(eq => {
                             const dictItem = backendItems.find(i => i.itemId === eq.itemId);
@@ -68,19 +69,21 @@ const ChildHomeScreen = ({ navigation }) => {
                             else if (eq.category === 'BACK' || eq.category === 'ACC' || eq.category === 'DECORATION') frontendCat = 'back';
                             else if (eq.category === 'OUTFIT') frontendCat = 'outfit';
                             else if (eq.category === 'PET') frontendCat = 'pet';
+                            else if (eq.category === 'ART_1') frontendCat = 'art1';
+                            else if (eq.category === 'ART_2') frontendCat = 'art2';
 
                             if (frontendCat) {
                                 // back, pet, outfit 등 명칭 불일치 대응
                                 const assetList = AVATAR_ITEMS[frontendCat] || AVATAR_ITEMS.decoration || AVATAR_ITEMS.pet || [];
                                 const assetItem = assetList.find(a => a.name === dictItem.name);
                                 if (assetItem) {
-                                    if (!newEquip) newEquip = { ...equipState };
+                                    hasChanges = true;
                                     newEquip[frontendCat] = assetItem.id;
                                 }
                             }
                         });
 
-                        if (newEquip) {
+                        if (hasChanges) {
                             setEquipState(newEquip);
                         }
                     } catch (dictErr) { console.error('Dictionary Fetch Error on Home', dictErr); }
@@ -134,13 +137,16 @@ const ChildHomeScreen = ({ navigation }) => {
                         </TouchableOpacity>
                     </View>
 
-                    {/* 내가 기부한 장소 카드 */}
-                    <TouchableOpacity style={styles.donationCard} activeOpacity={0.9} onPress={() => navigation.navigate('BadgeMap')}>
-                        <View style={styles.donationBadge}>
-                            <CustomText style={styles.donationBadgeText}>내가 기부한 장소</CustomText>
-                        </View>
-                        <CustomText style={styles.donationContentText}>준비 중</CustomText>
-                    </TouchableOpacity>
+                    {/* ART_1 (벽그림 갤러리) - 구 기부처 카드 자리 */}
+                    <View style={{ paddingHorizontal: scale(20), marginBottom: verticalScale(14), height: verticalScale(90), width: '100%', alignItems: 'flex-start', justifyContent: 'center' }}>
+                        {equipState.art1 && equipState.art1 !== 'none' && (() => {
+                            const artItem = AVATAR_ITEMS.art1.find(a => a.id === equipState.art1);
+                            if (!artItem || !artItem.img) return null;
+                            return (
+                                <Image source={artItem.img} style={{ width: scale(85), height: verticalScale(85) }} resizeMode="contain" />
+                            );
+                        })()}
+                    </View>
 
                     {/* 아바타 영역 */}
                     <View style={styles.avatarSection}>
@@ -159,12 +165,23 @@ const ChildHomeScreen = ({ navigation }) => {
                         <View style={styles.avatarWrapper}>
                             <ChildAvatar equipState={equipState} size={avatarSize} />
 
-                            {/* 펫 배치 */}
+                            {/* 펫 배치 (우측 하단) */}
                             {equipState.pet && equipState.pet !== 'none' && (
-                                <View style={{ position: 'absolute', right: scale(-150), bottom: verticalScale(-110) }}>
+                                <View style={{ position: 'absolute', right: scale(-150), bottom: verticalScale(-110), zIndex: 1 }}>
                                     <Pet petType={equipState.pet} size={scale(400)} />
                                 </View>
                             )}
+
+                            {/* ART_2 (나무들) 좌측 여백 배치 */}
+                            {equipState.art2 && equipState.art2 !== 'none' && (() => {
+                                const treeItem = AVATAR_ITEMS.art2.find(a => a.id === equipState.art2);
+                                if (!treeItem || !treeItem.img) return null;
+                                return (
+                                    <View style={{ position: 'absolute', left: scale(-10), bottom: verticalScale(-15), zIndex: 0 }}>
+                                        <Image source={treeItem.img} style={{ width: scale(140), height: scale(190) }} resizeMode="contain" />
+                                    </View>
+                                );
+                            })()}
                         </View>
                     </View>
                 </ImageBackground>
