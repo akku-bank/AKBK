@@ -2,38 +2,24 @@
 import { View, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Alert, Animated, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import { RFValue } from 'react-native-responsive-fontsize';
 import CustomText from '../../../components/common/CustomText';
-import CustomTextInput from '../../../components/common/CustomTextInput';
 import api from '../../../api/axios';
 
-const DONATION_OPTIONS = [
-    {
-        id: 'arts-support',
-        name: '문화 예술',
-        description: '아이들을 위한 공연과 전시를 후원해요.',
-        targetAmount: 5,
-        emoji: '🎨',
-    },
-    {
-        id: 'tree-planting',
-        name: '나무심기',
-        description: '도시 숲 조성과 나무 식재 활동에 기부해요.',
-        targetAmount: 10,
-        emoji: '🌳',
-    },
-    {
-        id: 'animal-shelter',
-        name: '유기동물 보호소',
-        description: '보호소 사료와 치료비를 지원해요.',
-        targetAmount: 15,
-        emoji: '🐶',
-    },
-];
+const CHARITY_EMOJI_MAP = {
+    '문화 예술': '🎨',
+    나무심기: '🌳',
+    '유기동물 보호소': '🐶',
+};
+
+const CHARITY_DESCRIPTION_MAP = {
+    '문화 예술': '아이들을 위한 공연과 전시를 후원해요.',
+    나무심기: '도시 숲 조성과 나무 식재 활동에 기부해요.',
+    '유기동물 보호소': '보호소 사료와 치료비를 지원해요.',
+};
 
 const SafeBoxScreen = ({ navigation }) => {
     const [isLoading, setIsLoading] = useState(true);
     const [hubInfo, setHubInfo] = useState(null); // { totalJelling, activeCharity: { id, name, description, goalAmount, currentAmount } }
-
-    const [donateAmount, setDonateAmount] = useState('');
+    const [charities, setCharities] = useState([]);
     const progressAnim = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
@@ -48,7 +34,9 @@ const SafeBoxScreen = ({ navigation }) => {
             if (data) {
                 setHubInfo(data);
                 if (data.activeCharity) {
-                    animateProgress(data.activeCharity.currentAmount, data.activeCharity.targetAmount);
+                    animateProgress(data.remainJelling, data.activeCharity.targetAmount);
+                } else {
+                    await fetchCharities();
                 }
             }
         } catch (e) {
@@ -56,6 +44,15 @@ const SafeBoxScreen = ({ navigation }) => {
             Alert.alert('오류', '젤링 허브 정보를 불러오지 못했습니다.');
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const fetchCharities = async () => {
+        try {
+            const res = await api.get('/jelling-hub/charities');
+            setCharities(res.data?.data?.charities || []);
+        } catch (e) {
+            console.error('Fetch Charities Error:', e);
         }
     };
 
@@ -70,20 +67,20 @@ const SafeBoxScreen = ({ navigation }) => {
 
     const handleSelectCharity = async (charity) => {
         Alert.alert(
-            '기부하시겠어요?',
-            `${charity.name}에 ${charity.targetAmount}젤링을 기부할까요?`,
+            '기부처를 선택할까요?',
+            `${charity.name}을(를) 현재 기부 목표로 설정할까요?`,
             [
                 { text: '취소', style: 'cancel' },
                 {
                     text: '확인', onPress: async () => {
                         try {
                             setIsLoading(true);
-                            await api.post('/jelling-hub/donations', { amount: charity.targetAmount });
+                            await api.post('/jelling-hub/active-charity', { charityId: charity.charityId });
                             await fetchHubInfo();
-                            Alert.alert('성공', '기부 요청이 전송되었습니다.');
+                            Alert.alert('성공', '기부 목표가 설정되었습니다.');
                         } catch (e) {
-                            console.error('Donate Preset Error:', e);
-                            Alert.alert('오류', '기부 요청에 실패했습니다.');
+                            console.error('Set Active Charity Error:', e);
+                            Alert.alert('오류', '기부 목표 설정에 실패했습니다.');
                             setIsLoading(false);
                         }
                     }
@@ -93,11 +90,18 @@ const SafeBoxScreen = ({ navigation }) => {
     };
 
     const handleDonate = async () => {
-        const amount = parseInt(donateAmount);
-        if (!amount || isNaN(amount) || amount <= 0) {
-            Alert.alert('알림', '기부할 젤링을 정확히 입력해주세요!');
+        if (!hubInfo?.activeCharity) {
+            Alert.alert('알림', '먼저 기부 목표를 선택해주세요.');
             return;
         }
+
+        const amount = hubInfo.activeCharity.targetAmount || 0;
+
+        if (amount <= 0) {
+            Alert.alert('알림', '이미 목표 금액을 달성했어요!');
+            return;
+        }
+
         if (hubInfo.remainJelling < amount) {
             Alert.alert('알림', '가진 젤링이 부족해요!');
             return;
@@ -106,7 +110,6 @@ const SafeBoxScreen = ({ navigation }) => {
         try {
             setIsLoading(true);
             await api.post('/jelling-hub/donations', { amount });
-            setDonateAmount('');
             await fetchHubInfo();
         } catch (e) {
             console.error('Donate Error:', e);
@@ -137,7 +140,9 @@ const SafeBoxScreen = ({ navigation }) => {
     }
 
     const { remainJelling, activeCharity } = hubInfo || { remainJelling: 0, activeCharity: null };
-    const isGoalReached = activeCharity && activeCharity.currentAmount >= activeCharity.targetAmount;
+    const isGoalReached = activeCharity && remainJelling >= activeCharity.targetAmount;
+    const targetDonationAmount = activeCharity?.targetAmount || 0;
+    const canDonateNow = activeCharity && remainJelling >= targetDonationAmount && !isGoalReached;
 
     return (
         <SafeAreaView style={styles.safeArea}>
@@ -158,22 +163,19 @@ const SafeBoxScreen = ({ navigation }) => {
                         <View style={styles.charitySelectionBox}>
                             <CustomText style={styles.sectionTitle}>어디에 기부해 볼까요?</CustomText>
                             <CustomText style={{ color: '#6B7280', marginBottom: RFValue(16) }}>
-                                원하는 기부처를 먼저 선택해주세요!
+                                원하는 기부처를 먼저 선택해주세요.
                             </CustomText>
 
-                            {DONATION_OPTIONS.map((charity) => (
+                            {charities.map((charity) => (
                                 <TouchableOpacity
-                                    key={charity.id}
+                                    key={charity.charityId}
                                     style={styles.charityItemCard}
                                     onPress={() => handleSelectCharity(charity)}
                                 >
-                                    <CustomText style={styles.targetEmoji}>{charity.emoji}</CustomText>
+                                    <CustomText style={styles.targetEmoji}>{CHARITY_EMOJI_MAP[charity.name] || '🌍'}</CustomText>
                                     <View style={styles.targetInfo}>
                                         <CustomText style={styles.targetTitle}>{charity.name}</CustomText>
                                         <CustomText style={styles.targetDesc}>{charity.description}</CustomText>
-                                    </View>
-                                    <View style={styles.goalPill}>
-                                        <CustomText style={styles.goalPillText}>{`💎 x ${charity.targetAmount}`}</CustomText>
                                     </View>
                                 </TouchableOpacity>
                             ))}
@@ -184,17 +186,19 @@ const SafeBoxScreen = ({ navigation }) => {
                             <CustomText style={styles.sectionTitle}>현재 기부 목표</CustomText>
 
                             <View style={styles.activeTargetCard}>
-                                <CustomText style={styles.targetEmoji}>🌍</CustomText>
+                                <CustomText style={styles.targetEmoji}>{CHARITY_EMOJI_MAP[activeCharity.name] || '🌍'}</CustomText>
                                 <View style={styles.targetInfo}>
                                     <CustomText style={styles.targetTitle}>{activeCharity.name}</CustomText>
-                                    <CustomText style={styles.targetDesc}>열심히 기부해봐요!</CustomText>
+                                    <CustomText style={styles.targetDesc}>
+                                        {CHARITY_DESCRIPTION_MAP[activeCharity.name] || '기부를 진행해보세요.'}
+                                    </CustomText>
                                 </View>
                             </View>
 
                             {/* 게이지 바 영역 */}
                             <View style={styles.gaugeContainer}>
                                 <View style={styles.gaugeTexts}>
-                                    <CustomText style={styles.gaugeCurrentText}>{activeCharity.currentAmount} 💎</CustomText>
+                                    <CustomText style={styles.gaugeCurrentText}>{remainJelling} 💎</CustomText>
                                     <CustomText style={styles.gaugeGoalText}>/ {activeCharity.targetAmount} 💎</CustomText>
                                 </View>
                                 <View style={styles.progressBarBg}>
@@ -208,32 +212,25 @@ const SafeBoxScreen = ({ navigation }) => {
                                         }
                                     ]} />
                                 </View>
-                                {isGoalReached && (
-                                    <CustomText style={styles.goalReachedText}>🎉 목표 금액 달성 완료! 🎉</CustomText>
-                                )}
                             </View>
 
                             {/* 액션 버튼 */}
-                            {!isGoalReached ? (
-                                <View style={styles.donateInputWrapper}>
-                                    <View style={styles.donateInputContainer}>
-                                        <CustomTextInput
-                                            style={styles.donateInput}
-                                            placeholder="기부할 금액 입력"
-                                            placeholderTextColor="#9CA3AF"
-                                            keyboardType="numeric"
-                                            value={donateAmount}
-                                            onChangeText={setDonateAmount}
-                                        />
-                                        <CustomText style={{ fontSize: RFValue(16), fontWeight: 'bold', color: '#111' }}>💎</CustomText>
-                                    </View>
-                                    <TouchableOpacity style={styles.donateButton} onPress={handleDonate}>
-                                        <CustomText style={styles.donateButtonText}>기부</CustomText>
-                                    </TouchableOpacity>
-                                </View>
+                            {!isGoalReached && canDonateNow ? (
+                                <TouchableOpacity style={styles.singleDonateButton} onPress={handleDonate}>
+                                    <CustomText style={styles.singleDonateButtonText}>
+                                        {`💎 x ${targetDonationAmount} 기부`}
+                                    </CustomText>
+                                </TouchableOpacity>
                             ) : (
-                                <TouchableOpacity style={styles.gachaButton} onPress={handleGacha}>
-                                    <CustomText style={styles.gachaButtonText}>기부 완료! 보상 획득하기 🎁</CustomText>
+                                <TouchableOpacity
+                                    style={[styles.gachaButton, !isGoalReached && styles.gachaButtonDisabled]}
+                                    onPress={isGoalReached ? handleGacha : undefined}
+                                    disabled={!isGoalReached}
+                                    activeOpacity={isGoalReached ? 0.7 : 1}
+                                >
+                                    <CustomText style={[styles.gachaButtonText, !isGoalReached && styles.gachaButtonTextDisabled]}>
+                                        보상 획득하기 🎁
+                                    </CustomText>
                                 </TouchableOpacity>
                             )}
                         </View>
@@ -260,8 +257,6 @@ const styles = StyleSheet.create({
 
     charitySelectionBox: { backgroundColor: '#FFF', borderRadius: RFValue(20), padding: RFValue(20), marginBottom: RFValue(20) },
     charityItemCard: { backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#E5E7EB', padding: RFValue(16), borderRadius: RFValue(12), marginBottom: RFValue(12), flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-    goalPill: { backgroundColor: '#E0E7FF', paddingHorizontal: RFValue(9), paddingVertical: RFValue(7), borderRadius: RFValue(20), marginLeft: RFValue(3) },
-    goalPillText: { color: '#4F46E5', fontSize: RFValue(12), fontWeight: 'bold' },
 
     donationTargetBox: { backgroundColor: '#FFF', borderRadius: RFValue(20), padding: RFValue(20), marginBottom: RFValue(20), shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 3 },
     sectionTitle: { fontSize: RFValue(16), fontWeight: 'bold', color: '#111', marginBottom: RFValue(8) },
@@ -278,16 +273,16 @@ const styles = StyleSheet.create({
     gaugeGoalText: { fontSize: RFValue(14), fontWeight: 'bold', color: '#9CA3AF', marginLeft: RFValue(4) },
     progressBarBg: { height: RFValue(20), backgroundColor: '#E5E7EB', borderRadius: RFValue(10), overflow: 'hidden' },
     progressBarFill: { height: '100%', backgroundColor: '#10B981', borderRadius: RFValue(10) },
-    goalReachedText: { textAlign: 'center', marginTop: RFValue(12), fontSize: RFValue(14), fontWeight: 'bold', color: '#F59E0B' },
-
-    donateInputWrapper: { flexDirection: 'row', alignItems: 'center', gap: RFValue(12) },
-    donateInputContainer: { flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: RFValue(12), paddingHorizontal: RFValue(16) },
-    donateInput: { flex: 1, fontSize: RFValue(16), fontWeight: 'bold', color: '#111', paddingVertical: RFValue(14) },
-
     donateButton: { backgroundColor: '#10B981', paddingVertical: RFValue(14), paddingHorizontal: RFValue(24), borderRadius: RFValue(12), alignItems: 'center', justifyContent: 'center' },
     donateButtonText: { color: '#FFF', fontWeight: 'bold', fontSize: RFValue(16) },
+    singleDonateButton: { backgroundColor: '#10B981', paddingVertical: RFValue(14), borderRadius: RFValue(12), alignItems: 'center', justifyContent: 'center' },
+    singleDonateButtonText: { color: '#FFF', fontWeight: 'bold', fontSize: RFValue(16) },
+    lockedDonateBox: { backgroundColor: '#F3F4F6', paddingVertical: RFValue(14), borderRadius: RFValue(12), alignItems: 'center', justifyContent: 'center' },
+    lockedDonateText: { color: '#6B7280', fontWeight: 'bold', fontSize: RFValue(14) },
     gachaButton: { backgroundColor: '#F59E0B', paddingVertical: RFValue(14), borderRadius: RFValue(12), alignItems: 'center' },
     gachaButtonText: { color: '#FFF', fontWeight: 'bold', fontSize: RFValue(16) },
+    gachaButtonDisabled: { backgroundColor: '#D1D5DB' },
+    gachaButtonTextDisabled: { color: '#6B7280' },
 
     mapButton: { backgroundColor: '#111', padding: RFValue(16), borderRadius: RFValue(12), alignItems: 'center' },
     mapButtonText: { color: '#FFF', fontWeight: 'bold', fontSize: RFValue(16) }
