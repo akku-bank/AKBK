@@ -11,7 +11,8 @@ public record CardProductResponse(
     String cardIssuerName,
     String cardTypeName,
     Long baseLimitPerformance,
-    Long maxBenefitLimit
+    Long maxBenefitLimit,
+    String cardBenefitInfo
 ) {
     public static CardProductResponse from(CardProduct cardProduct) {
         return new CardProductResponse(
@@ -21,7 +22,8 @@ public record CardProductResponse(
             cardProduct.getCardIssuerName(),
             cardProduct.getCardTypeName(),
             cardProduct.getBaseLimitPerformance(),
-            cardProduct.getMaxBenefitLimit()
+            cardProduct.getMaxBenefitLimit(),
+            cardProduct.getCardBenefitInfo()
         );
     }
 }

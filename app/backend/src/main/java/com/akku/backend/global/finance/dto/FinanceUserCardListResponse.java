@@ -21,6 +21,7 @@ public record FinanceUserCardListResponse(
         @JsonProperty("cardDescription") String cardDescription,
         @JsonProperty("cardExpiryDate") String cardExpiryDate,
         @JsonProperty("withdrawalAccountNo") String withdrawalAccountNo,
-        @JsonProperty("withdrawalDate") String withdrawalDate
+        @JsonProperty("withdrawalDate") String withdrawalDate,
+        @JsonProperty("cardBenefitsInfo") List<java.util.Map<String, String>> cardBenefitInfo
     ) {}
 }

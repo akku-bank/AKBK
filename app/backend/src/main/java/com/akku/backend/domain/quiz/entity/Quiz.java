@@ -4,9 +4,10 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -17,6 +18,7 @@ import java.util.UUID;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 @Table(name = "quizzes")
 public class Quiz {
 
@@ -44,7 +46,7 @@ public class Quiz {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String explanation;
 
-    @CreationTimestamp
+    @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 }

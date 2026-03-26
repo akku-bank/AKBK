@@ -11,6 +11,11 @@ import com.akku.backend.domain.donation.repository.CharityRepository;
 import com.akku.backend.domain.jelling.entity.Jelling;
 import com.akku.backend.domain.jelling.repository.JellingRepository;
 import com.akku.backend.global.error.ApiException;
+import com.akku.backend.domain.jelling.repository.JellingTransactionRepository;
+import com.akku.backend.domain.avatar.repository.ItemRepository;
+import com.akku.backend.domain.avatar.repository.UserItemRepository;
+import com.akku.backend.domain.avatar.entity.Item;
+import com.akku.backend.domain.avatar.entity.UserItem;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -165,8 +170,8 @@ class DonationServiceTest {
         given(activeCharityRepository.findByUserIdAndStatus(userId, "IN_PROGRESS")).willReturn(Optional.of(activeCharity));
         given(jellingRepository.findByUserIdWithLock(userId)).willReturn(Optional.of(jelling));
         given(userRepository.findById(userId)).willReturn(Optional.of(user));
-        given(itemRepository.count()).willReturn(1L);
         given(itemRepository.findAll()).willReturn(List.of(Item.builder().id(UUID.randomUUID()).build()));
+        given(userItemRepository.findAllByUserIdWithItem(userId)).willReturn(List.of());
 
         // when
         ReceiveRewardResponse response = donationService.receiveReward(userId);
@@ -196,5 +201,38 @@ class DonationServiceTest {
         assertThatThrownBy(() -> donationService.receiveReward(userId))
                 .isInstanceOf(ApiException.class)
                 .hasMessageContaining(DonationErrorCode.INSUFFICIENT_JELLING.getDefaultMessage());
+    }
+
+    @Test
+    @DisplayName("기부처 카테고리에 맞는 보상 아이템을 수령한다.")
+    void receiveReward_withCategory_success() {
+        // given
+        UUID userId = UUID.randomUUID();
+        User user = User.builder().id(userId).build();
+        Charity charity = Charity.builder()
+                .name("Environment Charity")
+                .category("ENVIRONMENT")
+                .build();
+        ActiveCharity activeCharity = ActiveCharity.builder()
+                .user(user)
+                .charity(charity)
+                .targetAmount(500)
+                .status("IN_PROGRESS")
+                .build();
+        Jelling jelling = Jelling.builder().userId(userId).user(user).balance(600L).build();
+        Item environmentItem = Item.builder().id(UUID.randomUUID()).category("ENVIRONMENT").build();
+
+        given(activeCharityRepository.findByUserIdAndStatus(userId, "IN_PROGRESS")).willReturn(Optional.of(activeCharity));
+        given(jellingRepository.findByUserIdWithLock(userId)).willReturn(Optional.of(jelling));
+        given(userRepository.findById(userId)).willReturn(Optional.of(user));
+        given(itemRepository.findByCategory("ENVIRONMENT")).willReturn(List.of(environmentItem));
+        given(userItemRepository.findAllByUserIdWithItem(userId)).willReturn(List.of());
+
+        // when
+        ReceiveRewardResponse response = donationService.receiveReward(userId);
+
+        // then
+        assertThat(response.category()).isEqualTo("ENVIRONMENT");
+        verify(itemRepository).findByCategory("ENVIRONMENT");
     }
 }
