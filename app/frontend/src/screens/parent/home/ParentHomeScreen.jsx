@@ -48,14 +48,18 @@ const ParentHomeScreen = ({ navigation }) => {
                                 return null;
                             }
 
-                            return {
+                            const result = {
                                 id: matchedMember.profileId,
                                 childId: child.childId,
                                 accountId: matchedMember.accountId,
                                 name: child.name,
                                 balance: child.balance || 0,
+                                bankCode: child.bankCode,
+                                accountNumber: child.accountNumber,
                                 avatar: require('../../../assets/croco/croco_face.png')
                             };
+                            console.log('[ParentHomeScreen] Mapped child:', result);
+                            return result;
                         })
                         .filter(Boolean);
 
