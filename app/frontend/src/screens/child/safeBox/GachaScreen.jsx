@@ -1,27 +1,61 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { View, StyleSheet, TouchableOpacity, SafeAreaView, Dimensions, ActivityIndicator, Animated, Easing, Platform } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import {
+    Animated,
+    Easing,
+    Image,
+    Platform,
+    SafeAreaView,
+    StyleSheet,
+    TouchableOpacity,
+    View,
+} from 'react-native';
 import { scale, verticalScale } from 'react-native-size-matters';
 import CustomText from '../../../components/common/CustomText';
-import api from '../../../api/axios';
 
-const { width, height } = Dimensions.get('window');
+const REWARD_IMAGE_MAP = {
+    'app/frontend/src/assets/art/lastmeal.png': require('../../../assets/art/lastmeal.png'),
+    'app/frontend/src/assets/art/monalisa.png': require('../../../assets/art/monalisa.png'),
+    'app/frontend/src/assets/art/pearl.png': require('../../../assets/art/pearl.png'),
+    'app/frontend/src/assets/art/scream.png': require('../../../assets/art/scream.png'),
+    'app/frontend/src/assets/art/starnight.png': require('../../../assets/art/starnight.png'),
+    'app/frontend/src/assets/tree/apple.png': require('../../../assets/tree/apple.png'),
+    'app/frontend/src/assets/tree/bamboo.png': require('../../../assets/tree/bamboo.png'),
+    'app/frontend/src/assets/tree/blossom.png': require('../../../assets/tree/blossom.png'),
+    'app/frontend/src/assets/tree/buddle.png': require('../../../assets/tree/buddle.png'),
+    'app/frontend/src/assets/tree/maple.png': require('../../../assets/tree/maple.png'),
+    'app/frontend/src/assets/tree/palm.png': require('../../../assets/tree/palm.png'),
+    'app/frontend/src/assets/tree/tree.png': require('../../../assets/tree/tree.png'),
+    'app/frontend/src/assets/pet/akku.png': require('../../../assets/pet/akku.png'),
+    'app/frontend/src/assets/pet/cat.png': require('../../../assets/pet/cat.png'),
+    'app/frontend/src/assets/pet/kdh.png': require('../../../assets/pet/kdh.png'),
+    'app/frontend/src/assets/pet/kdh_special.png': require('../../../assets/pet/kdh_special.png'),
+    'app/frontend/src/assets/pet/shiba.png': require('../../../assets/pet/shiba.png'),
+    'app/frontend/src/assets/pet/akku-base.png': require('../../../assets/pet/akku-base.png'),
+};
+
+const CATEGORY_LABEL_MAP = {
+    art: '문화 예술 보상',
+    tree: '나무심기 보상',
+    pet: '유기동물 지원 보상',
+};
+
+const CATEGORY_EMOJI_MAP = {
+    art: '🎨',
+    tree: '🌳',
+    pet: '🐶',
+};
 
 const GachaScreen = ({ navigation, route }) => {
-    const { itemName = '지구 지키기 캠페인 기부', boxType = '지구' } = route?.params || {};
+    const reward = route?.params?.reward ?? null;
+    const [step, setStep] = useState('OPENING');
 
-    const [step, setStep] = useState('OPENING'); // 개봉중 -> 결과확인 -> 완료
-    const [reward, setReward] = useState(null);
-
-    // 애니메이션 값
-    const translateY = useRef(new Animated.Value(-verticalScale(300))).current; // 위에서 떨어짐
-    const translateX = useRef(new Animated.Value(-scale(100))).current; // 왼쪽에서 굴러옴
-    const rotate = useRef(new Animated.Value(0)).current; // 회전각
-    const scaleAnim = useRef(new Animated.Value(0.5)).current; // 크기 커짐
+    const translateY = useRef(new Animated.Value(-verticalScale(300))).current;
+    const translateX = useRef(new Animated.Value(-scale(100))).current;
+    const rotate = useRef(new Animated.Value(0)).current;
+    const scaleAnim = useRef(new Animated.Value(0.5)).current;
 
     useEffect(() => {
-        // 1. 캡슐 굴러나오는 애니메이션 시작
         Animated.sequence([
-            // 1-1. 떨어지면서 구르기
             Animated.parallel([
                 Animated.spring(translateY, {
                     toValue: 0,
@@ -36,7 +70,7 @@ const GachaScreen = ({ navigation, route }) => {
                     useNativeDriver: Platform.OS !== 'web',
                 }),
                 Animated.timing(rotate, {
-                    toValue: 1, // 1 = 360도
+                    toValue: 1,
                     duration: 1200,
                     useNativeDriver: Platform.OS !== 'web',
                 }),
@@ -44,51 +78,35 @@ const GachaScreen = ({ navigation, route }) => {
                     toValue: 1,
                     duration: 1000,
                     useNativeDriver: Platform.OS !== 'web',
-                })
+                }),
             ]),
-            // 1-2. 흔들거림 (열리기 직전 긴장감)
             Animated.sequence([
                 Animated.timing(rotate, { toValue: 1.1, duration: 100, useNativeDriver: Platform.OS !== 'web' }),
                 Animated.timing(rotate, { toValue: 0.9, duration: 100, useNativeDriver: Platform.OS !== 'web' }),
                 Animated.timing(rotate, { toValue: 1.1, duration: 100, useNativeDriver: Platform.OS !== 'web' }),
                 Animated.timing(rotate, { toValue: 1.0, duration: 100, useNativeDriver: Platform.OS !== 'web' }),
-            ])
+            ]),
         ]).start(() => {
-            // 애니메이션 종료 직후 결과 세팅 (약 2.5초 뒤)
-            /* ==========================================
-               [진짜 랜덤 가챠 뽑기 로직 API 연동]
-               ========================================== 
-            try {
-                // 뽑기 결과 API 호출 (ex. 기부 완료 보상 또는 일반 뽑기)
-                // const res = await api.post('/gacha/draw', { type: boxType });
-                // setReward(res.data.data.reward);
-            } catch(e) { console.error('Gacha Draw Error', e); }
-            ========================================== */
-
-            // --- 실제 연동 시 아래 임시 로직 삭제 ---
-            const mockRewards = [
-                { type: 'PET', name: '꼬마 북극곰', emoji: '🐻‍❄️', desc: '지구를 아끼는 멋진 마음이에요!' },
-                { type: 'JELLING', name: '보너스 50 젤링', emoji: '🍬', desc: '기부 천사에게 주는 작은 선물!' },
-                { type: 'FRAME', name: '에코 나무 액자', emoji: '🖼️', desc: '새로운 액자로 아바타를 꾸며보세요!' },
-                { type: 'ITEM', name: '스페셜 왕관', emoji: '👑', desc: '아바타를 멋지게 꾸며보세요!' },
-                { type: 'DUPLICATE', name: '앗! 꽝이에요', emoji: '😥', desc: '아쉽지만 이미 보유한 아이템이에요. 꽝!' }
-            ];
-            const randomPick = mockRewards[Math.floor(Math.random() * mockRewards.length)];
-            setReward(randomPick);
-            // ------------------------------------
-
             setStep('REVEAL');
         });
-    }, []);
+    }, [rotate, scaleAnim, translateX, translateY]);
 
-    // 회전 값을 각도로 변환
     const spin = rotate.interpolate({
         inputRange: [0, 0.9, 1, 1.1],
-        outputRange: ['0deg', '324deg', '360deg', '396deg']
+        outputRange: ['0deg', '324deg', '360deg', '396deg'],
     });
 
+    const rewardImage = reward?.resourceUrl ? REWARD_IMAGE_MAP[reward.resourceUrl] : null;
+    const rewardCategoryLabel = reward?.category
+        ? CATEGORY_LABEL_MAP[String(reward.category).toLowerCase()] || '기부 보상'
+        : '기부 보상';
+    const rewardCategoryEmoji = reward?.category
+        ? CATEGORY_EMOJI_MAP[String(reward.category).toLowerCase()] || '🎁'
+        : '🎁';
+    const rewardName = reward?.name || reward?.rewardItemName || '알 수 없는 보상';
+    const donationCompleteText = '기부가 완료되었어요!';
+
     const handleConfirm = () => {
-        // 원래 세이프박스 화면으로 복귀
         navigation.goBack();
     };
 
@@ -96,34 +114,37 @@ const GachaScreen = ({ navigation, route }) => {
         <SafeAreaView style={styles.safeArea}>
             {step === 'OPENING' ? (
                 <View style={styles.centerContainer}>
-                    {/* 데구르르 굴러오는 캡슐 애니메이션 */}
-                    <Animated.View style={[
-                        styles.capsuleWrapper,
-                        {
-                            transform: [
-                                { translateY: translateY },
-                                { translateX: translateX },
-                                { rotate: spin },
-                                { scale: scaleAnim }
-                            ]
-                        }
-                    ]}>
-                        <CustomText style={styles.boxEmoji}>🥚</CustomText>
+                    <Animated.View
+                        style={[
+                            styles.capsuleWrapper,
+                            {
+                                transform: [
+                                    { translateY },
+                                    { translateX },
+                                    { rotate: spin },
+                                    { scale: scaleAnim },
+                                ],
+                            },
+                        ]}
+                    >
+                        <CustomText style={styles.boxEmoji}>🎁</CustomText>
                     </Animated.View>
 
-                    <CustomText style={styles.capsuleText}>
-                        데구르르.. 캡슐이 나오고 있어요!
-                    </CustomText>
+                    <CustomText style={styles.capsuleText}>보상을 준비하고 있어요</CustomText>
                 </View>
             ) : (
                 <View style={styles.revealContainer}>
-                    <CustomText style={styles.tadaEmoji}>🎉</CustomText>
-                    <CustomText style={styles.titleText}>짜잔! 선물이 도착했어요</CustomText>
+                    <CustomText style={styles.tadaEmoji}>{rewardCategoryEmoji}</CustomText>
+                    <CustomText style={styles.titleText}>{donationCompleteText}</CustomText>
 
                     <View style={styles.rewardCard}>
-                        <CustomText style={styles.rewardEmoji}>{reward?.emoji}</CustomText>
-                        <CustomText style={styles.rewardName}>{reward?.name}</CustomText>
-                        <CustomText style={styles.rewardDesc}>{reward?.desc}</CustomText>
+                        {rewardImage ? (
+                            <Image source={rewardImage} style={styles.rewardImage} resizeMode="contain" />
+                        ) : (
+                            <CustomText style={styles.rewardFallbackEmoji}>{rewardCategoryEmoji}</CustomText>
+                        )}
+                        <CustomText style={styles.rewardCategory}>{rewardCategoryLabel}</CustomText>
+                        <CustomText style={styles.rewardName}>{rewardName}</CustomText>
                     </View>
 
                     <TouchableOpacity style={styles.confirmButton} onPress={handleConfirm}>
@@ -138,7 +159,7 @@ const GachaScreen = ({ navigation, route }) => {
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
-        backgroundColor: '#F3F4F6', // 좀 더 부드러운 토스 스타일 배경
+        backgroundColor: '#F3F4F6',
     },
     centerContainer: {
         flex: 1,
@@ -182,7 +203,7 @@ const styles = StyleSheet.create({
         width: '100%',
         backgroundColor: '#FFFFFF',
         borderRadius: scale(24),
-        paddingVertical: verticalScale(40),
+        paddingVertical: verticalScale(32),
         paddingHorizontal: scale(20),
         alignItems: 'center',
         marginBottom: verticalScale(40),
@@ -192,19 +213,24 @@ const styles = StyleSheet.create({
         shadowRadius: 12,
         elevation: 3,
     },
-    rewardEmoji: {
+    rewardImage: {
+        width: scale(140),
+        height: scale(140),
+        marginBottom: verticalScale(16),
+    },
+    rewardFallbackEmoji: {
         fontSize: scale(70),
         marginBottom: verticalScale(16),
+    },
+    rewardCategory: {
+        fontSize: scale(14),
+        color: '#6B7280',
+        marginBottom: verticalScale(8),
     },
     rewardName: {
         fontSize: scale(22),
         fontWeight: 'bold',
         color: '#3B82F6',
-        marginBottom: verticalScale(8),
-    },
-    rewardDesc: {
-        fontSize: scale(14),
-        color: '#6B7280',
         textAlign: 'center',
     },
     confirmButton: {
@@ -218,7 +244,7 @@ const styles = StyleSheet.create({
         fontSize: scale(18),
         fontWeight: 'bold',
         color: '#FFFFFF',
-    }
+    },
 });
 
 export default GachaScreen;
