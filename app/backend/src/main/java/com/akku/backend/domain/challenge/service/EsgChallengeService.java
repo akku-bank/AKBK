@@ -150,6 +150,7 @@ public class EsgChallengeService {
                 .challengeId(challenge.getId())
                 .isCompleted(status != EsgChallengeStatus.IN_PROGRESS)
                 .isRewarded(status == EsgChallengeStatus.REWARDED)
+                .rewardAmount(challenge.getRewardAmount())
                 .build();
     }
 }
