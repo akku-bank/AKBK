@@ -1,9 +1,14 @@
 package com.akku.backend.domain.quiz.dto;
 
-/**
- * FastAPI AI 서버 힌트 응답 DTO
- */
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+@JsonIgnoreProperties(ignoreUnknown = true)
 public record ChatResponse(
-        String reply,       // AI 답변 텍스트
-        String chatJson     // FastAPI가 직렬화하여 반환하는 전체 대화 기록 JSON
+        @JsonProperty("ai_reply")
+        String reply,
+        @JsonProperty("deducted_credits")
+        int deductedCredits,
+        @JsonProperty("chat_json")
+        String chatJson
 ) {}
