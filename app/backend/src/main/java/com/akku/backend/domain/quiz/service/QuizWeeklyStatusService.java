@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.temporal.TemporalAdjusters;
@@ -26,6 +27,7 @@ import java.util.UUID;
 public class QuizWeeklyStatusService {
 
     private final UserQuizRepository userQuizRepository;
+    private final Clock clock;
 
     /**
      * 이번 주 퀴즈 챌린지 상태 조회.
@@ -38,7 +40,7 @@ public class QuizWeeklyStatusService {
      * @param userId 조회 대상 자녀 ID
      */
     public QuizWeeklyStatusDto getThisWeekStatus(UUID userId) {
-        LocalDate today      = LocalDate.now();
+        LocalDate today      = LocalDate.now(clock);
         LocalDate thisMonday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
         LocalDate thisSunday = thisMonday.plusDays(6);
 
