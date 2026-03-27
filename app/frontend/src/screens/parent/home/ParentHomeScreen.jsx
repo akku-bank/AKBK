@@ -162,7 +162,7 @@ const ParentHomeScreen = ({ navigation }) => {
 
                 <View style={styles.reportSection}>
                     <CustomText style={styles.sectionTitle}>이번 주 소비 리포트 요약</CustomText>
-                    <TouchableOpacity style={styles.reportCard} onPress={() => navigation.navigate('ParentReportScreen')}>
+                    <TouchableOpacity style={styles.reportCard} onPress={() => navigation.navigate('ParentReportScreen', { childId: childrenData[0]?.childId, childName: childrenData[0]?.name })}>
                         <CustomText style={styles.reportEmoji}>리포트</CustomText>
                         <View style={{ flex: 1 }}>
                             <CustomText style={styles.reportTitle}>
