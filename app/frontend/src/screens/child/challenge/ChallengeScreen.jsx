@@ -25,6 +25,8 @@ const TABS = {
     COMPLETED: 'COMPLETED',
 };
 
+const QUIZ_DIFFICULTIES = ['easy', 'medium', 'hard'];
+
 const getDdayLabel = (item, activeTab) => {
     if (!item?.startDate || !item?.endDate) return null;
     if (activeTab !== TABS.IN_PROGRESS) return null;
@@ -128,15 +130,48 @@ const ChallengeScreen = ({ navigation }) => {
         navigation.navigate('ChallengePropose', { challenge });
     };
 
-    const handleOpenQuizDifficulty = () => {
-        const parentNavigation = navigation.getParent?.();
+    const handleOpenQuizDifficulty = async () => {
+        try {
+            const quizChecks = await Promise.all(
+                QUIZ_DIFFICULTIES.map((difficulty) =>
+                    api.get(`/challenges/quizzes?difficulty=${difficulty}`, {
+                        validateStatus: () => true,
+                    }).then((response) => ({ difficulty, response }))
+                )
+            );
 
-        if (parentNavigation) {
-            parentNavigation.navigate('QuizDifficultySelect');
-            return;
+            const submittedQuiz = quizChecks.find(
+                ({ response }) => response.status === 200 && response.data?.data?.isSubmitted === true
+            ) || null;
+
+            const activeQuiz = quizChecks.find(({ response }) => response.status === 200)
+                || null;
+
+            const hasDifficultyLock = quizChecks.some(
+                ({ response }) => response.status === 409 && response.data?.errorCode === 'QZ_002'
+            );
+
+            if (submittedQuiz) {
+                navigation.navigate('QuizScreen', { difficulty: submittedQuiz.difficulty });
+                return;
+            }
+
+            if (hasDifficultyLock && activeQuiz) {
+                navigation.navigate('QuizScreen', { difficulty: activeQuiz.difficulty });
+                return;
+            }
+
+            const parentNavigation = navigation.getParent?.();
+            if (parentNavigation) {
+                parentNavigation.navigate('QuizDifficultySelect');
+                return;
+            }
+
+            navigation.navigate('QuizDifficultySelect');
+        } catch (error) {
+            console.error('Quiz difficulty precheck error', error);
+            Alert.alert('오류', '퀴즈 정보를 확인하지 못했습니다.');
         }
-
-        navigation.navigate('QuizDifficultySelect');
     };
 
     const getCurrentChallenges = () => {
