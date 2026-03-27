@@ -2,6 +2,10 @@ package com.akku.backend.domain.quiz.service;
 
 import com.akku.backend.domain.auth.entity.User;
 import com.akku.backend.domain.auth.repository.UserRepository;
+import com.akku.backend.domain.jelling.entity.Jelling;
+import com.akku.backend.domain.jelling.entity.JellingTransaction;
+import com.akku.backend.domain.jelling.repository.JellingRepository;
+import com.akku.backend.domain.jelling.repository.JellingTransactionRepository;
 import com.akku.backend.domain.quiz.client.QuizAiClient;
 import com.akku.backend.domain.quiz.dto.AnswerRequest;
 import com.akku.backend.domain.quiz.dto.AnswerResponse;
@@ -38,6 +42,8 @@ public class QuizService {
     private final UserQuizRepository userQuizRepository;
     private final ChatLogRepository chatLogRepository;
     private final UserRepository userRepository;
+    private final JellingRepository jellingRepository;
+    private final JellingTransactionRepository jellingTransactionRepository;
     private final QuizAiClient quizAiClient;
     private final SseConnectionManager sseConnectionManager;
     private final Clock clock;
@@ -144,6 +150,7 @@ public class QuizService {
         if (isCorrect) {
             long reward = ThreadLocalRandom.current().nextLong(1, 21);
             jellingReward = reward;
+            addQuizRewardJelling(userId, reward);
         }
 
         return new AnswerResponse(isCorrect, jellingReward);
@@ -152,5 +159,26 @@ public class QuizService {
     @Transactional
     public void upsertChatLog(UUID userId, UUID quizId, String chatJson) {
         chatLogRepository.upsertChatJson(userId, quizId, chatJson);
+    }
+
+    private void addQuizRewardJelling(UUID userId, long rewardAmount) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ApiException(UserErrorCode.USER_NOT_FOUND));
+
+        Jelling jelling = jellingRepository.findById(userId)
+                .orElseGet(() -> jellingRepository.save(Jelling.builder()
+                        .user(user)
+                        .balance(0L)
+                        .build()));
+
+        jelling.addBalance(rewardAmount);
+        jellingRepository.save(jelling);
+
+        jellingTransactionRepository.save(JellingTransaction.builder()
+                .user(user)
+                .amount(rewardAmount)
+                .type("QUIZ_REWARD")
+                .description("금융 퀴즈 정답 보상")
+                .build());
     }
 }
