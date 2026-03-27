@@ -13,6 +13,6 @@ public record CardCreateRequest(
     String withdrawalAccountNo,
 
     @NotBlank(message = "결제일(출금일)은 필수입니다.")
-    @Pattern(regexp = "^(0[1-9]|[12][0-9]|3[01])$", message = "결제일은 01부터 31 사이의 2자리 숫자여야 합니다.")
+    @Pattern(regexp = "^[1-7]$", message = "결제일은 1(월)부터 7(일) 사이의 숫자여야 합니다.")
     String withdrawalDate
 ) {}

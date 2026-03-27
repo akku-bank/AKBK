@@ -21,6 +21,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -39,6 +40,7 @@ public class QuizService {
     private final ChatLogRepository chatLogRepository;
     private final UserRepository userRepository;
     private final QuizKafkaProducer quizKafkaProducer;
+    private final Clock clock;
 
     // ────────────────────────────────────────────────────────────────────────
     // 1. 퀴즈 조회 및 난이도 락 (GET /api/challenges/quizzes)
@@ -46,14 +48,14 @@ public class QuizService {
 
     @Transactional
     public QuizResponse fetchQuiz(UUID userId, String difficulty) {
-        LocalDateTime quizFrom = LocalDateTime.of(LocalDate.now().minusDays(1), LocalTime.of(22, 0));
-        LocalDateTime quizTo   = LocalDateTime.of(LocalDate.now(), LocalTime.MIDNIGHT);
+        LocalDateTime quizFrom = LocalDateTime.of(LocalDate.now(clock).minusDays(1), LocalTime.of(22, 0));
+        LocalDateTime quizTo   = LocalDateTime.of(LocalDate.now(clock), LocalTime.MIDNIGHT);
 
         Quiz quiz = quizRepository.findTopByDifficultyAndCreatedAtBetween(difficulty, quizFrom, quizTo)
                 .orElseThrow(() -> new ApiException(QuizErrorCode.QUIZ_NOT_FOUND));
 
-        LocalDateTime lockFrom = LocalDateTime.of(LocalDate.now(), LocalTime.MIDNIGHT);
-        LocalDateTime lockTo   = LocalDateTime.now();
+        LocalDateTime lockFrom = LocalDateTime.of(LocalDate.now(clock), LocalTime.MIDNIGHT);
+        LocalDateTime lockTo   = LocalDateTime.now(clock);
 
         UserQuiz userQuiz = userQuizRepository
                 .findTopByUserIdAndCreatedAtBetweenOrderByCreatedAtDesc(userId, lockFrom, lockTo)
@@ -79,7 +81,7 @@ public class QuizService {
 
         // 당일 채팅 로그만 조회
         String todayChatJson = chatLogRepository.findByUserIdAndQuizId(userId, quiz.getId())
-                .filter(log -> log.getCreatedAt().equals(LocalDate.now()))
+                .filter(log -> log.getCreatedAt().equals(LocalDate.now(clock)))
                 .map(ChatLog::getChatJson)
                 .orElse(null);
 
@@ -150,7 +152,7 @@ public class QuizService {
                 .orElseThrow(() -> new ApiException(QuizErrorCode.QUIZ_NOT_FOUND));
 
         boolean isCorrect = (quiz.getCorrectAnswer() == request.selectedAnswer());
-        userQuiz.submit(isCorrect);
+        userQuiz.submit(isCorrect, LocalDate.now(clock));
 
         Long jellingReward = null;
         if (isCorrect) {

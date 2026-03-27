@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
@@ -23,22 +24,25 @@ public class SsafyFinanceService {
 
     private final RestClient restClient;
     private final String apiKey;
+    private final Clock clock;
 
     public SsafyFinanceService(
             @Value("${ssafy.api.base-url}") String baseUrl,
-            @Value("${ssafy.api.key}") String apiKey
+            @Value("${ssafy.api.key}") String apiKey,
+            Clock clock
     ) {
         this.restClient = RestClient.builder()
                 .baseUrl(baseUrl)
                 .build();
         this.apiKey = apiKey;
+        this.clock = clock;
     }
 
     /**
      * 금융망 공통 헤더 생성
      */
     private FinanceRequestHeader createHeader(String apiName, String apiServiceCode, String userKey) {
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(clock);
         String date = now.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
         String time = now.format(DateTimeFormatter.ofPattern("HHmmss"));
         

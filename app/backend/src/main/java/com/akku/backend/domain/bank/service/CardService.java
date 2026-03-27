@@ -18,6 +18,8 @@ import com.akku.backend.global.finance.dto.FinanceCardProductListResponse;
 import com.akku.backend.global.finance.dto.FinanceUserCardListResponse;
 import com.akku.backend.global.finance.dto.FinanceCardPaymentResponse;
 import com.akku.backend.global.finance.dto.FinanceCardTransactionHistoryResponse;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -44,6 +46,7 @@ public class CardService {
     private final SsafyFinanceService ssafyFinanceService;
     private final UserRepository userRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final ObjectMapper objectMapper;
 
     /**
      * 카드 상품 목록 조회
@@ -59,20 +62,24 @@ public class CardService {
         // DB 업데이트
         for (FinanceCardProductListResponse.CardProductDetails p : finProducts) {
             cardProductRepository.findByCardUniqueNo(p.cardUniqueNo())
-                    .orElseGet(() -> {
-                        CardProduct newProduct = CardProduct.builder()
-                                .cardUniqueNo(p.cardUniqueNo())
-                                .cardIssuerCode(p.cardIssuerCode())
-                                .cardIssuerName(p.cardIssuerName())
-                                .cardName(p.cardName())
-                                .cardTypeCode(p.cardTypeCode())
-                                .cardTypeName(p.cardTypeName())
-                                .baseLimitPerformance(p.baseLimitPerformance())
-                                .maxBenefitLimit(p.maxBenefitLimit())
-                                .cardDescription(p.cardDescription())
-                                .build();
-                        return cardProductRepository.save(newProduct);
-                    });
+                    .ifPresentOrElse(
+                        product -> product.update(p.cardName(), p.cardDescription(), p.baseLimitPerformance(), p.maxBenefitLimit(), toJson(p.cardBenefitInfo())),
+                        () -> {
+                            CardProduct newProduct = CardProduct.builder()
+                                    .cardUniqueNo(p.cardUniqueNo())
+                                    .cardIssuerCode(p.cardIssuerCode())
+                                    .cardIssuerName(p.cardIssuerName())
+                                    .cardName(p.cardName())
+                                    .cardTypeCode(p.cardTypeCode())
+                                    .cardTypeName(p.cardTypeName())
+                                    .baseLimitPerformance(p.baseLimitPerformance())
+                                    .maxBenefitLimit(p.maxBenefitLimit())
+                                    .cardDescription(p.cardDescription())
+                                    .cardBenefitInfo(toJson(p.cardBenefitInfo()))
+                                    .build();
+                            cardProductRepository.save(newProduct);
+                        }
+                    );
         }
 
         // DB 목록 반환
@@ -139,25 +146,28 @@ public class CardService {
 
         // DB 업데이트
         for (FinanceUserCardListResponse.UserCardDetails c : finCards) {
+            // 카드 상품 정보 조회 및 업데이트/생성
+            CardProduct product = cardProductRepository.findByCardUniqueNo(c.cardUniqueNo())
+                    .map(p -> {
+                        p.update(c.cardName(), c.cardDescription(), c.baseLimitPerformance(), c.maxBenefitLimit(), toJson(c.cardBenefitInfo()));
+                        return p;
+                    })
+                    .orElseGet(() -> cardProductRepository.save(CardProduct.builder()
+                            .cardUniqueNo(c.cardUniqueNo())
+                            .cardIssuerCode(c.cardIssuerCode())
+                            .cardIssuerName(c.cardIssuerName())
+                            .cardName(c.cardName())
+                            .baseLimitPerformance(c.baseLimitPerformance())
+                            .maxBenefitLimit(c.maxBenefitLimit())
+                            .cardDescription(c.cardDescription())
+                            .cardBenefitInfo(toJson(c.cardBenefitInfo()))
+                            .build()));
+
             // 해당 카드 번호가 이미 있는지 확인
             boolean exists = cardRepository.findAllByUserId(userId).stream()
                     .anyMatch(card -> card.getCardNo().equals(c.cardNo()));
 
             if (!exists) {
-                // 카드 상품 정보 조회
-                CardProduct product = cardProductRepository.findByCardUniqueNo(c.cardUniqueNo())
-                        .orElseGet(() -> {
-                            return cardProductRepository.save(CardProduct.builder()
-                                    .cardUniqueNo(c.cardUniqueNo())
-                                    .cardIssuerCode(c.cardIssuerCode())
-                                    .cardIssuerName(c.cardIssuerName())
-                                    .cardName(c.cardName())
-                                    .baseLimitPerformance(c.baseLimitPerformance())
-                                    .maxBenefitLimit(c.maxBenefitLimit())
-                                    .cardDescription(c.cardDescription())
-                                    .build());
-                        });
-
                 Card newCard = Card.builder()
                         .userId(userId)
                         .cardProductId(product.getId())
@@ -269,5 +279,14 @@ public class CardService {
                 .collect(Collectors.toList());
 
         return new CardHistoryResponse(rec.estimatedBalance(), list);
+    }
+
+    private String toJson(Object obj) {
+        try {
+            return objectMapper.writeValueAsString(obj);
+        } catch (JsonProcessingException e) {
+            log.error("JSON serialization error", e);
+            return null;
+        }
     }
 }

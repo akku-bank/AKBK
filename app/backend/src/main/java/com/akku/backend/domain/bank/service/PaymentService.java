@@ -25,6 +25,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.Random;
@@ -41,6 +42,7 @@ public class PaymentService {
     private final TransactionRepository transactionRepository;
     private final JellingRepository jellingRepository;
     private final JellingTransactionRepository jellingTransactionRepository;
+    private final Clock clock;
 
     @Value("${ssafy.api.system-key}")
     private String systemApiKey;
@@ -73,7 +75,7 @@ public class PaymentService {
         OfflinePaymentToken token = OfflinePaymentToken.builder()
                 .userId(userId)
                 .token(tokenString)
-                .expiredAt(LocalDateTime.now().plusSeconds(expiresInSeconds))
+                .expiredAt(LocalDateTime.now(clock).plusSeconds(expiresInSeconds))
                 .build();
 
         offlinePaymentTokenRepository.save(token);

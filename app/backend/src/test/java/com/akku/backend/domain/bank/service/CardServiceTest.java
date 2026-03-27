@@ -195,7 +195,7 @@ class CardServiceTest {
         given(userRepository.findById(userId)).willReturn(Optional.of(user));
 
         FinanceUserCardListResponse.UserCardDetails finCard = new FinanceUserCardListResponse.UserCardDetails(
-                "9999-9999", "123", "CARD-123", "001", "BankA", "Good Card", 100000L, 50000L, "Discount card", "1225", "ACC-123", "10"
+                "9999-9999", "123", "CARD-123", "001", "BankA", "Good Card", 100000L, 50000L, "Discount card", "1225", "ACC-123", "10", Collections.emptyList()
         );
         given(ssafyFinanceService.getUserCards("userKey123")).willReturn(List.of(finCard));
 

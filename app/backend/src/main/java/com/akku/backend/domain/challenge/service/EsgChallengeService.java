@@ -19,6 +19,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.temporal.TemporalAdjusters;
@@ -34,6 +35,7 @@ public class EsgChallengeService {
     private final UserRepository userRepository;
     private final JellingRepository jellingRepository;
     private final JellingTransactionRepository jellingTransactionRepository;
+    private final Clock clock;
 
     /**
      * 요구사항 1 — GET /api/challenges/esg
@@ -50,7 +52,7 @@ public class EsgChallengeService {
             throw new ApiException(ChallengeErrorCode.ACCESS_DENIED);
         }
 
-        LocalDate thisMonday = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        LocalDate thisMonday = LocalDate.now(clock).with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
         LocalDate thisSunday = thisMonday.plusDays(6);
 
         EsgChallenge challenge = esgChallengeRepository

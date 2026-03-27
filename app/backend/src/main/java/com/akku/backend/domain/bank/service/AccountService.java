@@ -28,6 +28,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -50,6 +51,7 @@ public class AccountService {
     private final AccountVerificationRepository accountVerificationRepository;
     private final SsafyFinanceService ssafyFinanceService;
     private final PasswordEncoder passwordEncoder;
+    private final Clock clock;
  
     private static final String DEFAULT_ACCOUNT_TYPE_UNIQUE_NO = "999-1-98000e5fd8024b";
 
@@ -405,7 +407,7 @@ public class AccountService {
 
         // 거래 내역 조회를 통해 금융 API가 생성한 인증 코드 추출 (폴링 로직)
         String authCode = null;
-        String dateStr = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        String dateStr = LocalDateTime.now(clock).format(DateTimeFormatter.ofPattern("yyyyMMdd"));
         
         for (int i = 0; i < 3; i++) {
             try {
@@ -448,7 +450,7 @@ public class AccountService {
                 .authCode(authCode)
                 .authText(authText)
                 .status("PENDING")
-                .expiresAt(LocalDateTime.now().plusMinutes(5))
+                .expiresAt(LocalDateTime.now(clock).plusMinutes(5))
                 .build();
         
         accountVerificationRepository.save(verification);

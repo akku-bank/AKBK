@@ -21,7 +21,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -51,6 +54,14 @@ class QuizServiceTest {
 
     @Mock
     private QuizKafkaProducer quizKafkaProducer;
+    @Mock
+    private Clock clock;
+
+    @org.junit.jupiter.api.BeforeEach
+    void setUp() {
+        lenient().when(clock.getZone()).thenReturn(ZoneId.of("Asia/Seoul"));
+        lenient().when(clock.instant()).thenReturn(Instant.parse("2026-03-27T10:00:00Z"));
+    }
 
     @Nested
     @DisplayName("1. 퀴즈 조회 및 난이도 락 (fetchQuiz)")
@@ -163,7 +174,7 @@ class QuizServiceTest {
             ChatRequest request = new ChatRequest(quizId, "힌트 주세요");
 
             UserQuiz submittedQuiz = UserQuiz.builder().userId(userId).quizId(quizId).build();
-            submittedQuiz.submit(true); // 이미 제출된 상태로 세팅
+            submittedQuiz.submit(true, LocalDate.now(clock)); // 이미 제출된 상태로 세팅
             given(userQuizRepository.findByUserIdAndQuizId(userId, quizId))
                     .willReturn(Optional.of(submittedQuiz));
 
