@@ -2,6 +2,9 @@ package com.akku.backend.domain.quiz.service;
 
 import com.akku.backend.domain.auth.entity.User;
 import com.akku.backend.domain.auth.repository.UserRepository;
+import com.akku.backend.domain.jelling.entity.Jelling;
+import com.akku.backend.domain.jelling.repository.JellingRepository;
+import com.akku.backend.domain.jelling.repository.JellingTransactionRepository;
 import com.akku.backend.domain.quiz.dto.*;
 import com.akku.backend.domain.quiz.entity.*;
 import com.akku.backend.domain.quiz.event.QuizChatEvent;
@@ -53,7 +56,14 @@ class QuizServiceTest {
     private UserRepository userRepository;
 
     @Mock
+    private JellingRepository jellingRepository;
+
+    @Mock
+    private JellingTransactionRepository jellingTransactionRepository;
+
+    @Mock
     private QuizKafkaProducer quizKafkaProducer;
+
     @Mock
     private Clock clock;
 
@@ -192,7 +202,7 @@ class QuizServiceTest {
     class SubmitAnswerTests {
 
         @Test
-        @DisplayName("성공 - 정답 시 1~20 사이 랜덤 보상 지급 (젤링 TODO 처리)")
+        @DisplayName("성공 - 정답 시 1~20 사이 랜덤 보상이 Jelling 잔액에 적립되고 거래 내역이 기록됨")
         void submitAnswer_Correct_Reward() {
             // given
             UUID userId = UUID.randomUUID();
@@ -206,6 +216,10 @@ class QuizServiceTest {
             given(quiz.getCorrectAnswer()).willReturn(1);
             given(quizRepository.findById(quizId)).willReturn(Optional.of(quiz));
 
+            User mockUser = mock(User.class);
+            Jelling jelling = spy(Jelling.builder().user(mockUser).build());
+            given(jellingRepository.findByUserIdWithLock(userId)).willReturn(Optional.of(jelling));
+
             // when
             AnswerResponse response = quizService.submitAnswer(userId, request);
 
@@ -213,6 +227,8 @@ class QuizServiceTest {
             assertTrue(response.isCorrect());
             assertNotNull(response.jellingReward());
             assertTrue(response.jellingReward() >= 1 && response.jellingReward() <= 20);
+            verify(jelling).addBalance(response.jellingReward());
+            verify(jellingTransactionRepository).save(any());
         }
     }
 
