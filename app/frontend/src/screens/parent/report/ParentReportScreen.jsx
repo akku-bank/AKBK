@@ -1,77 +1,43 @@
-﻿import React, { useState } from 'react';
-import { View, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Platform } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Platform, ActivityIndicator } from 'react-native';
 import Svg, { Circle, G, Path, Text as SvgText } from 'react-native-svg';
 import { scale, verticalScale } from 'react-native-size-matters';
 import CustomText from '../../../components/common/CustomText';
+import { getChildWeeklyReport } from '../../../api/reportApi';
+import api from '../../../api/axios';
 
-const WEEKLY_FLOW_DATA = [
-    { day: '월', income: 12000, expense: 18000 },
-    { day: '화', income: 8000, expense: 14000 },
-    { day: '수', income: 21000, expense: 9000 },
-    { day: '목', income: 6000, expense: 17000 },
-    { day: '금', income: 28000, expense: 22000 },
-    { day: '토', income: 17000, expense: 26000 },
-    { day: '일', income: 9000, expense: 7000 },
-];
+const CATEGORY_COLORS = ['#FF8A65', '#64B5F6', '#81C784', '#FFD54F', '#CE93D8', '#80DEEA', '#FFCC80', '#EF9A9A'];
+const DAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+const DAY_LABELS = ['월', '화', '수', '목', '금', '토', '일'];
 
-const CATEGORY_DATA = [
-    {
-        id: 'snack',
-        label: '간식',
-        color: '#FF8A65',
-        total: 18200,
-        transactions: [
-            { day: '월', title: '편의점 젤리', amount: 2500 },
-            { day: '수', title: '분식집 떡볶이', amount: 4800 },
-            { day: '금', title: '카페 음료', amount: 5900 },
-            { day: '토', title: '아이스크림', amount: 5000 },
-        ],
-    },
-    {
-        id: 'play',
-        label: '오락',
-        color: '#64B5F6',
-        total: 12400,
-        transactions: [
-            { day: '화', title: '문구점 뽑기', amount: 2400 },
-            { day: '목', title: '게임 아이템', amount: 5000 },
-            { day: '토', title: '코인노래방', amount: 5000 },
-        ],
-    },
-    {
-        id: 'transport',
-        label: '이동',
-        color: '#81C784',
-        total: 7600,
-        transactions: [
-            { day: '수', title: '버스 충전', amount: 3800 },
-            { day: '일', title: '지하철 이용', amount: 3800 },
-        ],
-    },
-    {
-        id: 'study',
-        label: '학습',
-        color: '#FFD54F',
-        total: 5400,
-        transactions: [
-            { day: '월', title: '연습장 구매', amount: 1800 },
-            { day: '금', title: '독서실 간식', amount: 3600 },
-        ],
-    },
-];
+const formatCurrency = (amount) => `${(amount || 0).toLocaleString()}원`;
+const formatChartAmount = (amount) => (amount || 0).toLocaleString();
 
-const WEEK_RANGES = ['3.1-3.9', '3.10-3.16', '3.17-3.23', '3.24-3.31'];
+const getMondayDate = (offsetWeeks = 0) => {
+    const today = new Date();
+    const dayOfWeek = today.getDay();
+    const daysToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+    const monday = new Date(today);
+    monday.setDate(today.getDate() + daysToMonday + offsetWeeks * 7);
+    return monday;
+};
 
-const formatCurrency = (amount) => `${amount.toLocaleString()}원`;
-const formatChartAmount = (amount) => amount.toLocaleString();
+const formatDateParam = (date) => {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+};
+
+const formatWeekLabel = (mondayDate) => {
+    const sunday = new Date(mondayDate);
+    sunday.setDate(mondayDate.getDate() + 6);
+    return `${mondayDate.getMonth() + 1}.${mondayDate.getDate()} - ${sunday.getMonth() + 1}.${sunday.getDate()}`;
+};
 
 const polarToCartesian = (cx, cy, radius, angle) => {
     const radian = ((angle - 90) * Math.PI) / 180;
-
-    return {
-        x: cx + radius * Math.cos(radian),
-        y: cy + radius * Math.sin(radian),
-    };
+    return { x: cx + radius * Math.cos(radian), y: cy + radius * Math.sin(radian) };
 };
 
 const createArcPath = (cx, cy, outerRadius, innerRadius, startAngle, endAngle) => {
@@ -80,7 +46,6 @@ const createArcPath = (cx, cy, outerRadius, innerRadius, startAngle, endAngle) =
     const startInner = polarToCartesian(cx, cy, innerRadius, endAngle);
     const endInner = polarToCartesian(cx, cy, innerRadius, startAngle);
     const largeArcFlag = endAngle - startAngle > 180 ? 1 : 0;
-
     return [
         `M ${startOuter.x} ${startOuter.y}`,
         `A ${outerRadius} ${outerRadius} 0 ${largeArcFlag} 0 ${endOuter.x} ${endOuter.y}`,
@@ -103,23 +68,65 @@ const bodyFontFamily = Platform.select({
 });
 
 const ParentReportScreen = ({ navigation, route }) => {
-    const childName = route.params?.childName || '김싸피';
-    const [weekIndex, setWeekIndex] = useState(1);
-    const [selectedCategoryId, setSelectedCategoryId] = useState(CATEGORY_DATA[0].id);
+    const [childId, setChildId] = useState(route.params?.childId || null);
+    const [childName, setChildName] = useState(route.params?.childName || null);
+    const [weekOffset, setWeekOffset] = useState(0);
+    const [reportData, setReportData] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [selectedCategoryIndex, setSelectedCategoryIndex] = useState(0);
 
-    const totalExpense = CATEGORY_DATA.reduce((sum, category) => sum + category.total, 0);
-    const totalIncome = WEEKLY_FLOW_DATA.reduce((sum, item) => sum + item.income, 0);
-    const selectedCategory = CATEGORY_DATA.find((category) => category.id === selectedCategoryId) || CATEGORY_DATA[0];
-    const maxFlowAmount = Math.max(...WEEKLY_FLOW_DATA.flatMap((item) => [item.income, item.expense]));
+    // childId가 없으면 가족 구성원에서 첫 번째 자녀를 가져온다
+    useEffect(() => {
+        if (!childId) {
+            api.get('/families/members')
+                .then(res => {
+                    const members = res.data?.data?.members || [];
+                    const firstChild = members.find(m => m.role === 'CHILD');
+                    if (firstChild) {
+                        setChildId(firstChild.userId);
+                        setChildName(firstChild.name);
+                    }
+                })
+                .catch(() => {});
+        }
+    }, []);
+
+    const mondayDate = getMondayDate(weekOffset);
+    const weekLabel = formatWeekLabel(mondayDate);
+    const dateParam = formatDateParam(mondayDate);
+
+    useEffect(() => {
+        if (!childId) return;
+        setLoading(true);
+        setSelectedCategoryIndex(0);
+        getChildWeeklyReport(childId, dateParam)
+            .then(res => setReportData(res.data?.data || null))
+            .catch(() => setReportData(null))
+            .finally(() => setLoading(false));
+    }, [childId, dateParam]);
+
+    const dailyFlowData = DAY_KEYS.map((key, i) => ({
+        day: DAY_LABELS[i],
+        expense: reportData?.dailySpending?.[key] || 0,
+    }));
+
+    const categoryData = (reportData?.categoryRatios || []).map((cat, i) => ({
+        id: cat.subCategoryId,
+        label: cat.subCategoryName,
+        color: CATEGORY_COLORS[i % CATEGORY_COLORS.length],
+        total: cat.spendingAmount || 0,
+        ratio: cat.ratio || 0,
+    }));
+
+    const totalSpending = reportData?.totalSpending || 0;
+    const totalIncome = reportData?.totalIncome || 0;
+    const selectedCategory = categoryData[selectedCategoryIndex] || null;
+    const maxFlowAmount = Math.max(...dailyFlowData.map(item => item.expense), 1);
 
     let currentAngle = 0;
-    const pieSlices = CATEGORY_DATA.map((category) => {
-        const angle = (category.total / totalExpense) * 360;
-        const slice = {
-            ...category,
-            startAngle: currentAngle,
-            endAngle: currentAngle + angle,
-        };
+    const pieSlices = categoryData.map((category) => {
+        const angle = totalSpending > 0 ? (category.total / totalSpending) * 360 : 360 / categoryData.length;
+        const slice = { ...category, startAngle: currentAngle, endAngle: currentAngle + angle };
         currentAngle += angle;
         return slice;
     });
@@ -130,7 +137,7 @@ const ParentReportScreen = ({ navigation, route }) => {
                 <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
                     <CustomText style={styles.backButtonText}>←</CustomText>
                 </TouchableOpacity>
-                <CustomText style={styles.headerTitle}>{`${childName}의 주간 리포트`}</CustomText>
+                <CustomText style={styles.headerTitle}>{`${childName || '자녀'}의 주간 리포트`}</CustomText>
                 <View style={styles.headerSpacer} />
             </View>
 
@@ -138,165 +145,154 @@ const ParentReportScreen = ({ navigation, route }) => {
                 <View style={styles.weekNavigator}>
                     <TouchableOpacity
                         style={styles.weekArrowButton}
-                        onPress={() => setWeekIndex((prev) => Math.max(prev - 1, 0))}
-                        disabled={weekIndex === 0}
+                        onPress={() => setWeekOffset(prev => prev - 1)}
                     >
-                        <CustomText style={[styles.weekArrowText, weekIndex === 0 && styles.weekArrowDisabled]}>‹</CustomText>
+                        <CustomText style={styles.weekArrowText}>‹</CustomText>
                     </TouchableOpacity>
                     <View style={styles.weekLabelBox}>
-                        <CustomText style={styles.weekLabel}>{WEEK_RANGES[weekIndex]}</CustomText>
+                        <CustomText style={styles.weekLabel}>{weekLabel}</CustomText>
                     </View>
                     <TouchableOpacity
                         style={styles.weekArrowButton}
-                        onPress={() => setWeekIndex((prev) => Math.min(prev + 1, WEEK_RANGES.length - 1))}
-                        disabled={weekIndex === WEEK_RANGES.length - 1}
+                        onPress={() => setWeekOffset(prev => prev + 1)}
+                        disabled={weekOffset >= 0}
                     >
-                        <CustomText
-                            style={[
-                                styles.weekArrowText,
-                                weekIndex === WEEK_RANGES.length - 1 && styles.weekArrowDisabled,
-                            ]}
-                        >
-                            ›
-                        </CustomText>
+                        <CustomText style={[styles.weekArrowText, weekOffset >= 0 && styles.weekArrowDisabled]}>›</CustomText>
                     </TouchableOpacity>
                 </View>
 
-                <View style={styles.summaryCard}>
-                    <CustomText style={styles.summaryTitle}>이번 주 총 지출</CustomText>
-                    <CustomText style={styles.amountText}>{formatCurrency(totalExpense)}</CustomText>
-                    <CustomText style={styles.comparisonText}>
-                        저번 주보다 <CustomText style={styles.highlightRed}>3,000원</CustomText> 더 지출했어요
-                    </CustomText>
-                </View>
+                {loading ? (
+                    <ActivityIndicator size="large" color="#34D399" style={{ marginTop: verticalScale(40) }} />
+                ) : (
+                    <>
+                        <View style={styles.summaryCard}>
+                            <CustomText style={styles.summaryTitle}>이번 주 총 지출</CustomText>
+                            <CustomText style={styles.amountText}>{formatCurrency(totalSpending)}</CustomText>
+                        </View>
 
-                <View style={styles.chartCard}>
-                    <View style={styles.cardHeaderRow}>
-                        <CustomText style={styles.sectionTitle}>요일별 수입/지출 흐름</CustomText>
-                        <CustomText style={styles.cardCaption}>더미 데이터</CustomText>
-                    </View>
-                    <View style={styles.barChart}>
-                        <View style={styles.plotArea}>
-                            <View style={styles.chartMidLine} />
-                            <View style={styles.barRow}>
-                                {WEEKLY_FLOW_DATA.map((item) => {
-                                    const incomeHeight = Math.max((item.income / maxFlowAmount) * verticalScale(70), scale(8));
-                                    const expenseHeight = Math.max((item.expense / maxFlowAmount) * verticalScale(70), scale(8));
-
-                                    return (
-                                        <View key={item.day} style={styles.barColumn}>
-                                            <View style={styles.barTrack}>
-                                                <View style={styles.positiveZone}>
-                                                    <CustomText style={styles.barValuePositive}>{`+${formatChartAmount(item.income)}`}</CustomText>
-                                                    <View style={[styles.positiveBar, { height: incomeHeight }]} />
-                                                </View>
-                                                <View style={styles.negativeZone}>
-                                                    <View style={[styles.negativeBar, { height: expenseHeight }]} />
-                                                    <CustomText style={styles.barValueNegative}>{`-${formatChartAmount(item.expense)}`}</CustomText>
-                                                </View>
-                                            </View>
-                                            <CustomText style={styles.dayLabel}>{item.day}</CustomText>
-                                        </View>
-                                    );
-                                })}
+                        <View style={styles.chartCard}>
+                            <View style={styles.cardHeaderRow}>
+                                <CustomText style={styles.sectionTitle}>요일별 지출 흐름</CustomText>
                             </View>
-                        </View>
-                    </View>
-                    <View style={styles.chartSummaryRow}>
-                        <View style={styles.summaryChip}>
-                            <View style={[styles.legendDot, styles.positiveDot]} />
-                            <CustomText style={styles.summaryChipText}>{`총 수입 ${formatCurrency(totalIncome)}`}</CustomText>
-                        </View>
-                        <View style={styles.summaryChip}>
-                            <View style={[styles.legendDot, styles.negativeDot]} />
-                            <CustomText style={styles.summaryChipText}>{`총 지출 ${formatCurrency(totalExpense)}`}</CustomText>
-                        </View>
-                    </View>
-                </View>
-
-                <View style={styles.aiReviewCard}>
-                    <CustomText style={styles.aiReviewTitle}>AI 부모님 조언 가이드</CustomText>
-                    <CustomText style={[styles.aiReviewText, styles.bodyCopyText]}>
-                        금요일과 토요일에 소비가 집중됐고, 간식과 오락이 전체 지출의 대부분을 차지합니다. 자녀와 함께
-                        주말 예산 상한선을 정해두면 지출 통제가 쉬워질 수 있어요.
-                    </CustomText>
-                </View>
-
-                <View style={styles.categoryCard}>
-                    <View style={styles.cardHeaderRow}>
-                        <CustomText style={styles.sectionTitle}>카테고리별 지출</CustomText>
-                        <CustomText style={styles.cardCaption}>파이를 누르면 일주일 내역 표시</CustomText>
-                    </View>
-
-                    <View style={styles.pieSection}>
-                        <View style={styles.pieChartWrap}>
-                            <Svg width={scale(260)} height={scale(260)} viewBox="0 0 260 260">
-                                <Circle cx="130" cy="130" r="86" fill="#F8FAFC" />
-                                {pieSlices.map((slice) => {
-                                    const isSelected = slice.id === selectedCategoryId;
-                                    const outerRadius = isSelected ? 104 : 96;
-                                    const innerRadius = 56;
-                                    const labelPosition = getSliceLabelPosition(
-                                        130,
-                                        130,
-                                        slice.startAngle,
-                                        slice.endAngle,
-                                        outerRadius,
-                                        innerRadius,
-                                    );
-
-                                    return (
-                                        <G key={slice.id}>
-                                            <Path
-                                                d={createArcPath(130, 130, outerRadius, innerRadius, slice.startAngle, slice.endAngle)}
-                                                fill={slice.color}
-                                                opacity={isSelected ? 1 : 0.9}
-                                                onPress={() => setSelectedCategoryId(slice.id)}
-                                            />
-                                            <SvgText
-                                                x={labelPosition.x}
-                                                y={labelPosition.y}
-                                                fontSize={scale(12)}
-                                                fontWeight="700"
-                                                fill="#FFFFFF"
-                                                textAnchor="middle"
-                                                alignmentBaseline="middle"
-                                            >
-                                                {slice.label}
-                                            </SvgText>
-                                        </G>
-                                    );
-                                })}
-                            </Svg>
-
-                            <View style={styles.pieCenterLabel} pointerEvents="none">
-                                <CustomText style={styles.pieCenterAmount}>{formatCurrency(selectedCategory.total)}</CustomText>
-                            </View>
-                        </View>
-                    </View>
-
-                    <View style={styles.detailCard}>
-                        <View style={styles.detailHeader}>
-                            <CustomText style={styles.detailTitle}>{`${selectedCategory.label} 일주일 내역`}</CustomText>
-                            <CustomText style={styles.detailBadge}>{`${selectedCategory.transactions.length}건`}</CustomText>
-                        </View>
-                        {selectedCategory.transactions.map((transaction, index) => (
-                            <View
-                                key={`${selectedCategory.id}-${transaction.day}-${index}`}
-                                style={[
-                                    styles.detailRow,
-                                    index === selectedCategory.transactions.length - 1 && styles.detailRowLast,
-                                ]}
-                            >
-                                <View>
-                                    <CustomText style={styles.detailDay}>{transaction.day}</CustomText>
-                                    <CustomText style={styles.detailText}>{transaction.title}</CustomText>
+                            <View style={styles.barChart}>
+                                <View style={styles.plotArea}>
+                                    <View style={styles.barRow}>
+                                        {dailyFlowData.map((item) => {
+                                            const barHeight = Math.max(
+                                                (item.expense / maxFlowAmount) * verticalScale(180),
+                                                item.expense > 0 ? scale(8) : 0,
+                                            );
+                                            return (
+                                                <View key={item.day} style={styles.barColumn}>
+                                                    <View style={styles.barTrack}>
+                                                        <CustomText style={styles.barValueNegative}>
+                                                            {item.expense > 0 ? formatChartAmount(item.expense) : ''}
+                                                        </CustomText>
+                                                        <View style={[styles.negativeBar, { height: barHeight }]} />
+                                                    </View>
+                                                    <CustomText style={styles.dayLabel}>{item.day}</CustomText>
+                                                </View>
+                                            );
+                                        })}
+                                    </View>
                                 </View>
-                                <CustomText style={styles.detailAmount}>{`-${formatCurrency(transaction.amount)}`}</CustomText>
                             </View>
-                        ))}
-                    </View>
-                </View>
+                            <View style={styles.chartSummaryRow}>
+                                <View style={styles.summaryChip}>
+                                    <View style={[styles.legendDot, styles.positiveDot]} />
+                                    <CustomText style={styles.summaryChipText}>{`총 수입 ${formatCurrency(totalIncome)}`}</CustomText>
+                                </View>
+                                <View style={styles.summaryChip}>
+                                    <View style={[styles.legendDot, styles.negativeDot]} />
+                                    <CustomText style={styles.summaryChipText}>{`총 지출 ${formatCurrency(totalSpending)}`}</CustomText>
+                                </View>
+                            </View>
+                        </View>
+
+                        {!!reportData?.aiSpendingSummary && (
+                            <View style={styles.aiReviewCard}>
+                                <CustomText style={styles.aiReviewTitle}>AI 부모님 조언 가이드</CustomText>
+                                <CustomText style={[styles.aiReviewText, styles.bodyCopyText]}>
+                                    {reportData.aiSpendingSummary}
+                                </CustomText>
+                            </View>
+                        )}
+
+                        {categoryData.length > 0 && (
+                            <View style={styles.categoryCard}>
+                                <View style={styles.cardHeaderRow}>
+                                    <CustomText style={styles.sectionTitle}>카테고리별 지출</CustomText>
+                                    <CustomText style={styles.cardCaption}>파이를 누르면 일주일 내역 표시</CustomText>
+                                </View>
+
+                                <View style={styles.pieSection}>
+                                    <View style={styles.pieChartWrap}>
+                                        <Svg width={scale(260)} height={scale(260)} viewBox="0 0 260 260">
+                                            <Circle cx="130" cy="130" r="86" fill="#F8FAFC" />
+                                            {pieSlices.map((slice, i) => {
+                                                const isSelected = i === selectedCategoryIndex;
+                                                const outerRadius = isSelected ? 104 : 96;
+                                                const innerRadius = 56;
+                                                const labelPosition = getSliceLabelPosition(
+                                                    130, 130,
+                                                    slice.startAngle, slice.endAngle,
+                                                    outerRadius, innerRadius,
+                                                );
+                                                return (
+                                                    <G key={slice.id ?? i}>
+                                                        <Path
+                                                            d={createArcPath(130, 130, outerRadius, innerRadius, slice.startAngle, slice.endAngle)}
+                                                            fill={slice.color}
+                                                            opacity={isSelected ? 1 : 0.9}
+                                                            onPress={() => setSelectedCategoryIndex(i)}
+                                                        />
+                                                        <SvgText
+                                                            x={labelPosition.x}
+                                                            y={labelPosition.y}
+                                                            fontSize={scale(12)}
+                                                            fontWeight="700"
+                                                            fill="#FFFFFF"
+                                                            textAnchor="middle"
+                                                            alignmentBaseline="middle"
+                                                        >
+                                                            {slice.label}
+                                                        </SvgText>
+                                                    </G>
+                                                );
+                                            })}
+                                        </Svg>
+                                        <View style={styles.pieCenterLabel} pointerEvents="none">
+                                            <CustomText style={styles.pieCenterAmount}>{formatCurrency(selectedCategory?.total)}</CustomText>
+                                        </View>
+                                    </View>
+                                </View>
+
+                                <View style={styles.detailCard}>
+                                    <View style={styles.detailHeader}>
+                                        <CustomText style={styles.detailTitle}>{`${selectedCategory?.label} 이번 주 지출`}</CustomText>
+                                        <CustomText style={styles.detailBadge}>
+                                            {selectedCategory?.ratio
+                                                ? `${(Number(selectedCategory.ratio) * 100).toFixed(1)}%`
+                                                : '0%'}
+                                        </CustomText>
+                                    </View>
+                                    <View style={styles.detailRow}>
+                                        <CustomText style={styles.detailText}>총 지출</CustomText>
+                                        <CustomText style={styles.detailAmount}>{formatCurrency(selectedCategory?.total)}</CustomText>
+                                    </View>
+                                    <View style={[styles.detailRow, styles.detailRowLast]}>
+                                        <CustomText style={styles.detailText}>전체 지출 대비</CustomText>
+                                        <CustomText style={styles.detailAmount}>
+                                            {selectedCategory?.ratio
+                                                ? `${(Number(selectedCategory.ratio) * 100).toFixed(1)}%`
+                                                : '0%'}
+                                        </CustomText>
+                                    </View>
+                                </View>
+                            </View>
+                        )}
+                    </>
+                )}
             </ScrollView>
         </SafeAreaView>
     );
@@ -371,8 +367,6 @@ const styles = StyleSheet.create({
     },
     summaryTitle: { fontSize: scale(14), color: '#6B7280', marginBottom: verticalScale(8) },
     amountText: { fontSize: scale(28), fontWeight: '900', color: '#111827', marginBottom: verticalScale(8) },
-    comparisonText: { fontSize: scale(14), color: '#4B5563' },
-    highlightRed: { color: '#EF4444', fontWeight: 'bold' },
     chartCard: {
         backgroundColor: '#FFFFFF',
         padding: scale(18),
@@ -393,80 +387,44 @@ const styles = StyleSheet.create({
     sectionTitle: { fontSize: scale(16), fontWeight: 'bold', color: '#111827' },
     cardCaption: { fontSize: scale(12), color: '#94A3B8' },
     barChart: {
-        height: verticalScale(280),
+        height: verticalScale(240),
         borderRadius: scale(16),
         backgroundColor: '#F8FAFC',
         paddingHorizontal: scale(10),
-        paddingTop: verticalScale(16),
-        paddingBottom: verticalScale(18),
+        paddingTop: verticalScale(12),
+        paddingBottom: verticalScale(12),
         overflow: 'hidden',
     },
     plotArea: {
         flex: 1,
-        position: 'relative',
     },
     barRow: {
         flex: 1,
         flexDirection: 'row',
-        alignItems: 'flex-start',
+        alignItems: 'flex-end',
         justifyContent: 'space-between',
-    },
-    chartMidLine: {
-        position: 'absolute',
-        left: 0,
-        right: 0,
-        top: verticalScale(100),
-        borderTopWidth: 1.5,
-        borderTopColor: '#94A3B8',
     },
     barColumn: {
         width: scale(36),
         alignItems: 'center',
     },
-    barValuePositive: {
-        fontSize: scale(8),
-        color: '#0F766E',
-        fontWeight: 'bold',
-        marginBottom: verticalScale(6),
-        textAlign: 'center',
-    },
     barTrack: {
         width: scale(36),
-        height: verticalScale(200),
-        alignItems: 'center',
-        justifyContent: 'space-between',
-    },
-    positiveZone: {
-        width: '100%',
-        height: '50%',
+        height: verticalScale(190),
         alignItems: 'center',
         justifyContent: 'flex-end',
-        paddingBottom: verticalScale(10),
-    },
-    negativeZone: {
-        width: '100%',
-        height: '50%',
-        alignItems: 'center',
-        justifyContent: 'flex-start',
-        paddingTop: verticalScale(10),
-    },
-    positiveBar: {
-        width: scale(28),
-        backgroundColor: '#34D399',
-        borderTopLeftRadius: scale(8),
-        borderTopRightRadius: scale(8),
     },
     negativeBar: {
         width: scale(28),
         backgroundColor: '#F87171',
-        borderBottomLeftRadius: scale(8),
-        borderBottomRightRadius: scale(8),
+        borderTopLeftRadius: scale(8),
+        borderTopRightRadius: scale(8),
     },
     barValueNegative: {
         fontSize: scale(8),
         color: '#DC2626',
         fontWeight: 'bold',
-        marginTop: verticalScale(6),
+        marginBottom: verticalScale(4),
         textAlign: 'center',
     },
     dayLabel: {
@@ -584,11 +542,6 @@ const styles = StyleSheet.create({
     detailRowLast: {
         borderBottomWidth: 0,
         paddingBottom: 0,
-    },
-    detailDay: {
-        fontSize: scale(12),
-        color: '#94A3B8',
-        marginBottom: verticalScale(2),
     },
     detailText: {
         fontSize: scale(14),
