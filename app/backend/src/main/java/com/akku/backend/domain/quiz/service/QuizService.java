@@ -84,7 +84,9 @@ public class QuizService {
                 quiz.getProblemJson(),
                 quiz.getExplanation(),
                 userQuiz.getRemainingCredits(),
-                todayChatJson
+                todayChatJson,
+                userQuiz.isSubmitted(),
+                userQuiz.getIsCorrect()
         );
     }
 
