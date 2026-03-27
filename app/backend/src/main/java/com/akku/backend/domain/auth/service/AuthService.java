@@ -71,6 +71,11 @@ public class AuthService {
                             .build();
                     return userRepository.save(newUser);
                 });
+        
+        // DB에는 있으나 간편 비밀번호가 없는 경우 신규 가입 절차로 유도
+        if (user.getPinPassword() == null) {
+            isNewUserFlag[0] = true;
+        }
 
         // 탈퇴/비활성 사용자 차단
         if (!user.getIsActive()) {
