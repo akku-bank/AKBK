@@ -77,7 +77,7 @@ public class QuizKafkaConsumer {
             if (event.reply() != null && !event.reply().isBlank()) {
                 sseConnectionManager.send(
                         event.userId(),
-                        new ChatResponse(event.reply(), null),
+                        new ChatResponse(event.reply(), 0, null),
                         "chat-response"
                 );
             }
@@ -96,7 +96,7 @@ public class QuizKafkaConsumer {
             // 재사용 기존 ChatResponse DTO: reply(AI 텍스트) + chatJson(전체 누적 기록)
             sseConnectionManager.send(
                     event.userId(),
-                    new ChatResponse(event.reply(), event.chatJson()),
+                    new ChatResponse(event.reply(), 0, event.chatJson()),
                     "chat-response"
             );
         } finally {
