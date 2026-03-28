@@ -74,8 +74,24 @@ public class TransactionService {
             // 새로운 내역 DB에 저장 (동기화)
             for (FinanceTransactionHistoryResponse.TransactionDetails h : finHistory) {
                 if (!transactionRepository.existsByTransactionUniqueNo(h.transactionUniqueNo())) {
+                    // 수신/발신자 이름 처리 로직 개선
                     String place = (h.transactionMemo() != null && !h.transactionMemo().trim().isEmpty()) 
                             ? h.transactionMemo().trim() : h.transactionSummary().trim();
+                    
+                    // 만약 이체 내역인데 적요가 비어있거나 제네릭한 경우, 계좌 번호로 실명 조회 시도
+                    if (("송금".equals(place) || "이체".equals(place) || "입금".equals(place) || "출금".equals(place) || "출금(이체)".equals(place) || "입금(이체)".equals(place))
+                            && h.transactionAccountNo() != null && !h.transactionAccountNo().isEmpty()) {
+                        try {
+                            // 상대방 계좌 번호로 실명 조회
+                            String holderName = accountService.getAccountHolderName("999", h.transactionAccountNo());
+                            if (!"알 수 없음".equals(holderName) && !"외부 계좌 사용자".equals(holderName)) {
+                                place = holderName;
+                            }
+                        } catch (Exception e) {
+                            log.warn("실명 조회 패스: {}", e.getMessage());
+                        }
+                    }
+
                     Optional<Merchant> merchantOpt = merchantRepository.findByMerchantName(place);
 
                     Transaction tx = Transaction.builder()
@@ -93,7 +109,36 @@ public class TransactionService {
                             .build();
                     transactionRepository.save(tx);
                     publishTransactionEvent(tx, userId, account);
-                }
+                } else {
+                    // 이미 존재하는 내역이라도 merchantName이 비어있거나 "결제 내역"인 경우 업데이트 시도
+                    Transaction existingTx = transactionRepository.findByTransactionUniqueNo(h.transactionUniqueNo()).orElse(null);
+                    if (existingTx != null && (existingTx.getMerchantName() == null || existingTx.getMerchantName().trim().isEmpty() 
+                            || "결제 내역".equals(existingTx.getMerchantName()) || "입금 내역".equals(existingTx.getMerchantName()))) {
+                            
+                            String place = (h.transactionMemo() != null && !h.transactionMemo().trim().isEmpty()) 
+                                    ? h.transactionMemo().trim() : h.transactionSummary().trim();
+                            
+                            // 이체/송금 관련 키워드 포함 시 실명 조회 시도
+                            boolean isTransfer = place.contains("송금") || place.contains("이체") || place.contains("입금") || place.contains("출금");
+                            
+                            if (isTransfer && h.transactionAccountNo() != null && !h.transactionAccountNo().isEmpty()) {
+                                try {
+                                    String holderName = accountService.getAccountHolderName("999", h.transactionAccountNo());
+                                    if (!"알 수 없음".equals(holderName) && !"외부 계좌 사용자".equals(holderName)) {
+                                        place = holderName;
+                                    }
+                                } catch (Exception e) {}
+                            }
+
+                            if (!place.equals(existingTx.getMerchantName())) {
+                                existingTx.updateMerchantName(place);
+                                if (existingTx.getSubCategoryName() == null || existingTx.getSubCategoryName().trim().isEmpty() || "결제 내역".equals(existingTx.getSubCategoryName())) {
+                                    existingTx.updateSubCategoryName(place);
+                                }
+                                transactionRepository.save(existingTx);
+                            }
+                        }
+                    }
             }
 
             // 우리 DB에서 해당 기간 내역 조회
@@ -215,7 +260,7 @@ public class TransactionService {
     /**
      * Kafka로 거래 이벤트 발행
      */
-    private void publishTransactionEvent(Transaction tx, UUID userId, Account account) {
+    public void publishTransactionEvent(Transaction tx, UUID userId, Account account) {
         try {
             String mappedTransactionType = mapTransactionType(tx.getTransactionType());
 

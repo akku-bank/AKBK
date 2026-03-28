@@ -66,6 +66,9 @@ class CardServiceTest {
     private com.akku.backend.domain.bank.repository.MerchantRepository merchantRepository;
 
     @Mock
+    private com.akku.backend.domain.bank.repository.AccountRepository accountRepository;
+
+    @Mock
     private ApplicationEventPublisher eventPublisher;
 
     @Test
@@ -87,6 +90,8 @@ class CardServiceTest {
         com.akku.backend.domain.bank.entity.Merchant merchant = mock(com.akku.backend.domain.bank.entity.Merchant.class);
         given(merchant.getIsGreen()).willReturn(false);
         given(merchantRepository.findById(1L)).willReturn(Optional.of(merchant));
+        com.akku.backend.domain.bank.entity.Account account = mock(com.akku.backend.domain.bank.entity.Account.class);
+        given(accountRepository.findByAccountNumberAndBankCode(anyString(), eq("001"))).willReturn(Optional.of(account));
 
         // when
         TransactionSynchronizationManager.initSynchronization();
