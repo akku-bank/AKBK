@@ -2,11 +2,6 @@ package com.akku.backend.domain.quiz.service;
 
 import com.akku.backend.domain.auth.entity.User;
 import com.akku.backend.domain.auth.repository.UserRepository;
-import com.akku.backend.domain.jelling.entity.Jelling;
-import com.akku.backend.domain.jelling.entity.JellingTransaction;
-import com.akku.backend.domain.jelling.repository.JellingRepository;
-import com.akku.backend.domain.jelling.repository.JellingTransactionRepository;
-import com.akku.backend.domain.quiz.client.QuizAiClient;
 import com.akku.backend.domain.quiz.dto.AnswerRequest;
 import com.akku.backend.domain.quiz.dto.AnswerResponse;
 import com.akku.backend.domain.quiz.dto.ChatRequest;
@@ -148,7 +143,16 @@ public class QuizService {
 
         Long jellingReward = null;
         if (isCorrect) {
-            long reward = ThreadLocalRandom.current().nextLong(1, 21);
+            long reward = ThreadLocalRandom.current().nextLong(1, 21); // 1~20 랜덤 보상
+            Jelling jelling = jellingRepository.findByUserIdWithLock(userId)
+                    .orElseThrow(() -> new ApiException(QuizErrorCode.QUIZ_NOT_FOUND));
+            jelling.addBalance(reward);
+            jellingTransactionRepository.save(JellingTransaction.builder()
+                    .user(jelling.getUser())
+                    .amount(reward)
+                    .type("QUIZ_REWARD")
+                    .description("퀴즈 정답 보상")
+                    .build());
             jellingReward = reward;
             addQuizRewardJelling(userId, reward);
         }

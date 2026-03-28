@@ -2,6 +2,11 @@ package com.akku.backend.domain.quiz.service;
 
 import com.akku.backend.domain.auth.entity.User;
 import com.akku.backend.domain.auth.repository.UserRepository;
+import com.akku.backend.domain.jelling.entity.Jelling;
+import com.akku.backend.domain.jelling.repository.JellingRepository;
+import com.akku.backend.domain.jelling.repository.JellingTransactionRepository;
+import com.akku.backend.domain.quiz.dto.*;
+import com.akku.backend.domain.quiz.entity.*;
 import com.akku.backend.domain.quiz.client.QuizAiClient;
 import com.akku.backend.domain.quiz.dto.AnswerRequest;
 import com.akku.backend.domain.quiz.dto.AnswerResponse;
@@ -60,6 +65,12 @@ class QuizServiceTest {
 
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private JellingRepository jellingRepository;
+
+    @Mock
+    private JellingTransactionRepository jellingTransactionRepository;
 
     @Mock
     private QuizAiClient quizAiClient;
@@ -190,6 +201,7 @@ class QuizServiceTest {
     class SubmitAnswerTests {
 
         @Test
+        @DisplayName("성공 - 정답 시 1~20 사이 랜덤 보상 지급 (젤링 TODO 처리)")
         void submitAnswer_Correct_Reward() {
             UUID userId = UUID.randomUUID();
             UUID quizId = UUID.randomUUID();
@@ -202,11 +214,21 @@ class QuizServiceTest {
             given(quiz.getCorrectAnswer()).willReturn(1);
             given(quizRepository.findById(quizId)).willReturn(Optional.of(quiz));
 
+            User mockUser = mock(User.class);
+            Jelling jelling = spy(Jelling.builder().user(mockUser).build());
+            given(jellingRepository.findByUserIdWithLock(userId)).willReturn(Optional.of(jelling));
+
+            User mockUser = mock(User.class);
+            Jelling jelling = spy(Jelling.builder().user(mockUser).build());
+            given(jellingRepository.findByUserIdWithLock(userId)).willReturn(Optional.of(jelling));
+
             AnswerResponse response = quizService.submitAnswer(userId, request);
 
             assertTrue(response.isCorrect());
             assertNotNull(response.jellingReward());
             assertTrue(response.jellingReward() >= 1 && response.jellingReward() <= 20);
+            verify(jelling).addBalance(response.jellingReward());
+            verify(jellingTransactionRepository).save(any());
         }
     }
 

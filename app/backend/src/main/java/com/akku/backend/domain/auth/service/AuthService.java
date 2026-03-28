@@ -14,6 +14,8 @@ import com.akku.backend.domain.auth.repository.LogoutTokenRepository;
 import com.akku.backend.domain.auth.repository.UserRepository;
 import com.akku.backend.global.security.JwtProvider;
 import com.akku.backend.domain.auth.exception.AuthErrorCode;
+import com.akku.backend.domain.jelling.entity.Jelling;
+import com.akku.backend.domain.jelling.repository.JellingRepository;
 import com.akku.backend.domain.user.exception.UserErrorCode;
 import com.akku.backend.global.error.ApiException;
 import io.jsonwebtoken.Claims;
@@ -36,6 +38,7 @@ public class AuthService {
     private final SsafyFinanceService ssafyFinanceService;
     private final UserRepository userRepository;
     private final LogoutTokenRepository logoutTokenRepository;
+    private final JellingRepository jellingRepository;
     private final JwtProvider jwtProvider;
     private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
     private final Clock clock;
@@ -124,6 +127,13 @@ public class AuthService {
         // PIN 암호화 저장
         String encodedPin = passwordEncoder.encode(request.pin());
         user.updatePinPassword(encodedPin);
+
+        // CHILD 역할이면 Jelling 지갑 생성 (없는 경우에만)
+        if ("CHILD".equals(user.getRole())) {
+            jellingRepository.findById(user.getId()).orElseGet(() ->
+                    jellingRepository.save(Jelling.builder().user(user).build())
+            );
+        }
 
         String accessToken = jwtProvider.generateAccessToken(user.getId(), user.getRole());
         String refreshToken = jwtProvider.generateRefreshToken(user.getId());
