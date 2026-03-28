@@ -65,4 +65,11 @@ public class UserQuiz {
         this.isCorrect = isCorrect;
         this.solvedDate = solvedDate;
     }
+
+    public void deductCredits(int credits) {
+        if (credits <= 0) {
+            return;
+        }
+        this.remainingCredits = Math.max(0, this.remainingCredits - credits);
+    }
 }
