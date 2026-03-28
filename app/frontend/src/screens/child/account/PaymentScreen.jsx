@@ -47,10 +47,10 @@ const PaymentScreen = ({ navigation }) => {
 
         try {
             setIsPaying(true);
-            // 가상 결제 데모 (가게ID 1번, 금액 1500원)
+            // 가상 결제 데모 (가게ID 16350번, 금액 1500원)
             await api.post('/bank/cards/payment', {
                 cardId: myCardId,
-                merchantId: 1,
+                merchantId: 16350,
                 paymentBalance: 1500
             });
             Alert.alert('결제 성공', '1,500원 결제가 완료되었습니다!', [

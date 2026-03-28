@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, Alert } from 'react-native';
 import { scale, verticalScale } from 'react-native-size-matters';
+import { useFocusEffect } from '@react-navigation/native';
 import CustomText from '../../../components/common/CustomText';
 import api from '../../../api/axios';
 
@@ -8,16 +9,22 @@ const CardListScreen = ({ navigation }) => {
     const [myCards, setMyCards] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        fetchMyCards();
-    }, []);
+    useFocusEffect(
+        useCallback(() => {
+            fetchMyCards();
+        }, [])
+    );
 
     const fetchMyCards = async () => {
         try {
             const res = await api.get('/bank/cards/my');
             const data = res.data?.data;
-            if (data && data.cards) {
-                setMyCards(data.cards);
+            if (data) {
+                if (data.cards) {
+                    setMyCards(data.cards);
+                } else if (Array.isArray(data)) {
+                    setMyCards(data);
+                }
             }
         } catch (err) {
             console.error('Fetch My Cards Error', err);

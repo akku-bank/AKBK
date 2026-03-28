@@ -47,7 +47,13 @@ public class Transaction {
     private String merchantName;
 
     public String getPlace() {
-        return this.merchantName;
+        if (this.merchantName != null && !this.merchantName.trim().isEmpty()) {
+            return this.merchantName;
+        }
+        if (this.memo != null && !this.memo.trim().isEmpty()) {
+            return this.memo;
+        }
+        return "1".equals(this.transactionType) ? "입금 내역" : "결제 내역";
     }
 
     @Column(name = "transaction_date", length = 14)
@@ -70,5 +76,13 @@ public class Transaction {
 
     public void updateMemo(String memo) {
         this.memo = memo;
+    }
+
+    public void updateMerchantName(String merchantName) {
+        this.merchantName = merchantName;
+    }
+
+    public void updateSubCategoryName(String subCategoryName) {
+        this.subCategoryName = subCategoryName;
     }
 }

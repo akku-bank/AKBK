@@ -30,6 +30,7 @@ public class Item {
     @Column(columnDefinition = "TEXT")
     private String resourceUrl;
 
+    @Builder.Default
     @Column(nullable = false)
     private int requiredLevel = 1;
 }

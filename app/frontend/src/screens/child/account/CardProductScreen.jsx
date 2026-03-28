@@ -11,7 +11,7 @@ const CardProductScreen = ({ navigation }) => {
     const [selectedProduct, setSelectedProduct] = useState(null);
     const [accounts, setAccounts] = useState([]);
     const [selectedAccountNo, setSelectedAccountNo] = useState('');
-    const [selectedDate, setSelectedDate] = useState('1'); // 기본 월요일(1)
+    const [selectedDate, setSelectedDate] = useState('7'); // 기본 일요일(7)
     const [issuing, setIssuing] = useState(false);
 
     useEffect(() => {
@@ -155,10 +155,10 @@ const CardProductScreen = ({ navigation }) => {
                                                         return benefits.map((b, i) => (
                                                             <View key={i} style={styles.benefitRow}>
                                                                 <CustomText style={styles.benefitName}>
-                                                                    {b.benefitName || Object.values(b)[0]}
+                                                                    {b.categoryName || b.benefitName || Object.values(b)[0]}
                                                                 </CustomText>
                                                                 <CustomText style={styles.benefitDetail}>
-                                                                    {b.discountRate ? `${b.discountRate}%` : ''} {b.benefitType || ''}
+                                                                    {b.discountRate ? `${b.discountRate}% 할인` : (b.benefitType || '')}
                                                                 </CustomText>
                                                             </View>
                                                         ));
@@ -173,23 +173,6 @@ const CardProductScreen = ({ navigation }) => {
                                 </View>
                             )}
 
-                            <View style={styles.configSection}>
-                                <CustomText style={styles.sectionLabel}>결제일 선택 (요일)</CustomText>
-                                <View style={styles.daySelector}>
-                                    {dayNames.map((name, i) => {
-                                        const val = (i + 1).toString();
-                                        return (
-                                            <TouchableOpacity
-                                                key={val}
-                                                style={[styles.dayItem, selectedDate === val && styles.dayItemActive]}
-                                                onPress={() => setSelectedDate(val)}
-                                            >
-                                                <CustomText style={[styles.dayText, selectedDate === val && styles.dayTextActive]}>{name}</CustomText>
-                                            </TouchableOpacity>
-                                        );
-                                    })}
-                                </View>
-                            </View>
 
                             <View style={styles.configSection}>
                                 <CustomText style={styles.sectionLabel}>출금 계좌 선택</CustomText>
