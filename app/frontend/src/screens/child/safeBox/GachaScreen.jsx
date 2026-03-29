@@ -126,10 +126,10 @@ const GachaScreen = ({ navigation, route }) => {
         : '🎁';
     const isFallback = !reward?.name && !reward?.rewardItemName;
     const rewardNameStr = isFallback ? '준비된 아이템이 없습니다.' : (reward?.name || reward?.rewardItemName);
-    const donationCompleteText = reward?.isDuplicate ? '아쉬워요! 중복이에요!' : '기부가 완료되었어요!';
+    const donationCompleteText = reward?.isDuplicate ? '아쉽게도 중복이에요!' : '기부가 완료되었어요!';
 
     if (!rewardImage && !isFallback && rewardNameStr) {
-        if (rewardNameStr.includes('아꾸') || rewardNameStr.includes('akku')) rewardImage = require('../../../assets/pet/akku.png');
+        if (rewardNameStr.includes('아꾸') || rewardNameStr.includes('akku')) rewardImage = [require('../../../assets/pet/akku-body.png'), require('../../../assets/pet/akku-base.png')];
         else if (rewardNameStr.includes('시바견') || rewardNameStr.includes('shiba')) rewardImage = require('../../../assets/pet/shiba.png');
         else if (rewardNameStr.includes('냥이') || rewardNameStr.includes('고양이') || rewardNameStr.includes('cat')) rewardImage = require('../../../assets/pet/cat.png');
         else if (rewardNameStr.includes('진주') || rewardNameStr.includes('pearl')) rewardImage = require('../../../assets/art/pearl.png');
@@ -187,13 +187,13 @@ const GachaScreen = ({ navigation, route }) => {
                         <CustomText style={[styles.titleText, { marginTop: verticalScale(10), marginBottom: verticalScale(20), textAlign: 'center' }]}>{donationCompleteText}</CustomText>
                         {rewardImage ? (
                             Array.isArray(rewardImage) ? (
-                                <View style={[styles.rewardImage, { position: 'relative' }]}>
+                                <View style={[styles.rewardImage, { position: 'relative', marginTop: verticalScale(20), marginBottom: verticalScale(20) }]}>
                                     {rewardImage.map((img, idx) => (
-                                        <Image key={idx} source={img} style={{ width: '100%', height: '100%', position: 'absolute', transform: [{ scale: String(reward?.category).toLowerCase() === 'pet' ? 2.5 : 1.0 }, { translateY: String(reward?.category).toLowerCase() === 'pet' ? verticalScale(-10) : 0 }] }} resizeMode="contain" />
+                                        <Image key={idx} source={img} style={{ width: '100%', height: '100%', position: 'absolute', transform: [{ scale: 2.2 }, { translateY: verticalScale(-5) }, { translateX: scale(5) }] }} resizeMode="contain" />
                                     ))}
                                 </View>
                             ) : (
-                                <Image source={rewardImage} style={[styles.rewardImage, { transform: [{ scale: String(reward?.category).toLowerCase() === 'pet' ? 2.2 : 1.0 }, { translateY: String(reward?.category).toLowerCase() === 'pet' ? verticalScale(-10) : 0 }] }]} resizeMode="contain" />
+                                <Image source={rewardImage} style={[styles.rewardImage, { transform: [{ scale: String(reward?.category).toLowerCase() === 'pet' ? 2.3 : 1.0 }, { translateY: String(reward?.category).toLowerCase() === 'pet' ? verticalScale(-10) : 0 }, { translateX: String(reward?.category).toLowerCase() === 'pet' ? scale(6) : 0 }] }]} resizeMode="contain" />
                             )
                         ) : null}
 
@@ -269,8 +269,8 @@ const styles = StyleSheet.create({
         elevation: 3,
     },
     rewardImage: {
-        width: scale(160),
-        height: scale(160),
+        width: scale(220),
+        height: scale(220),
         marginBottom: verticalScale(10),
     },
     rewardFallbackEmoji: {

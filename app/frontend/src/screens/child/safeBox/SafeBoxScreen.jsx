@@ -185,9 +185,8 @@ const SafeBoxScreen = ({ navigation }) => {
 
                     {!activeCharity ? (
                         <View style={styles.charitySelectionBox}>
-                            <CustomText style={[styles.sectionTitle, { textAlign: 'center' }]}>어디에 기부해 볼까요?</CustomText>
+                            <CustomText style={[styles.sectionTitle, { textAlign: 'center' }]}>원하는 기부처를 선택해보세요!</CustomText>
                             <CustomText style={[styles.selectionDescription, { textAlign: 'center' }]}>
-                                원하는 기부처를 선택해주세요!
                             </CustomText>
 
                             {charities.map((charity) => (

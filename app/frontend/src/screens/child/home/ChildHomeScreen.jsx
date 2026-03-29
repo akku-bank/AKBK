@@ -199,8 +199,8 @@ const ChildHomeScreen = ({ navigation }) => {
                                 const treeItem = AVATAR_ITEMS.art2.find(a => a.id === equipState.art2);
                                 if (!treeItem || !treeItem.img) return null;
                                 return (
-                                    <View style={{ position: 'absolute', left: scale(-10), bottom: verticalScale(-15), zIndex: 0 }}>
-                                        <Image source={treeItem.img} style={{ width: scale(140), height: scale(190) }} resizeMode="contain" />
+                                    <View style={{ position: 'absolute', left: scale(10), bottom: verticalScale(5), zIndex: 0 }}>
+                                        <Image source={treeItem.img} style={{ width: scale(90), height: scale(130) }} resizeMode="contain" />
                                     </View>
                                 );
                             })()}

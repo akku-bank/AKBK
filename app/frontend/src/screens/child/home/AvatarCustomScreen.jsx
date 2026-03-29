@@ -236,8 +236,8 @@ const AvatarCustomScreen = ({ navigation }) => {
                         const treeItem = AVATAR_ITEMS.art2.find(a => a.id === equipState.art2);
                         if (!treeItem || !treeItem.img) return null;
                         return (
-                            <View style={{ position: 'absolute', left: scale(-70), bottom: verticalScale(-65) }} pointerEvents="none">
-                                <Image source={treeItem.img} style={{ width: scale(140), height: scale(190) }} resizeMode="contain" />
+                            <View style={{ position: 'absolute', right: scale(180), bottom: verticalScale(-35) }} pointerEvents="none">
+                                <Image source={treeItem.img} style={{ width: scale(80), height: scale(110) }} resizeMode="contain" />
                             </View>
                         );
                     })()}

@@ -1,32 +1,33 @@
 import React from 'react';
 import { Image, SafeAreaView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { scale, verticalScale } from 'react-native-size-matters';
+import { Ionicons } from '@expo/vector-icons';
 import CustomText from '../../../components/common/CustomText';
 
 const DIFFICULTIES = [
     {
-        label: '\uD558',
+        label: '하',
         value: 'EASY',
-        title: '\uC26C\uC6B4 \uB09C\uC774\uB3C4',
-        description: '\uAE30\uCD08 \uAE08\uC735 \uAC1C\uB150\uBD80\uD130 \uCC28\uADFC\uCC28\uADFC \uD480\uC5B4\uC694.',
+        title: '쉬운 난이도',
+        description: '기초 금융 개념부터\n차근차근 풀어요.',
         image: require('../../../assets/croco/kids_akku.png'),
         badgeBackgroundColor: '#DCFCE7',
         badgeTextColor: '#15803D',
     },
     {
-        label: '\uC911',
+        label: '중',
         value: 'NORMAL',
-        title: '\uBCF4\uD1B5 \uB09C\uC774\uB3C4',
-        description: '\uC870\uAE08 \uB354 \uC0DD\uAC01\uC774 \uD544\uC694\uD55C \uBB38\uC81C\uB97C \uD480\uC5B4\uC694.',
+        title: '보통 난이도',
+        description: '조금 더 생각이 필요한\n문제를 풀어요.',
         image: require('../../../assets/croco/students_akku.png'),
         badgeBackgroundColor: '#FEF3C7',
         badgeTextColor: '#B45309',
     },
     {
-        label: '\uC0C1',
+        label: '상',
         value: 'HARD',
-        title: '\uC5B4\uB824\uC6B4 \uB09C\uC774\uB3C4',
-        description: '\uB3C4\uC804\uC801\uC778 \uAE08\uC735 \uD034\uC988\uC5D0 \uB3C4\uC804\uD574\uC694.',
+        title: '어려운 난이도',
+        description: '도전적인 금융 퀴즈에\n도전해요.',
         image: require('../../../assets/croco/adult_akku.png'),
         badgeBackgroundColor: '#FEE2E2',
         badgeTextColor: '#B91C1C',
@@ -37,20 +38,12 @@ const QuizDifficultySelectScreen = ({ navigation }) => {
     const handleSelectDifficulty = (difficulty) => {
         navigation.navigate('QuizScreen', { difficulty });
     };
-    const formatDescription = (text) => {
-        if (!text) return '';
-        const words = text.split(' ');
-        if (words.length > 4) {
-            return words.slice(0, 4).join(' ') + '\n' + words.slice(4).join(' ');
-        }
-        return text;
-    };
 
     return (
         <SafeAreaView style={styles.safeArea}>
             <View style={styles.header}>
                 <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-                    <CustomText style={styles.backButtonText}>{'<'}</CustomText>
+                    <Ionicons name="chevron-back" size={scale(28)} color="#111" />
                 </TouchableOpacity>
                 <CustomText style={styles.headerTitle}>{'\uD034\uC988 \uB09C\uC774\uB3C4 \uC120\uD0DD'}</CustomText>
                 <View style={styles.headerSpacer} />
@@ -80,7 +73,7 @@ const QuizDifficultySelectScreen = ({ navigation }) => {
                                     <CustomText style={styles.cardTitle}>{item.title}</CustomText>
                                 </View>
                                 <CustomText style={styles.cardDescription}>
-                                    {formatDescription(item.description)}
+                                    {item.description}
                                 </CustomText>
                             </View>
                             <Image source={item.image} style={styles.cardImage} resizeMode="contain" />

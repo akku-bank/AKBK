@@ -55,13 +55,13 @@ const ChildAccountScreen = ({ navigation }) => {
                     <CustomText style={styles.balanceValue}>{balance.toLocaleString()}원</CustomText>
                     <View style={styles.actionRow}>
                         <TouchableOpacity style={styles.actionBtn} onPress={() => navigation.navigate('Payment')}>
-                            <CustomText style={styles.actionBtnText}>💸 바코드 결제</CustomText>
+                            <CustomText style={styles.actionBtnText}>결제</CustomText>
                         </TouchableOpacity>
                         <TouchableOpacity style={styles.actionBtn} onPress={() => navigation.navigate('Transfer')}>
-                            <CustomText style={styles.actionBtnText}>🤝 송금하기</CustomText>
+                            <CustomText style={styles.actionBtnText}>송금하기</CustomText>
                         </TouchableOpacity>
                         <TouchableOpacity style={styles.actionBtn} onPress={() => navigation.navigate('CardListScreen')}>
-                            <CustomText style={styles.actionBtnText}>💳 내 카드</CustomText>
+                            <CustomText style={styles.actionBtnText}>내 카드</CustomText>
                         </TouchableOpacity>
                     </View>
                 </View>
