@@ -267,6 +267,7 @@ class QuizServiceTest {
             assertTrue(response.isCorrect());
             assertNotNull(response.jellingReward());
             assertTrue(response.jellingReward() >= 1 && response.jellingReward() <= 20);
+            assertEquals(1, response.correctChoiceNo());
             verify(jellingRepository).findByUserIdWithLock(userId);
             verify(jellingTransactionRepository).save(any());
         }

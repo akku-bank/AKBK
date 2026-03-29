@@ -95,7 +95,8 @@ public class QuizService {
                 userQuiz.getRemainingCredits(),
                 todayChatJson,
                 userQuiz.isSubmitted(),
-                userQuiz.getIsCorrect()
+                userQuiz.getIsCorrect(),
+                quiz.getCorrectAnswer()
         );
     }
 
@@ -159,7 +160,7 @@ public class QuizService {
             jellingReward = reward;
         }
 
-        return new AnswerResponse(isCorrect, jellingReward);
+        return new AnswerResponse(isCorrect, jellingReward, quiz.getCorrectAnswer());
     }
 
     @Transactional

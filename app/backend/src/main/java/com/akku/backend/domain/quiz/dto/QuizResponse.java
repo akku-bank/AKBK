@@ -11,5 +11,6 @@ public record QuizResponse(
         int remainingCredits,
         String chatJson,
         boolean isSubmitted,
-        Boolean isCorrect
+        Boolean isCorrect,
+        int correctChoiceNo  // 실제 정답 번호 (1-4)
 ) {}
