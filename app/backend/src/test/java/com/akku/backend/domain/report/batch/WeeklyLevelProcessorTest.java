@@ -9,11 +9,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -35,7 +37,8 @@ class WeeklyLevelProcessorTest {
     @Mock
     private com.akku.backend.domain.quiz.repository.UserQuizRepository userQuizRepository;
 
-    @InjectMocks
+    private final Clock clock = Clock.fixed(Instant.parse("2026-03-31T00:00:00Z"), ZoneId.of("Asia/Seoul"));
+
     private WeeklyLevelProcessor weeklyLevelProcessor;
 
     private User child;
@@ -43,6 +46,7 @@ class WeeklyLevelProcessorTest {
 
     @BeforeEach
     void setUp() {
+        weeklyLevelProcessor = new WeeklyLevelProcessor(weeklyReportRepository, accountRepository, userQuizRepository, clock);
         userId = UUID.randomUUID();
         child = User.builder()
                 .id(userId)
@@ -143,6 +147,22 @@ class WeeklyLevelProcessorTest {
         // 총 가용 자금 = 수입(10000) + 기초잔액(5000) = 15,000
         // 잔액 유지력 = 20 * (8000 / 15000) = 약 10.6 -> 11점 (반올림)
         assertThat(result.getScore()).isGreaterThan(0);
+    }
+
+    @Test
+    @DisplayName("신규 유저(수입/지출/잔액 모두 0): 소비 점수 0점 반환")
+    void process_NewUser_NoFunds_SpendingScoreIsZero() {
+        // given: 수입/지출 내역 없음, 잔액 없음
+        given(weeklyReportRepository.findByIdUserIdAndIdStartDay(any(), any())).willReturn(List.of());
+        given(accountRepository.findByUserIdAndType(any(), any())).willReturn(Optional.empty());
+        given(userQuizRepository.countByUserIdAndIsCorrectTrueAndSolvedDateBetween(any(), any(), any())).willReturn(0L);
+
+        // when
+        User result = weeklyLevelProcessor.process(child);
+
+        // then: totalFunds = 0 → spendingScore = 0, balanceScore = 0, quizScore = 0
+        assertThat(result.getScore()).isEqualTo(0);
+        assertThat(result.getLevel()).isEqualTo(1);
     }
 
     @Test
