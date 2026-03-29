@@ -161,7 +161,12 @@ const styles = StyleSheet.create({
     categoryRow: { flexDirection: 'row', flexWrap: 'wrap', gap: scale(8), marginBottom: verticalScale(24) },
     categoryBtn: {
         backgroundColor: '#FFFFFF', paddingVertical: verticalScale(10), paddingHorizontal: scale(16),
-        borderRadius: scale(20), borderWidth: 1, borderColor: '#E5E7EB'
+        borderRadius: scale(20), borderWidth: 1, borderColor: '#E5E7EB',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
+        elevation: 2,
     },
     categoryBtnActive: { backgroundColor: '#A3E635', borderColor: '#A3E635' },
     categoryText: { fontSize: scale(14), fontWeight: '600', color: '#6B7280' },
@@ -169,7 +174,12 @@ const styles = StyleSheet.create({
 
     inputContainer: {
         flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF',
-        borderRadius: scale(12), paddingHorizontal: scale(16), marginBottom: verticalScale(24), borderWidth: 1, borderColor: '#E5E7EB'
+        borderRadius: scale(12), paddingHorizontal: scale(16), marginBottom: verticalScale(24), borderWidth: 1, borderColor: '#E5E7EB',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
+        elevation: 2,
     },
     amountInput: { flex: 1, fontSize: scale(18), fontWeight: 'bold', color: '#111', paddingVertical: verticalScale(16) },
     currencyText: { fontSize: scale(16), fontWeight: 'bold', color: '#111' },

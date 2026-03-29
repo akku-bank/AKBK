@@ -51,16 +51,15 @@ const AvatarDictionaryScreen = ({ navigation }) => {
                 };
 
                 // 백엔드에서 획득했다고 알려준 아이템 이름 맵핑
-                const ownedMap = {};
-                items.forEach(backendItem => {
-                    if (backendItem.isOwned) {
-                        ownedMap[backendItem.name] = true;
-                    }
-                });
+                // 백엔드에서 획득했다고 알려준 아이템들의 이름 목록 저장
+                const ownedNames = items.filter(backendItem => backendItem.isOwned).map(i => i.name);
 
                 // 카테고리별 공통 아이템 변환 헬퍼
                 const createItemObj = (localItem, isForcedUnlock = false) => {
-                    const isOwned = !!ownedMap[localItem.name];
+                    // 유연한 매핑: 백엔드에서 준 이름이 로컬 이름을 포함하거나, 역으로도 허용 (예: "시바견 펫" vs "시바견")
+                    const isOwned = ownedNames.some(ownedName =>
+                        ownedName.includes(localItem.name) || localItem.name.includes(ownedName)
+                    );
                     // 레벨 1 기본템은 무조건 보유 처리 (백엔드에 없어도), 강제 해금(isForcedUnlock) 추가
                     const finalOwned = isOwned || localItem.level === 1 || isForcedUnlock;
                     // 가챠 등 특수(level 99)는 미보유시 잠김. 일반템은 유저레벨이 낮으면 잠김.
@@ -183,7 +182,7 @@ const styles = StyleSheet.create({
     backButton: { width: scale(32), height: scale(32), justifyContent: 'center' },
     backButtonText: { fontSize: scale(22), fontWeight: 'bold', color: '#111' },
     headerTitle: { fontSize: scale(18), fontWeight: 'bold', color: '#111' },
-    levelBox: { backgroundColor: '#ECFCCB', paddingHorizontal: scale(12), paddingVertical: verticalScale(6), borderRadius: scale(12) },
+    levelBox: { backgroundColor: '#ECFCCB', paddingHorizontal: scale(12), paddingVertical: verticalScale(6), borderRadius: scale(12), shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 1, },
     levelText: { fontSize: scale(14), fontWeight: 'bold', color: '#4D7C0F' },
 
     categoryRowWrapper: { backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#E5E7EB' },

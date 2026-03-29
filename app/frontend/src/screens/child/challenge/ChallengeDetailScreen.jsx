@@ -275,6 +275,11 @@ const styles = StyleSheet.create({
         borderRadius: scale(16),
         padding: scale(18),
         marginBottom: verticalScale(14),
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
+        elevation: 2,
     },
     progressHeader: {
         flexDirection: 'row',

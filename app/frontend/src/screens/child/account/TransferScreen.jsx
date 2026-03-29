@@ -323,12 +323,12 @@ const styles = StyleSheet.create({
     stepTitle: { fontSize: 26, fontWeight: '900', color: '#111', lineHeight: 34, marginBottom: 30 },
 
     // Step 1
-    bankSelect: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F9FAFB', padding: 16, borderRadius: 16, marginBottom: 16, borderWidth: 1, borderColor: '#E5E7EB' },
+    bankSelect: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', padding: 16, borderRadius: 16, marginBottom: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8, elevation: 3 },
     bankCircle: { width: 24, height: 24, borderRadius: 12, marginRight: 12 },
     bankName: { flex: 1, fontSize: 16, fontWeight: '600', color: '#111' },
     chevron: { fontSize: 12, color: '#9CA3AF' },
-    accountInput: { backgroundColor: '#F9FAFB', padding: 16, borderRadius: 16, fontSize: 18, fontWeight: 'bold', color: '#111', marginBottom: 16, borderWidth: 1, borderColor: '#E5E7EB' },
-    nameInput: { backgroundColor: '#F9FAFB', padding: 16, borderRadius: 16, fontSize: 16, color: '#111', borderWidth: 1, borderColor: '#E5E7EB' },
+    accountInput: { backgroundColor: '#FFFFFF', padding: 16, borderRadius: 16, fontSize: 18, fontWeight: 'bold', color: '#111', marginBottom: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8, elevation: 3 },
+    nameInput: { backgroundColor: '#FFFFFF', padding: 16, borderRadius: 16, fontSize: 16, color: '#111', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8, elevation: 3 },
 
     // Step 2
     recipientBadge: { backgroundColor: '#F9FAFB', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, fontSize: 13, color: '#6B7280', alignSelf: 'flex-start', marginBottom: 12 },

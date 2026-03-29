@@ -145,7 +145,7 @@ const styles = StyleSheet.create({
     helperText: { fontSize: scale(12), color: '#9CA3AF', marginTop: verticalScale(-4), marginBottom: verticalScale(24) },
 
     footer: { padding: scale(16), backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: '#F9FAFB' },
-    saveButton: { backgroundColor: '#A3E635', paddingVertical: verticalScale(16), borderRadius: scale(16), alignItems: 'center' },
+    saveButton: { backgroundColor: '#A3E635', paddingVertical: verticalScale(16), borderRadius: scale(16), alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2, },
     saveButtonText: { fontSize: scale(16), fontWeight: 'bold', color: '#111' },
 
     utilitySection: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: verticalScale(40), marginBottom: verticalScale(16) },

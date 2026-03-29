@@ -158,7 +158,7 @@ const styles = StyleSheet.create({
     currencyText: { fontSize: scale(24), fontWeight: 'bold', color: '#111', marginLeft: scale(8) },
 
     quickAmountRow: { flexDirection: 'row', gap: scale(8) },
-    quickAmountBtn: { backgroundColor: '#F9FAFB', paddingHorizontal: scale(16), paddingVertical: verticalScale(10), borderRadius: scale(20) },
+    quickAmountBtn: { backgroundColor: '#F9FAFB', paddingHorizontal: scale(16), paddingVertical: verticalScale(10), borderRadius: scale(20), shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2, },
     quickAmountText: { fontSize: scale(14), fontWeight: 'bold', color: '#4B5563' },
 
     pinInput: {
@@ -167,7 +167,7 @@ const styles = StyleSheet.create({
     },
 
     footer: { padding: scale(16), backgroundColor: '#FFFFFF' },
-    mainButton: { backgroundColor: '#A3E635', paddingVertical: verticalScale(16), borderRadius: scale(16), alignItems: 'center' },
+    mainButton: { backgroundColor: '#A3E635', paddingVertical: verticalScale(16), borderRadius: scale(16), alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2, },
     disabledButton: { backgroundColor: '#D1D5DB' },
     mainButtonText: { fontSize: scale(16), fontWeight: 'bold', color: '#111' }
 });

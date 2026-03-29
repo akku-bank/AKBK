@@ -56,7 +56,9 @@ const AvatarCustomScreen = ({ navigation }) => {
 
                 items.forEach(backendItem => {
                     for (const cat in AVATAR_ITEMS) {
-                        const matchingFrontendItem = AVATAR_ITEMS[cat].find(i => i.name === backendItem.name);
+                        const matchingFrontendItem = AVATAR_ITEMS[cat].find(i =>
+                            backendItem.name.includes(i.name) || i.name.includes(backendItem.name)
+                        );
                         if (matchingFrontendItem) {
                             if (backendItem.isOwned) {
                                 owned[matchingFrontendItem.id] = true;

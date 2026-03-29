@@ -111,7 +111,6 @@ const ChildMyPageScreen = ({ navigation }) => {
 
                     <View style={styles.menuItem}>
                         <View style={styles.menuItemLeft}>
-                            <CustomText style={styles.menuIcon}>🔔</CustomText>
                             <CustomText style={styles.menuText}>푸시 알림</CustomText>
                         </View>
                         <Switch
@@ -123,7 +122,6 @@ const ChildMyPageScreen = ({ navigation }) => {
 
                     <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('ChildChangePassword')}>
                         <View style={styles.menuItemLeft}>
-                            <CustomText style={styles.menuIcon}>🔒</CustomText>
                             <CustomText style={styles.menuText}>비밀번호 변경</CustomText>
                         </View>
                         <CustomText style={styles.chevron}>›</CustomText>
@@ -179,10 +177,10 @@ const styles = StyleSheet.create({
         marginTop: verticalScale(16),
         marginBottom: verticalScale(24),
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.03,
-        shadowRadius: 8,
-        elevation: 1,
+        shadowOffset: { width: 0, height: verticalScale(2) },
+        shadowOpacity: 0.05,
+        shadowRadius: scale(8),
+        elevation: 2,
     },
     profileAvatarBox: {
         width: scale(56),
@@ -192,7 +190,12 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: scale(16),
-        overflow: 'hidden'
+        overflow: 'hidden',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
+        elevation: 2,
     },
     profileAvatarImage: {
         width: '110%',
@@ -218,6 +221,11 @@ const styles = StyleSheet.create({
         paddingVertical: verticalScale(6),
         paddingHorizontal: scale(12),
         borderRadius: scale(8),
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: verticalScale(2) },
+        shadowOpacity: 0.05,
+        shadowRadius: scale(4),
+        elevation: 2,
     },
     editButtonText: {
         fontSize: scale(13),
@@ -230,6 +238,11 @@ const styles = StyleSheet.create({
         paddingVertical: verticalScale(8),
         paddingHorizontal: scale(16),
         marginBottom: verticalScale(16),
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: verticalScale(2) },
+        shadowOpacity: 0.05,
+        shadowRadius: scale(8),
+        elevation: 2,
     },
     menuGroupTitle: {
         fontSize: scale(13),

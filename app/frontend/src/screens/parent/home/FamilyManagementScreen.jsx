@@ -251,16 +251,16 @@ const styles = StyleSheet.create({
     statusPending: { color: '#F59E0B' },
     statusActive: { color: '#10B981' },
 
-    qrButton: { backgroundColor: '#F9FAFB', paddingHorizontal: scale(16), paddingVertical: verticalScale(8), borderRadius: scale(12) },
+    qrButton: { backgroundColor: '#F9FAFB', paddingHorizontal: scale(16), paddingVertical: verticalScale(8), borderRadius: scale(12), shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2, },
     qrButtonText: { fontSize: scale(14), fontWeight: 'bold', color: '#4B5563' },
 
-    detailButton: { backgroundColor: '#ECFCCB', paddingHorizontal: scale(16), paddingVertical: verticalScale(8), borderRadius: scale(12) },
+    detailButton: { backgroundColor: '#ECFCCB', paddingHorizontal: scale(16), paddingVertical: verticalScale(8), borderRadius: scale(12), shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2, },
     detailButtonText: { fontSize: scale(14), fontWeight: 'bold', color: '#4D7C0F' },
 
     editInput: { flex: 1, backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#D1D5DB', borderRadius: scale(8), paddingHorizontal: scale(12), paddingVertical: verticalScale(6), fontSize: scale(14), color: '#111', marginRight: scale(8) },
     actionBtn: { paddingHorizontal: scale(8), paddingVertical: verticalScale(6) },
 
-    infoBox: { marginTop: verticalScale(32), backgroundColor: '#ECFCCB', padding: scale(16), borderRadius: scale(12) },
+    infoBox: { marginTop: verticalScale(32), backgroundColor: '#ECFCCB', padding: scale(16), borderRadius: scale(12), shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2, },
     infoTitle: { fontSize: scale(14), fontWeight: 'bold', color: '#4D7C0F', marginBottom: verticalScale(8) },
     infoText: { fontSize: scale(13), color: '#4D7C0F', lineHeight: 20 },
 
@@ -268,7 +268,7 @@ const styles = StyleSheet.create({
     modalContent: { width: '85%', backgroundColor: '#FFF', borderRadius: scale(16), padding: scale(20) },
     modalTitle: { fontSize: scale(18), fontWeight: 'bold', color: '#111', marginBottom: verticalScale(16), textAlign: 'center' },
     modalInput: { width: '100%', height: scale(45), backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#D1D5DB', borderRadius: scale(8), paddingHorizontal: scale(12), fontSize: scale(14), color: '#111' },
-    roleBtn: { paddingVertical: verticalScale(8), paddingHorizontal: scale(16), borderRadius: scale(8), backgroundColor: '#F9FAFB' },
+    roleBtn: { paddingVertical: verticalScale(8), paddingHorizontal: scale(16), borderRadius: scale(8), backgroundColor: '#F9FAFB', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2, },
     roleBtnActive: { backgroundColor: '#ECFCCB' },
     roleText: { color: '#6B7280', fontWeight: 'bold' },
     roleTextActive: { color: '#4D7C0F', fontWeight: 'bold' },

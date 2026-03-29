@@ -88,6 +88,7 @@ const WeeklyReportScreen = ({ navigation }) => {
     const dailyFlowData = DAY_KEYS.map((key, i) => ({
         day: DAY_LABELS[i],
         expense: reportData?.dailySpending?.[key] || 0,
+        income: reportData?.dailyIncome?.[key] || 0,
     }));
 
     const categoryData = (reportData?.categoryRatios || []).map((cat, i) => ({
@@ -101,7 +102,19 @@ const WeeklyReportScreen = ({ navigation }) => {
     const totalSpending = reportData?.totalSpending || 0;
     const totalIncome = reportData?.totalIncome || 0;
     const selectedCategory = categoryData[selectedCategoryIndex] || null;
-    const maxFlowAmount = Math.max(...dailyFlowData.map(item => item.expense), 1);
+    const maxFlowAmount = Math.max(...dailyFlowData.map(item => Math.max(item.expense, item.income)), 1);
+
+    const chartHeights = dailyFlowData.map(item => ({
+        ...item,
+        incomeHeight: Math.max((item.income / maxFlowAmount) * verticalScale(90), item.income > 0 ? scale(4) : 0),
+        expenseHeight: Math.max((item.expense / maxFlowAmount) * verticalScale(90), item.expense > 0 ? scale(4) : 0),
+    }));
+
+    const maxIncomeRenderHeight = Math.max(...chartHeights.map(item => item.incomeHeight), verticalScale(10));
+    const maxExpenseRenderHeight = Math.max(...chartHeights.map(item => item.expenseHeight), verticalScale(10));
+
+    const incomeTrackHeight = maxIncomeRenderHeight + verticalScale(20);
+    const expenseTrackHeight = maxExpenseRenderHeight + verticalScale(20);
 
     let currentAngle = 0;
     const pieSlices = categoryData.map((category) => {
@@ -152,28 +165,37 @@ const WeeklyReportScreen = ({ navigation }) => {
 
                         <View style={styles.chartCard}>
                             <View style={styles.cardHeaderRow}>
-                                <CustomText style={styles.sectionTitle}>요일별 지출</CustomText>
+                                <CustomText style={styles.sectionTitle}>요일별 수입·지출 흐름</CustomText>
                             </View>
                             <View style={styles.barChart}>
                                 <View style={styles.plotArea}>
+                                    <View style={[styles.centerAxisLine, { top: incomeTrackHeight + verticalScale(12) }]} />
                                     <View style={styles.barRow}>
-                                        {dailyFlowData.map((item) => {
-                                            const barHeight = Math.max(
-                                                (item.expense / maxFlowAmount) * verticalScale(180),
-                                                item.expense > 0 ? scale(8) : 0,
-                                            );
-                                            return (
-                                                <View key={item.day} style={styles.barColumn}>
-                                                    <View style={styles.barTrack}>
-                                                        <CustomText style={styles.barValueNegative}>
-                                                            {item.expense > 0 ? formatChartAmount(item.expense) : ''}
+                                        {chartHeights.map((item) => (
+                                            <View key={item.day} style={styles.barColumn}>
+                                                <View style={[styles.incomeTrack, { height: incomeTrackHeight }]}>
+                                                    {item.income > 0 && (
+                                                        <CustomText style={styles.barValuePositive} numberOfLines={1}>
+                                                            +{formatChartAmount(item.income)}
                                                         </CustomText>
-                                                        <View style={[styles.negativeBar, { height: barHeight }]} />
-                                                    </View>
-                                                    <CustomText style={styles.dayLabel}>{item.day}</CustomText>
+                                                    )}
+                                                    {item.income > 0 && <View style={[styles.positiveBar, { height: item.incomeHeight }]} />}
                                                 </View>
-                                            );
-                                        })}
+
+                                                <View style={{ height: verticalScale(24) }} />
+
+                                                <View style={[styles.expenseTrack, { height: expenseTrackHeight }]}>
+                                                    {item.expense > 0 && <View style={[styles.negativeBar, { height: item.expenseHeight }]} />}
+                                                    {item.expense > 0 && (
+                                                        <CustomText style={styles.barValueNegative} numberOfLines={1}>
+                                                            -{formatChartAmount(item.expense)}
+                                                        </CustomText>
+                                                    )}
+                                                </View>
+
+                                                <CustomText style={styles.dayLabel}>{item.day}</CustomText>
+                                            </View>
+                                        ))}
                                     </View>
                                 </View>
                             </View>
@@ -330,6 +352,11 @@ const styles = StyleSheet.create({
         backgroundColor: '#FFFFFF',
         alignItems: 'center',
         justifyContent: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
+        elevation: 2,
     },
     weekLabel: {
         fontSize: scale(14),
@@ -370,49 +397,75 @@ const styles = StyleSheet.create({
     sectionTitle: { fontSize: scale(16), fontWeight: 'bold', color: '#111827' },
     cardCaption: { fontSize: scale(12), color: '#94A3B8' },
     barChart: {
-        height: verticalScale(240),
         borderRadius: scale(16),
         backgroundColor: '#F8FAFC',
-        paddingHorizontal: scale(10),
-        paddingTop: verticalScale(12),
-        paddingBottom: verticalScale(12),
+        paddingHorizontal: scale(6),
+        paddingVertical: verticalScale(20),
         overflow: 'hidden',
     },
     plotArea: {
         flex: 1,
+        position: 'relative',
+    },
+    centerAxisLine: {
+        position: 'absolute',
+        left: scale(7),
+        right: scale(7),
+        height: 2,
+        backgroundColor: '#898e96ff',
+        zIndex: 0,
+        borderRadius: 1,
     },
     barRow: {
         flex: 1,
         flexDirection: 'row',
-        alignItems: 'flex-end',
+        alignItems: 'flex-start',
         justifyContent: 'space-between',
+        zIndex: 1,
     },
     barColumn: {
-        width: scale(36),
+        width: scale(38),
         alignItems: 'center',
     },
-    barTrack: {
-        width: scale(36),
-        height: verticalScale(190),
-        alignItems: 'center',
+    incomeTrack: {
         justifyContent: 'flex-end',
+        alignItems: 'center',
+        width: '100%',
+    },
+    expenseTrack: {
+        justifyContent: 'flex-start',
+        alignItems: 'center',
+        width: '100%',
     },
     negativeBar: {
-        width: scale(28),
+        width: scale(24),
         backgroundColor: '#F87171',
-        borderTopLeftRadius: scale(8),
-        borderTopRightRadius: scale(8),
+        borderBottomLeftRadius: scale(6),
+        borderBottomRightRadius: scale(6),
+    },
+    positiveBar: {
+        width: scale(24),
+        backgroundColor: '#34D399',
+        borderTopLeftRadius: scale(6),
+        borderTopRightRadius: scale(6),
     },
     barValueNegative: {
-        fontSize: scale(8),
+        fontSize: scale(8.5),
         color: '#DC2626',
+        fontWeight: 'bold',
+        marginTop: verticalScale(4),
+        textAlign: 'center',
+    },
+    barValuePositive: {
+        fontSize: scale(8.5),
+        color: '#059669',
         fontWeight: 'bold',
         marginBottom: verticalScale(4),
         textAlign: 'center',
     },
     dayLabel: {
-        marginTop: verticalScale(6),
-        fontSize: scale(13),
+        marginTop: verticalScale(10),
+        fontSize: scale(14),
         fontWeight: 'bold',
         color: '#334155',
     },
@@ -449,6 +502,11 @@ const styles = StyleSheet.create({
         padding: scale(20),
         borderRadius: scale(16),
         marginBottom: verticalScale(16),
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
+        elevation: 2,
     },
     aiReviewTitle: { fontSize: scale(16), fontWeight: 'bold', color: '#166534', marginBottom: verticalScale(8), fontFamily: 'Mulmaru' },
     aiReviewText: { fontSize: scale(14), color: '#14532D', lineHeight: 26, fontFamily: 'Mulmaru', wordBreak: 'keep-all' },
@@ -494,6 +552,11 @@ const styles = StyleSheet.create({
         borderRadius: scale(14),
         paddingHorizontal: scale(14),
         paddingVertical: verticalScale(14),
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
+        elevation: 2,
     },
     detailTitle: {
         fontSize: scale(14),

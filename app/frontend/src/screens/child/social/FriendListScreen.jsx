@@ -312,7 +312,12 @@ const styles = StyleSheet.create({
         paddingVertical: verticalScale(18),
         borderWidth: 1,
         borderColor: '#D9F99D',
-        marginBottom: verticalScale(16)
+        marginBottom: verticalScale(16),
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
+        elevation: 2,
     },
     inviteTitle: {
         fontSize: scale(16),
@@ -344,7 +349,12 @@ const styles = StyleSheet.create({
         paddingHorizontal: scale(16),
         paddingVertical: verticalScale(12),
         borderRadius: scale(12),
-        marginBottom: verticalScale(20)
+        marginBottom: verticalScale(20),
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
+        elevation: 2,
     },
     searchText: { fontSize: scale(14), color: '#9CA3AF' },
 
@@ -374,7 +384,12 @@ const styles = StyleSheet.create({
         backgroundColor: '#F9FAFB',
         borderRadius: scale(16),
         paddingVertical: verticalScale(28),
-        alignItems: 'center'
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
+        elevation: 2,
     },
     emptyText: {
         fontSize: scale(14),
@@ -427,7 +442,12 @@ const styles = StyleSheet.create({
         backgroundColor: '#FFFFFF',
         borderRadius: scale(22),
         paddingHorizontal: scale(20),
-        paddingVertical: verticalScale(22)
+        paddingVertical: verticalScale(22),
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
+        elevation: 2,
     },
     modalTitle: {
         fontSize: scale(18),
@@ -472,7 +492,12 @@ const styles = StyleSheet.create({
         borderRadius: scale(16),
         paddingHorizontal: scale(16),
         paddingVertical: verticalScale(16),
-        marginTop: verticalScale(14)
+        marginTop: verticalScale(14),
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
+        elevation: 2,
     },
     lookupLabel: {
         fontSize: scale(12),
