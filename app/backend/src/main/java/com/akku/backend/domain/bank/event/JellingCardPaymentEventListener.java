@@ -7,6 +7,8 @@ import com.akku.backend.domain.jelling.entity.Jelling;
 import com.akku.backend.domain.jelling.entity.JellingTransaction;
 import com.akku.backend.domain.jelling.repository.JellingRepository;
 import com.akku.backend.domain.jelling.repository.JellingTransactionRepository;
+import com.akku.backend.domain.notification.dto.NotificationRequest;
+import com.akku.backend.domain.notification.service.FcmService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
@@ -28,6 +30,7 @@ public class JellingCardPaymentEventListener {
     private final JellingRepository jellingRepository;
     private final JellingTransactionRepository jellingTransactionRepository;
     private final UserRepository userRepository;
+    private final FcmService fcmService;
 
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
@@ -61,6 +64,19 @@ public class JellingCardPaymentEventListener {
                 .type("REWARD")
                 .description("카드 결제 캐시백 (5%)")
                 .build());
+
+        // FCM 알림 발송
+        if (user.getFcmToken() != null && !user.getFcmToken().isBlank()) {
+            try {
+                fcmService.sendMessage(NotificationRequest.builder()
+                        .token(user.getFcmToken())
+                        .title("젤링이 도착했어요! \uD83C\uDF6C")
+                        .body(String.format("카드 결제 보상으로 젤링 %,d개가 적립되었습니다.", cashbackAmount))
+                        .build());
+            } catch (Exception e) {
+                log.warn("젤링 알림 발송 실패: {}", e.getMessage());
+            }
+        }
 
         log.info("카드 결제 캐시백 적립 완료 — userId: {}, cashback: {} 🍬", event.userId(), cashbackAmount);
     }

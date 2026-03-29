@@ -27,6 +27,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -264,6 +265,7 @@ public class TransactionService {
         try {
             String mappedTransactionType = mapTransactionType(tx.getTransactionType());
 
+            LocalDateTime createdAt = tx.getCreatedAt() != null ? tx.getCreatedAt() : LocalDateTime.now();
             TransactionEvent event = new TransactionEvent(
                     "TRANSACTION_COMPLETED",
                     new TransactionEvent.Data(
@@ -276,7 +278,7 @@ public class TransactionService {
                             tx.getSubCategoryId(),
                             tx.getSubCategoryName(),
                             tx.getMerchantName(),
-                            tx.getCreatedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss"))
+                            createdAt.format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss"))
                     )
             );
 

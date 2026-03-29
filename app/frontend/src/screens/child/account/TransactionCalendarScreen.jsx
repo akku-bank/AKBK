@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView, DeviceEventEmitter } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { scale, verticalScale } from 'react-native-size-matters';
 import useTransactionStore from '../../../store/transactionStore';
@@ -21,40 +21,47 @@ const TransactionCalendarScreen = ({ navigation }) => {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
 
+    const fetchMonthlyTransactions = useCallback(async () => {
+        try {
+            const res = await api.get(`/bank/transactions?year=${year}&month=${month + 1}`);
+            const txList = res.data?.data?.transactions || [];
+
+            const grouped = {};
+            txList.forEach(tx => {
+                const dateStr = tx.date;
+                if (!dateStr || dateStr.length < 8) return;
+
+                const dateKey = `${dateStr.substring(0, 4)}-${dateStr.substring(4, 6)}-${dateStr.substring(6, 8)}`;
+                const timeStr = dateStr.length >= 12
+                    ? `${dateStr.substring(8, 10)}:${dateStr.substring(10, 12)}`
+                    : '';
+
+                if (!grouped[dateKey]) grouped[dateKey] = [];
+
+                grouped[dateKey].push({
+                    id: tx.id || Math.random().toString(),
+                    time: timeStr,
+                    title: tx.place || tx.merchantName || '결제 내역',
+                    amount: tx.amount,
+                    type: tx.isIncome ? 'DEPOSIT' : 'PAYMENT',
+                    isHidden: tx.isHidden
+                });
+            });
+            setTransactionsByDate(grouped);
+        } catch (e) { console.error('Transaction Fetch Error:', e); }
+    }, [year, month]);
+
+    // 포커스 될 때 & 알림 올 때 갱신
     useFocusEffect(
         useCallback(() => {
-            const fetchMonthlyTransactions = async () => {
-                try {
-                    const res = await api.get(`/bank/transactions?year=${year}&month=${month + 1}`);
-                    const txList = res.data?.data?.transactions || [];
-
-                    const grouped = {};
-                    txList.forEach(tx => {
-                        const dateStr = tx.date;
-                        if (!dateStr || dateStr.length < 8) return;
-
-                        const dateKey = `${dateStr.substring(0, 4)}-${dateStr.substring(4, 6)}-${dateStr.substring(6, 8)}`;
-                        const timeStr = dateStr.length >= 12
-                            ? `${dateStr.substring(8, 10)}:${dateStr.substring(10, 12)}`
-                            : '';
-
-                        if (!grouped[dateKey]) grouped[dateKey] = [];
-
-                        grouped[dateKey].push({
-                            id: tx.id || Math.random().toString(),
-                            time: timeStr,
-                            title: tx.place || tx.merchantName || '결제 내역',
-                            amount: tx.amount,
-                            type: tx.isIncome ? 'DEPOSIT' : 'PAYMENT',
-                            isHidden: tx.isHidden
-                        });
-                    });
-                    setTransactionsByDate(grouped);
-                } catch (e) { console.error('Transaction Fetch Error:', e); }
-            };
             fetchMonthlyTransactions();
-        }, [year, month])
+        }, [fetchMonthlyTransactions])
     );
+
+    useEffect(() => {
+        const subscription = DeviceEventEmitter.addListener('refresh_transactions', fetchMonthlyTransactions);
+        return () => subscription.remove();
+    }, [fetchMonthlyTransactions]);
 
 
     const prevMonth = () => {

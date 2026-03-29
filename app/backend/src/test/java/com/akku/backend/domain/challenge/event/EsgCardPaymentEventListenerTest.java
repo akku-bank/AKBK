@@ -58,7 +58,7 @@ class EsgCardPaymentEventListenerTest {
     }
 
     private CardPaymentEvent buildEvent(UUID userId, boolean isGreen) {
-        return new CardPaymentEvent(userId, "123-456", "35796", "편의점", 5_000L, "1", "편의점", LocalDate.of(2025, 1, 8), "123456", isGreen);
+        return new CardPaymentEvent(userId, "123-456", "35796", "withdraw-123", "편의점", 5_000L, 95_000L, "1", "편의점", LocalDate.of(2025, 1, 8), "123456", isGreen);
     }
 
     private EsgChallenge buildChallenge(UUID challengeId, User user, EsgChallengeStatus status) {

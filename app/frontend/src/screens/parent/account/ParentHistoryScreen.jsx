@@ -1,5 +1,5 @@
 ﻿import React, { useState, useEffect, useCallback } from 'react';
-import { View, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, DeviceEventEmitter } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { scale, verticalScale } from 'react-native-size-matters';
 import CustomText from '../../../components/common/CustomText';
@@ -22,25 +22,32 @@ const ParentHistoryScreen = ({ navigation, route }) => {
     const [transactions, setTransactions] = useState([]);
     const [balance, setBalance] = useState(0);
 
+    const fetchHistory = useCallback(async () => {
+        try {
+            // childId가 있으면 자녀 내역, 없으면 본인(부모) 내역 조회
+            const endpoint = childId ? `/bank/transactions/${childId}` : '/bank/transactions';
+            const res = await api.get(endpoint);
+
+            if (res.data?.data) {
+                setTransactions(res.data.data.transactions || []);
+                if (res.data.data.balance !== undefined) setBalance(res.data.data.balance);
+            }
+        } catch (err) {
+            console.error('Fetch Parent History Error', err);
+        }
+    }, [childId]);
+
+    // 포커스 될 때 & 알림 올 때 갱신
     useFocusEffect(
         useCallback(() => {
-            const fetchHistory = async () => {
-                try {
-                    // childId가 있으면 자녀 내역, 없으면 본인(부모) 내역 조회
-                    const endpoint = childId ? `/bank/transactions/${childId}` : '/bank/transactions';
-                    const res = await api.get(endpoint);
-
-                    if (res.data?.data) {
-                        setTransactions(res.data.data.transactions || []);
-                        if (res.data.data.balance !== undefined) setBalance(res.data.data.balance);
-                    }
-                } catch (err) {
-                    console.error('Fetch Parent History Error', err);
-                }
-            };
             fetchHistory();
-        }, [childId])
+        }, [fetchHistory])
     );
+
+    useEffect(() => {
+        const subscription = DeviceEventEmitter.addListener('refresh_transactions', fetchHistory);
+        return () => subscription.remove();
+    }, [fetchHistory]);
 
     const formatDisplayDate = (dateStr) => {
         if (!dateStr || dateStr.length < 8) return '';

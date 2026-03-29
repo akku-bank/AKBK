@@ -2,6 +2,8 @@ package com.akku.backend.domain.quiz.service;
 
 import com.akku.backend.domain.auth.entity.User;
 import com.akku.backend.domain.auth.repository.UserRepository;
+import com.akku.backend.domain.jelling.entity.Jelling;
+import com.akku.backend.domain.jelling.entity.JellingTransaction;
 import com.akku.backend.domain.quiz.dto.AnswerRequest;
 import com.akku.backend.domain.quiz.dto.AnswerResponse;
 import com.akku.backend.domain.quiz.dto.ChatRequest;
@@ -16,6 +18,11 @@ import com.akku.backend.domain.quiz.repository.ChatLogRepository;
 import com.akku.backend.domain.quiz.repository.QuizRepository;
 import com.akku.backend.domain.quiz.repository.UserQuizRepository;
 import com.akku.backend.domain.quiz.sse.SseConnectionManager;
+import com.akku.backend.domain.jelling.repository.JellingRepository;
+import com.akku.backend.domain.jelling.repository.JellingTransactionRepository;
+import com.akku.backend.domain.quiz.client.QuizAiClient;
+import com.akku.backend.domain.notification.dto.NotificationRequest;
+import com.akku.backend.domain.notification.service.FcmService;
 import com.akku.backend.domain.user.exception.UserErrorCode;
 import com.akku.backend.global.error.ApiException;
 import lombok.RequiredArgsConstructor;
@@ -41,6 +48,7 @@ public class QuizService {
     private final JellingTransactionRepository jellingTransactionRepository;
     private final QuizAiClient quizAiClient;
     private final SseConnectionManager sseConnectionManager;
+    private final FcmService fcmService;
     private final Clock clock;
 
     @Transactional
@@ -144,17 +152,8 @@ public class QuizService {
         Long jellingReward = null;
         if (isCorrect) {
             long reward = ThreadLocalRandom.current().nextLong(1, 21); // 1~20 랜덤 보상
-            Jelling jelling = jellingRepository.findByUserIdWithLock(userId)
-                    .orElseThrow(() -> new ApiException(QuizErrorCode.QUIZ_NOT_FOUND));
-            jelling.addBalance(reward);
-            jellingTransactionRepository.save(JellingTransaction.builder()
-                    .user(jelling.getUser())
-                    .amount(reward)
-                    .type("QUIZ_REWARD")
-                    .description("퀴즈 정답 보상")
-                    .build());
-            jellingReward = reward;
             addQuizRewardJelling(userId, reward);
+            jellingReward = reward;
         }
 
         return new AnswerResponse(isCorrect, jellingReward);
@@ -169,11 +168,8 @@ public class QuizService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ApiException(UserErrorCode.USER_NOT_FOUND));
 
-        Jelling jelling = jellingRepository.findById(userId)
-                .orElseGet(() -> jellingRepository.save(Jelling.builder()
-                        .user(user)
-                        .balance(0L)
-                        .build()));
+        Jelling jelling = jellingRepository.findByUserIdWithLock(userId)
+                .orElseThrow(() -> new ApiException(QuizErrorCode.QUIZ_NOT_FOUND));
 
         jelling.addBalance(rewardAmount);
         jellingRepository.save(jelling);
@@ -184,5 +180,18 @@ public class QuizService {
                 .type("QUIZ_REWARD")
                 .description("금융 퀴즈 정답 보상")
                 .build());
+
+        // FCM 알림 발송
+        if (user.getFcmToken() != null && !user.getFcmToken().isBlank()) {
+            try {
+                fcmService.sendMessage(NotificationRequest.builder()
+                        .token(user.getFcmToken())
+                        .title("정답입니다! \uD83C\uDF89")
+                        .body(String.format("금융 퀴즈 보상으로 젤링 %,d개가 지급되었습니다.", rewardAmount))
+                        .build());
+            } catch (Exception e) {
+                // 알림 실패는 핵심 로직에 영향을 주지 않도록 로깅만 수행
+            }
+        }
     }
 }
