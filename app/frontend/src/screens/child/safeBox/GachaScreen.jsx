@@ -140,6 +140,7 @@ const GachaScreen = ({ navigation, route }) => {
         else if (rewardNameStr.includes('사과') || rewardNameStr.includes('apple')) rewardImage = require('../../../assets/tree/apple.png');
         else if (rewardNameStr.includes('대나무') || rewardNameStr.includes('bamboo')) rewardImage = require('../../../assets/tree/bamboo.png');
         else if (rewardNameStr.includes('벚꽃') || rewardNameStr.includes('blossom')) rewardImage = require('../../../assets/tree/blossom.png');
+        else if (rewardNameStr.includes('버드나무') || rewardNameStr.includes('buddle')) rewardImage = require('../../../assets/tree/buddle.png');
         else if (rewardNameStr.includes('단풍') || rewardNameStr.includes('maple')) rewardImage = require('../../../assets/tree/maple.png');
         else if (rewardNameStr.includes('야자') || rewardNameStr.includes('palm')) rewardImage = require('../../../assets/tree/palm.png');
         else if (rewardNameStr.includes('나무') || rewardNameStr.includes('tree')) rewardImage = require('../../../assets/tree/tree.png');

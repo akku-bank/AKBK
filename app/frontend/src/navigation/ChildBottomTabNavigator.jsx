@@ -1,5 +1,6 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { getFocusedRouteNameFromRoute } from '@react-navigation/native';
 import { View, Text, Platform, Image } from 'react-native';
 import ChildHomeScreen from '../screens/child/home/ChildHomeScreen';
 import ChallengeScreen from '../screens/child/challenge/ChallengeScreen';
@@ -59,13 +60,19 @@ const ChildBottomTabNavigator = () => {
                 },
                 tabBarActiveTintColor: '#000000ff',
                 tabBarInactiveTintColor: '#9CA3AF',
-                tabBarStyle: {
-                    backgroundColor: '#FFFFFF',
-                    borderTopColor: '#E5E7EB',
-                    height: Platform.OS === 'ios' ? 90 : 70,
-                    paddingBottom: Platform.OS === 'ios' ? 30 : 10,
-                    paddingTop: 10,
-                },
+                tabBarStyle: ((route) => {
+                    const routeName = getFocusedRouteNameFromRoute(route) ?? '';
+                    if (routeName === 'Payment') {
+                        return { display: 'none' };
+                    }
+                    return {
+                        backgroundColor: '#FFFFFF',
+                        borderTopColor: '#E5E7EB',
+                        height: Platform.OS === 'ios' ? 90 : 70,
+                        paddingBottom: Platform.OS === 'ios' ? 30 : 10,
+                        paddingTop: 10,
+                    };
+                })(route),
                 tabBarItemStyle: {
                     justifyContent: 'center',
                     alignItems: 'center',

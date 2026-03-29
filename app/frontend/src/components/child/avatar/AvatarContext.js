@@ -92,9 +92,11 @@ export const AvatarProvider = ({ children }) => {
                 let hasChanges = false;
 
                 items.filter(i => i.isEquipped).forEach(backendItem => {
-                    // 프론트의 모든 카테고리를 뒤져서 이름이 일치하는 아이템을 찾아 장착
+                    // 프론트의 모든 카테고리를 뒤져서 유연하게 이름이 포함되는 아이템을 찾아 장착
                     for (const cat in AVATAR_ITEMS) {
-                        const matching = AVATAR_ITEMS[cat].find(i => i.name === backendItem.name);
+                        const matching = AVATAR_ITEMS[cat].find(i =>
+                            backendItem.name.includes(i.name) || i.name.includes(backendItem.name)
+                        );
                         if (matching) {
                             newEquip[cat] = matching.id;
                             hasChanges = true;
