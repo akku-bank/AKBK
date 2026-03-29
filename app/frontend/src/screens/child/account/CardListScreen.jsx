@@ -86,10 +86,10 @@ const styles = StyleSheet.create({
     backButtonText: { fontSize: scale(22), fontWeight: 'bold', color: '#111' },
     headerTitle: { fontSize: scale(18), fontWeight: 'bold', color: '#111' },
     container: { flexGrow: 1, backgroundColor: '#ECFCCB', paddingHorizontal: scale(24), paddingTop: verticalScale(20), paddingBottom: verticalScale(40) },
-    topSection: { backgroundColor: '#FFFFFF', padding: scale(24), borderRadius: scale(24), marginBottom: verticalScale(20), alignItems: 'center' },
+    topSection: { backgroundColor: '#FFFFFF', padding: scale(24), borderRadius: scale(24), marginBottom: verticalScale(20), alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: verticalScale(2) }, shadowOpacity: 0.08, shadowRadius: scale(8), elevation: 3 },
     pageTitle: { fontSize: scale(22), fontWeight: '900', color: '#111', marginBottom: verticalScale(8), textAlign: 'center' },
     pageSubtitle: { fontSize: scale(14), color: '#6B7280', textAlign: 'center' },
-    emptyState: { backgroundColor: '#FFFFFF', padding: scale(30), borderRadius: scale(24), alignItems: 'center', marginTop: verticalScale(10) },
+    emptyState: { backgroundColor: '#FFFFFF', padding: scale(30), borderRadius: scale(24), alignItems: 'center', marginTop: verticalScale(10), shadowColor: '#000', shadowOffset: { width: 0, height: verticalScale(2) }, shadowOpacity: 0.08, shadowRadius: scale(8), elevation: 3 },
     emptyText: { fontSize: scale(16), fontWeight: 'bold', color: '#4B5563', marginBottom: verticalScale(8) },
     emptySubText: { fontSize: scale(14), color: '#9CA3AF' },
     cardItem: { backgroundColor: '#FFFFFF', borderRadius: scale(24), padding: scale(16), marginBottom: verticalScale(16), shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 },
@@ -100,7 +100,7 @@ const styles = StyleSheet.create({
     cardName: { fontSize: scale(16), fontWeight: 'bold', color: '#111', marginBottom: verticalScale(4) },
     cardDesc: { fontSize: scale(13), color: '#6B7280' },
     footer: { padding: scale(16), backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: '#F9FAFB' },
-    mainButton: { backgroundColor: '#A3E635', paddingVertical: verticalScale(16), borderRadius: scale(16), alignItems: 'center' },
+    mainButton: { backgroundColor: '#A3E635', paddingVertical: verticalScale(16), borderRadius: scale(16), alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: verticalScale(2) }, shadowOpacity: 0.08, shadowRadius: scale(8), elevation: 3 },
     mainButtonText: { fontSize: scale(16), fontWeight: 'bold', color: '#FFF' }
 });
 

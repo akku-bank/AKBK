@@ -535,9 +535,9 @@ const styles = StyleSheet.create({
     container: { flexGrow: 1, paddingHorizontal: scale(16), paddingTop: verticalScale(14), paddingBottom: verticalScale(8) },
 
     topInfoRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: verticalScale(10) },
-    progressBox: { backgroundColor: '#FFFFFF', paddingHorizontal: scale(12), paddingVertical: verticalScale(6), borderRadius: scale(16) },
+    progressBox: { backgroundColor: '#FFFFFF', paddingHorizontal: scale(12), paddingVertical: verticalScale(6), borderRadius: scale(16), shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 1, },
     progressText: { fontSize: scale(12), fontWeight: 'bold', color: '#4D7C0F' },
-    creditBox: { backgroundColor: '#FFFFFF', paddingHorizontal: scale(12), paddingVertical: verticalScale(6), borderRadius: scale(16) },
+    creditBox: { backgroundColor: '#FFFFFF', paddingHorizontal: scale(12), paddingVertical: verticalScale(6), borderRadius: scale(16), shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 1, },
     creditText: { fontSize: scale(12), fontWeight: 'bold', color: '#4D7C0F' },
 
     chatBubble: { backgroundColor: '#FFFFFF', padding: scale(16), borderRadius: scale(20), marginBottom: verticalScale(10), shadowColor: '#000', shadowOffset: { width: 0, height: verticalScale(2) }, shadowOpacity: 0.05, shadowRadius: scale(4), elevation: 2 },
@@ -545,7 +545,7 @@ const styles = StyleSheet.create({
 
     optionsContainer: { gap: verticalScale(8), marginBottom: verticalScale(14) },
 
-    optionBtn: { backgroundColor: '#FFFFFF', padding: scale(14), borderRadius: scale(12), borderWidth: 2, borderColor: '#FFFFFF' },
+    optionBtn: { backgroundColor: '#FFFFFF', padding: scale(14), borderRadius: scale(12), borderWidth: 2, borderColor: '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 1, },
     optionText: { fontSize: scale(16), fontWeight: '600', color: '#4B5563' },
 
     selectedBtn: { borderColor: '#A3E635', backgroundColor: '#F7FEE7' },
@@ -597,7 +597,7 @@ const styles = StyleSheet.create({
 
     chatInputWrapper: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: scale(16), padding: scale(4), borderWidth: 2, borderColor: '#A3E635' },
     chatInput: { flex: 1, paddingHorizontal: scale(12), paddingVertical: verticalScale(12), fontSize: scale(14), color: '#111' },
-    sendBtn: { backgroundColor: '#A3E635', paddingHorizontal: scale(16), paddingVertical: verticalScale(10), borderRadius: scale(12), justifyContent: 'center' },
+    sendBtn: { backgroundColor: '#A3E635', paddingHorizontal: scale(16), paddingVertical: verticalScale(10), borderRadius: scale(12), justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 1, },
     sendBtnDisabled: { backgroundColor: '#E5E7EB' },
     sendBtnText: { fontSize: scale(14), fontWeight: 'bold', color: '#111' },
 

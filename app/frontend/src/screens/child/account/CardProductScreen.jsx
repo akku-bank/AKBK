@@ -243,7 +243,7 @@ const styles = StyleSheet.create({
     selectedProductName: { fontSize: scale(18), fontWeight: 'bold', color: '#111', marginTop: verticalScale(16) },
     selectedProductDesc: { fontSize: scale(13), color: '#6B7280', marginTop: verticalScale(4) },
 
-    benefitsBox: { width: '100%', backgroundColor: '#F9FAFB', borderRadius: scale(12), padding: scale(16), marginTop: verticalScale(16) },
+    benefitsBox: { width: '100%', backgroundColor: '#F9FAFB', borderRadius: scale(12), padding: scale(16), marginTop: verticalScale(16), shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 1, },
     benefitRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: verticalScale(4) },
     benefitName: { fontSize: scale(13), color: '#374151', fontWeight: 'bold' },
     benefitDetail: { fontSize: scale(13), color: '#A3E635', fontWeight: 'bold' },
@@ -251,18 +251,18 @@ const styles = StyleSheet.create({
     configSection: { marginTop: verticalScale(24) },
     sectionLabel: { fontSize: scale(15), fontWeight: 'bold', color: '#111', marginBottom: verticalScale(12) },
     daySelector: { flexDirection: 'row', justifyContent: 'space-between' },
-    dayItem: { width: scale(40), height: scale(40), borderRadius: scale(12), backgroundColor: '#F9FAFB', alignItems: 'center', justifyContent: 'center' },
+    dayItem: { width: scale(40), height: scale(40), borderRadius: scale(12), backgroundColor: '#F9FAFB', alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 1, },
     dayItemActive: { backgroundColor: '#A3E635' },
     dayText: { fontSize: scale(14), fontWeight: 'bold', color: '#6B7280' },
     dayTextActive: { color: '#FFFFFF' },
 
-    accountItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: scale(16), borderRadius: scale(16), backgroundColor: '#F9FAFB', marginBottom: verticalScale(8), borderWidth: 2, borderColor: 'transparent' },
+    accountItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: scale(16), borderRadius: scale(16), backgroundColor: '#F9FAFB', marginBottom: verticalScale(8), borderWidth: 2, borderColor: 'transparent', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 1, },
     accountItemActive: { borderColor: '#A3E635', backgroundColor: '#ECFCCB' },
     accountName: { fontSize: scale(15), fontWeight: 'bold', color: '#111' },
     accountNo: { fontSize: scale(12), color: '#6B7280' },
     accountBalance: { fontSize: scale(14), fontWeight: 'bold', color: '#111' },
 
-    submitBtn: { backgroundColor: '#A3E635', paddingVertical: verticalScale(16), borderRadius: scale(16), alignItems: 'center', marginTop: verticalScale(24) },
+    submitBtn: { backgroundColor: '#A3E635', paddingVertical: verticalScale(16), borderRadius: scale(16), alignItems: 'center', marginTop: verticalScale(24), shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 1, },
     submitBtnText: { color: '#FFFFFF', fontSize: scale(16), fontWeight: 'bold' }
 });
 

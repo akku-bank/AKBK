@@ -160,7 +160,7 @@ const ChildHomeScreen = ({ navigation }) => {
 
                     {/* 아바타 영역 */}
                     <View style={styles.avatarSection}>
-                        <View style={{ marginTop: verticalScale(-2), alignItems: 'center', zIndex: 10 }}>
+                        <View style={{ marginTop: verticalScale(-2), alignItems: 'center', zIndex: 10, transform: [{ translateY: verticalScale(25) }] }}>
                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(8), marginBottom: verticalScale(-2), transform: [{ translateY: verticalScale(5) }], zIndex: 10 }}>
                                 <CustomText style={styles.levelText}>LV.{homeData ? homeData.level : 1}</CustomText>
                                 <CustomText style={styles.nameText}>{user ? user.name : '김싸피'}</CustomText>
@@ -284,9 +284,13 @@ const styles = StyleSheet.create({
         height: scale(40),
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#F9FAFB',
-        borderRadius: scale(8),
-        overflow: 'hidden',
+        backgroundColor: '#FFFFFF',
+        borderRadius: scale(12),
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: verticalScale(2) },
+        shadowOpacity: 0.05,
+        shadowRadius: scale(8),
+        elevation: 2,
     },
     qrImage: {
         width: '100%',
@@ -307,10 +311,15 @@ const styles = StyleSheet.create({
     squareIconButton: {
         width: scale(58),
         height: scale(58),
-        backgroundColor: 'rgba(255, 255, 255, 0.65)',
+        backgroundColor: 'rgba(255, 255, 255, 0.95)',
         borderRadius: scale(18),
         justifyContent: 'center',
         alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: verticalScale(2) },
+        shadowOpacity: 0.05,
+        shadowRadius: scale(8),
+        elevation: 2,
     },
     squareIconText: {
         fontSize: scale(11),
@@ -337,6 +346,11 @@ const styles = StyleSheet.create({
         position: 'relative',
         justifyContent: 'center',
         alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: verticalScale(2) },
+        shadowOpacity: 0.05,
+        shadowRadius: scale(8),
+        elevation: 2,
     },
     donationBadge: {
         position: 'absolute',
@@ -387,6 +401,11 @@ const styles = StyleSheet.create({
         paddingVertical: verticalScale(6),
         paddingHorizontal: scale(14),
         borderRadius: scale(16),
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
+        elevation: 2,
     },
     avatarActionText: {
         fontSize: scale(13),
@@ -466,6 +485,11 @@ const styles = StyleSheet.create({
         borderRadius: scale(16),
         width: '100%',
         alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
+        elevation: 2,
     },
     levelUpCloseText: {
         fontSize: scale(16),

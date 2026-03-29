@@ -236,11 +236,11 @@ const styles = StyleSheet.create({
     childTextInfo: { flex: 1 },
     childName: { fontSize: scale(16), fontWeight: 'bold', color: '#4B5563', marginBottom: verticalScale(4) },
     childBalance: { fontSize: scale(20), fontWeight: '900', color: '#111' },
-    historyBtn: { backgroundColor: '#F9FAFB', paddingHorizontal: scale(12), paddingVertical: verticalScale(8), borderRadius: scale(8) },
+    historyBtn: { backgroundColor: '#F9FAFB', paddingHorizontal: scale(12), paddingVertical: verticalScale(8), borderRadius: scale(8), shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2, },
     historyBtnText: { fontSize: scale(12), fontWeight: 'bold', color: '#4B5563' },
 
     actionRow: { flexDirection: 'row', gap: scale(8), marginTop: verticalScale(4) },
-    actionBtn: { flex: 1.5, backgroundColor: '#ECFCCB', paddingVertical: verticalScale(10), borderRadius: scale(8), alignItems: 'center' },
+    actionBtn: { flex: 1.5, backgroundColor: '#ECFCCB', paddingVertical: verticalScale(10), borderRadius: scale(8), alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2, },
     actionBtnText: { fontSize: scale(13), fontWeight: 'bold', color: '#4D7C0F' },
     actionBtnOutline: { flex: 1, backgroundColor: '#F9FAFB', paddingVertical: verticalScale(10), borderRadius: scale(8), alignItems: 'center' },
     actionBtnOutlineText: { fontSize: scale(13), fontWeight: 'bold', color: '#4B5563' },

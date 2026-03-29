@@ -181,11 +181,11 @@ const styles = StyleSheet.create({
     subtitle: { fontSize: scale(14), color: '#6B7280', textAlign: 'center', lineHeight: 20, marginBottom: verticalScale(40) },
 
     qrCard: { backgroundColor: '#F9FAFB', padding: scale(32), borderRadius: scale(24), alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: verticalScale(4) }, shadowOpacity: 0.1, shadowRadius: scale(8), elevation: 4 },
-    qrImageBox: { width: scale(180), height: scale(180), backgroundColor: '#FFFFFF', borderRadius: scale(16), padding: scale(16), marginBottom: verticalScale(20), justifyContent: 'center', alignItems: 'center' },
+    qrImageBox: { width: scale(180), height: scale(180), backgroundColor: '#FFFFFF', borderRadius: scale(16), padding: scale(16), marginBottom: verticalScale(20), justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2, },
     qrLoadingText: { fontSize: scale(14), color: '#6B7280', textAlign: 'center', lineHeight: 20 },
     timerText: { fontSize: scale(16), fontWeight: 'bold', color: '#EF4444' },
 
-    refreshBtn: { marginTop: verticalScale(32), padding: scale(12), borderRadius: scale(12), backgroundColor: '#F9FAFB' },
+    refreshBtn: { marginTop: verticalScale(32), padding: scale(12), borderRadius: scale(12), backgroundColor: '#F9FAFB', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2, },
     refreshBtnText: { fontSize: scale(14), fontWeight: 'bold', color: '#4B5563' },
 
     modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
