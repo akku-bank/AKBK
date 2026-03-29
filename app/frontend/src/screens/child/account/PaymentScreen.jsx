@@ -7,7 +7,7 @@ import api from '../../../api/axios';
 
 const PaymentScreen = ({ navigation }) => {
     // 혜택 시뮬레이션: 보유 젤링 및결제 시 예상 적립 젤링
-    const [currentJellings, setCurrentJellings] = useState(1500);
+    const [currentJellings, setCurrentJellings] = useState(0);
     const expectedCashback = 50;
 
     const [myCardId, setMyCardId] = useState(null);
@@ -18,9 +18,10 @@ const PaymentScreen = ({ navigation }) => {
         useCallback(() => {
             const fetchData = async () => {
                 try {
-                    const [cardRes, accRes] = await Promise.all([
+                    const [cardRes, accRes, jellingRes] = await Promise.all([
                         api.get('/bank/cards/my'),
-                        api.get('/bank/accounts/me')
+                        api.get('/bank/accounts/me'),
+                        api.get('/jelling-hub')
                     ]);
 
                     const cards = cardRes.data?.data || [];
@@ -30,6 +31,11 @@ const PaymentScreen = ({ navigation }) => {
                     if (accounts.length > 0) {
                         const primary = accounts.find(a => a.isPrimary) || accounts[0];
                         setBankBalance(primary.balance);
+                    }
+
+                    const jellingData = jellingRes.data?.data;
+                    if (jellingData) {
+                        setCurrentJellings(jellingData.remainJelling || 0);
                     }
                 } catch (error) {
                     console.error('Payment Screen Fetch Error:', error);
