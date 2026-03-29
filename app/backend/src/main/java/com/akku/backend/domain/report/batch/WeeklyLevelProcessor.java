@@ -130,21 +130,35 @@ public class WeeklyLevelProcessor implements ItemProcessor<User, User> {
     }
 
     /**
-     * 다음 주 정산을 위해 오늘 시점의 잔액을 기초 잔액(이월금)으로 미리 저장합니다.
+     * 새 주 시작 시 INCOME/SPEND 리포트 레코드를 초기화하고 기초 잔액을 저장합니다.
      */
     private void saveNextWeekStartBalance(User user, LocalDate today, long balance) {
-        com.akku.backend.domain.report.entity.WeeklyReportId id = 
+        // INCOME 레코드: 기초 잔액(이월금) 보관용
+        com.akku.backend.domain.report.entity.WeeklyReportId incomeId =
                 new com.akku.backend.domain.report.entity.WeeklyReportId(user.getId(), today, "INCOME");
-        
-        WeeklyReport report = weeklyReportRepository.findById(id)
+
+        WeeklyReport incomeReport = weeklyReportRepository.findById(incomeId)
                 .orElseGet(() -> WeeklyReport.builder()
-                        .id(id)
+                        .id(incomeId)
                         .user(user)
                         .mon(0L).tue(0L).wed(0L).thu(0L).fri(0L).sat(0L).sun(0L)
                         .totalAmount(0L)
                         .build());
-        
-        report.updateStartBalance(balance);
-        weeklyReportRepository.save(report);
+
+        incomeReport.updateStartBalance(balance);
+        weeklyReportRepository.save(incomeReport);
+
+        // SPEND 레코드: 주 시작 시 빈 레코드 생성 (Spark가 거래 발생 시 upsert)
+        com.akku.backend.domain.report.entity.WeeklyReportId spendId =
+                new com.akku.backend.domain.report.entity.WeeklyReportId(user.getId(), today, "SPEND");
+
+        if (!weeklyReportRepository.existsById(spendId)) {
+            weeklyReportRepository.save(WeeklyReport.builder()
+                    .id(spendId)
+                    .user(user)
+                    .mon(0L).tue(0L).wed(0L).thu(0L).fri(0L).sat(0L).sun(0L)
+                    .totalAmount(0L)
+                    .build());
+        }
     }
 }
