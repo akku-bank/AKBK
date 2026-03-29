@@ -335,9 +335,7 @@ const QuizScreen = ({ navigation, route }) => {
         submitTask();
     };
 
-    const visibleOptions = isAnswerRevealed
-        ? q.options.filter((_, index) => index === q.answerIndex)
-        : q.options;
+    const visibleOptions = q.options;
 
     return (
         <SafeAreaView style={styles.safeArea}>
@@ -371,10 +369,9 @@ const QuizScreen = ({ navigation, route }) => {
 
                     {/* 옵션 컨테이너가 채팅창 위로 올라간다 */}
                     <View style={styles.optionsContainer}>
-                        {visibleOptions.map((option, visibleIndex) => {
-                            const index = isAnswerRevealed
-                                ? q.answerIndex
-                                : visibleIndex;
+                        {visibleOptions.map((option, index) => {
+                            if (isAnswerRevealed && index !== q.answerIndex && index !== selectedOption) return null;
+
                             let btnStyle = styles.optionBtn;
                             let textStyle = styles.optionText;
 
