@@ -151,7 +151,7 @@ const AvatarDictionaryScreen = ({ navigation }) => {
                                         </View>
                                     )}
                                 </View>
-                                <CustomText style={[styles.itemName, isLocked && styles.lockedText]}>{item.name}</CustomText>
+                                <CustomText numberOfLines={1} ellipsizeMode="tail" style={[styles.itemName, isLocked && styles.lockedText]}>{item.name}</CustomText>
 
                                 {(item.isOwned || !isLocked) ? (
                                     <View style={[styles.statusButton, styles.ownedButton]}>

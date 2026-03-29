@@ -319,7 +319,7 @@ const styles = StyleSheet.create({
     headerTitle: { fontSize: 18, fontWeight: 'bold' },
 
     container: { flexGrow: 1, backgroundColor: '#ECFCCB', paddingHorizontal: 24, paddingTop: 20, paddingBottom: 40 },
-    stepContent: { backgroundColor: '#FFFFFF', borderRadius: 24, padding: 24, marginBottom: 0 },
+    stepContent: { backgroundColor: '#FFFFFF', borderRadius: 24, padding: 24, marginBottom: 0, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.08, shadowRadius: 12, elevation: 4 },
     stepTitle: { fontSize: 26, fontWeight: '900', color: '#111', lineHeight: 34, marginBottom: 30 },
 
     // Step 1

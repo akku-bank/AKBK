@@ -429,14 +429,14 @@ const styles = StyleSheet.create({
 
     container: { flexGrow: 1, padding: scale(16) },
 
-    card: { backgroundColor: '#FFFFFF', borderRadius: scale(16), padding: scale(20), marginBottom: verticalScale(16), shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
+    card: { backgroundColor: '#FFFFFF', borderRadius: scale(16), padding: scale(20), marginBottom: verticalScale(16), shadowColor: '#000', shadowOffset: { width: 0, height: verticalScale(2) }, shadowOpacity: 0.08, shadowRadius: scale(8), elevation: 3 },
     cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: verticalScale(12) },
     cardHeaderLeft: { flexDirection: 'row', alignItems: 'center' },
     badge: { paddingHorizontal: scale(10), paddingVertical: verticalScale(4), borderRadius: scale(12) },
 
     badgeProgress: { backgroundColor: '#FEF9C3', borderColor: '#FACC15', borderWidth: 1 },
     badgeTextProgress: { color: '#A16207', fontSize: scale(11), fontWeight: 'bold' },
-    badgePending: { backgroundColor: '#ECFCCB', borderColor: '#A3E635', borderWidth: 1 },
+    badgePending: { backgroundColor: '#ECFCCB' },
     badgeTextPending: { color: '#4D7C0F', fontSize: scale(11), fontWeight: 'bold' },
     badgeSuccess: { backgroundColor: '#D1FAE5', borderColor: '#34D399', borderWidth: 1 },
     badgeTextSuccess: { color: '#059669', fontSize: scale(11), fontWeight: 'bold' },
@@ -471,7 +471,7 @@ const styles = StyleSheet.create({
     rewardBtnText: { color: '#FFF', fontSize: scale(14), fontWeight: 'bold' },
 
     actionRow: { flexDirection: 'row', justifyContent: 'flex-end', marginTop: verticalScale(12) },
-    actionBtn: { paddingHorizontal: scale(12), paddingVertical: verticalScale(6), borderRadius: scale(8), marginLeft: scale(8) },
+    actionBtn: { paddingHorizontal: scale(12), paddingVertical: verticalScale(6), borderRadius: scale(8), marginLeft: scale(8), shadowColor: '#000', shadowOffset: { width: 0, height: verticalScale(2) }, shadowOpacity: 0.08, shadowRadius: scale(4), elevation: 2 },
     editBtn: { backgroundColor: '#ECFCCB' },
     editBtnText: { color: '#4D7C0F', fontWeight: 'bold' },
     deleteBtn: { backgroundColor: '#FEE2E2' },

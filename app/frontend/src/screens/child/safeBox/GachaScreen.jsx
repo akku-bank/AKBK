@@ -199,7 +199,7 @@ const GachaScreen = ({ navigation, route }) => {
                         ) : null}
 
                         {!isFallback && <CustomText style={styles.rewardCategory}>{rewardCategoryLabel}</CustomText>}
-                        <CustomText style={[styles.rewardName, isFallback && { color: '#111', marginTop: verticalScale(20) }]}>{rewardNameStr}</CustomText>
+                        <CustomText numberOfLines={2} adjustsFontSizeToFit={true} style={[styles.rewardName, isFallback && { color: '#111', marginTop: verticalScale(20) }]}>{rewardNameStr}</CustomText>
                     </View>
 
                     <TouchableOpacity style={[styles.confirmButton, { backgroundColor: '#A3E635' }]} onPress={handleConfirm}>
@@ -291,10 +291,15 @@ const styles = StyleSheet.create({
     },
     confirmButton: {
         width: '100%',
-        backgroundColor: '#3B82F6',
+        backgroundColor: '#A3E635',
         paddingVertical: verticalScale(16),
         borderRadius: scale(16),
         alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: verticalScale(2) },
+        shadowOpacity: 0.1,
+        shadowRadius: scale(4),
+        elevation: 3,
     },
     confirmButtonText: {
         fontSize: scale(18),
