@@ -90,7 +90,7 @@ public class WeeklyLevelProcessor implements ItemProcessor<User, User> {
      * 지출 비율 0~50%: 30점 / 51~80%: 20점 / 81~100%: 10점 / 100% 초과: 0점
      */
     private int calculateSpendingScore(long spend, long totalFunds) {
-        if (totalFunds <= 0) return 30; // 무지출 상태면 만점
+        if (totalFunds <= 0) return 0; // 가용 자금이 없으면 평가 불가
         double ratio = (double) spend / totalFunds;
         if (ratio <= 0.5) return 30;
         if (ratio <= 0.8) return 20;
