@@ -183,8 +183,8 @@ const styles = StyleSheet.create({
     },
     amountInput: { flex: 1, fontSize: scale(18), fontWeight: 'bold', color: '#111', paddingVertical: verticalScale(16) },
     currencyText: { fontSize: scale(16), fontWeight: 'bold', color: '#111' },
-    footer: { paddingHorizontal: scale(16), paddingBottom: verticalScale(24), paddingTop: verticalScale(12), backgroundColor: '#F9FAFB' },
-    submitButton: { backgroundColor: '#A3E635', paddingVertical: verticalScale(16), borderRadius: scale(12), alignItems: 'center' },
+    footer: { paddingHorizontal: scale(16), paddingBottom: verticalScale(24), paddingTop: verticalScale(12), backgroundColor: '#ECFCCB' },
+    submitButton: { backgroundColor: '#A3E635', paddingVertical: verticalScale(16), borderRadius: scale(12), alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: verticalScale(2) }, shadowOpacity: 0.1, shadowRadius: scale(4), elevation: 3 },
     submitButtonText: { fontSize: scale(16), fontWeight: 'bold', color: '#111' }
 });
 

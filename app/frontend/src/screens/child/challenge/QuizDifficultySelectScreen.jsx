@@ -1,7 +1,7 @@
 import React from 'react';
 import { Image, SafeAreaView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { scale, verticalScale } from 'react-native-size-matters';
-import { Ionicons } from '@expo/vector-icons';
+// remove ionic
 import CustomText from '../../../components/common/CustomText';
 
 const DIFFICULTIES = [
@@ -27,7 +27,7 @@ const DIFFICULTIES = [
         label: '상',
         value: 'HARD',
         title: '어려운 난이도',
-        description: '도전적인 금융 퀴즈에\n도전해요.',
+        description: '까다로운 금융 퀴즈에\n도전해요.',
         image: require('../../../assets/croco/adult_akku.png'),
         badgeBackgroundColor: '#FEE2E2',
         badgeTextColor: '#B91C1C',
@@ -43,7 +43,7 @@ const QuizDifficultySelectScreen = ({ navigation }) => {
         <SafeAreaView style={styles.safeArea}>
             <View style={styles.header}>
                 <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-                    <Ionicons name="chevron-back" size={scale(28)} color="#111" />
+                    <CustomText style={styles.backButtonText}>←</CustomText>
                 </TouchableOpacity>
                 <CustomText style={styles.headerTitle}>{'\uD034\uC988 \uB09C\uC774\uB3C4 \uC120\uD0DD'}</CustomText>
                 <View style={styles.headerSpacer} />
@@ -107,8 +107,6 @@ const styles = StyleSheet.create({
     subtitle: { fontSize: scale(14), color: '#6B7280', lineHeight: scale(22), textAlign: 'center' },
     card: {
         backgroundColor: '#FFFFFF',
-        borderWidth: 1,
-        borderColor: '#A3E635',
         borderRadius: scale(24),
         paddingHorizontal: scale(20),
         paddingVertical: verticalScale(18),

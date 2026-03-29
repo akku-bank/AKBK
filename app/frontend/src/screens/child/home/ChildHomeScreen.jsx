@@ -148,7 +148,7 @@ const ChildHomeScreen = ({ navigation }) => {
                     </View>
 
                     {/* ART_1 (벽그림 갤러리) - 구 기부처 카드 자리 */}
-                    <View style={{ paddingHorizontal: scale(20), marginBottom: verticalScale(14), height: verticalScale(90), width: '100%', alignItems: 'flex-start', justifyContent: 'center' }}>
+                    <View style={{ paddingHorizontal: scale(10), marginBottom: verticalScale(14), height: verticalScale(90), width: '100%', alignItems: 'flex-start', justifyContent: 'center' }}>
                         {equipState.art1 && equipState.art1 !== 'none' && (() => {
                             const artItem = AVATAR_ITEMS.art1.find(a => a.id === equipState.art1);
                             if (!artItem || !artItem.img) return null;

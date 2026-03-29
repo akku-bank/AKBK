@@ -389,10 +389,15 @@ const styles = StyleSheet.create({
         borderRadius: RFValue(10),
     },
     gachaButton: {
-        backgroundColor: '#F59E0B',
+        backgroundColor: '#A3E635',
         paddingVertical: RFValue(12),
         borderRadius: RFValue(12),
         alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+        elevation: 3,
     },
     gachaButtonText: {
         color: '#FFF',
