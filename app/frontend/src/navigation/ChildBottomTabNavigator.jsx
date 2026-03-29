@@ -7,7 +7,28 @@ import SafeBoxScreen from '../screens/child/safeBox/SafeBoxScreen';
 import ChildAccountScreen from '../screens/child/account/ChildAccountScreen';
 import ChildMyPageScreen from '../screens/child/mypage/ChildMyPageScreen';
 
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import TransactionCalendarScreen from '../screens/child/account/TransactionCalendarScreen';
+import TransactionDetailScreen from '../screens/child/account/TransactionDetailScreen';
+import TransferScreen from '../screens/child/account/TransferScreen';
+import PaymentScreen from '../screens/child/account/PaymentScreen';
+import CardListScreen from '../screens/child/account/CardListScreen';
+import CardProductScreen from '../screens/child/account/CardProductScreen';
+
 const Tab = createBottomTabNavigator();
+const AccountStack = createNativeStackNavigator();
+
+const AccountStackNavigator = () => (
+    <AccountStack.Navigator screenOptions={{ headerShown: false, animationEnabled: false }}>
+        <AccountStack.Screen name="ChildAccountScreen" component={ChildAccountScreen} />
+        <AccountStack.Screen name="TransactionCalendar" component={TransactionCalendarScreen} />
+        <AccountStack.Screen name="TransactionDetail" component={TransactionDetailScreen} />
+        <AccountStack.Screen name="Transfer" component={TransferScreen} />
+        <AccountStack.Screen name="Payment" component={PaymentScreen} />
+        <AccountStack.Screen name="CardListScreen" component={CardListScreen} />
+        <AccountStack.Screen name="CardProductScreen" component={CardProductScreen} />
+    </AccountStack.Navigator>
+);
 
 const PlaceholderScreen = ({ name }) => (
     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F9FAFB' }}>
@@ -76,7 +97,7 @@ const ChildBottomTabNavigator = () => {
             />
             <Tab.Screen
                 name="Account"
-                component={ChildAccountScreen}
+                component={AccountStackNavigator}
                 options={{ tabBarLabel: '결제' }}
             />
             <Tab.Screen

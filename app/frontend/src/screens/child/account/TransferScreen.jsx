@@ -218,6 +218,11 @@ const TransferScreen = ({ navigation }) => {
                             </View>
                         </View>
                     )}
+
+                    {/* 하단 버튼을 ScrollView 안으로 이동 */}
+                    <TouchableOpacity style={[styles.nextButton, { marginTop: 20 }]} onPress={handleNextStep}>
+                        <CustomText style={styles.nextButtonText}>다음</CustomText>
+                    </TouchableOpacity>
                 </ScrollView>
             )}
 
@@ -232,15 +237,6 @@ const TransferScreen = ({ navigation }) => {
                         </View>
                     </View>
                     {renderKeypad()}
-                </View>
-            )}
-
-            {/* 하단 버튼 */}
-            {step !== 'PIN' && (
-                <View style={styles.footer}>
-                    <TouchableOpacity style={styles.nextButton} onPress={handleNextStep}>
-                        <CustomText style={styles.nextButtonText}>다음</CustomText>
-                    </TouchableOpacity>
                 </View>
             )}
 
@@ -304,14 +300,14 @@ const TransferScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-    safeArea: { flex: 1, backgroundColor: '#F9FAFB' },
-    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, height: 60 },
+    safeArea: { flex: 1, backgroundColor: '#FFFFFF' },
+    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, height: 60, backgroundColor: '#FFFFFF' },
     backButton: { width: 40, height: 40, justifyContent: 'center' },
     backButtonText: { fontSize: 24, color: '#111' },
     headerTitle: { fontSize: 18, fontWeight: 'bold' },
 
-    container: { flexGrow: 1, paddingHorizontal: 24, paddingTop: 20 },
-    stepContent: { flex: 1 },
+    container: { flexGrow: 1, backgroundColor: '#ECFCCB', paddingHorizontal: 24, paddingTop: 20, paddingBottom: 40 },
+    stepContent: { backgroundColor: '#FFFFFF', borderRadius: 24, padding: 24, marginBottom: 0 },
     stepTitle: { fontSize: 26, fontWeight: '900', color: '#111', lineHeight: 34, marginBottom: 30 },
 
     // Step 1
@@ -332,7 +328,7 @@ const styles = StyleSheet.create({
     balanceValue: { fontSize: 14, fontWeight: 'bold', color: '#6B7280' },
 
     // PIN Step
-    pinStep: { flex: 1, justifyContent: 'space-between', paddingBottom: 40 },
+    pinStep: { flex: 1, backgroundColor: '#FFFFFF', justifyContent: 'space-between', paddingBottom: 40 },
     pinHeader: { alignItems: 'center', marginTop: 80 },
     pinTitle: { fontSize: 20, fontWeight: 'bold', color: '#111', marginBottom: 30 },
     pinDots: { flexDirection: 'row', gap: 15 },
@@ -342,7 +338,7 @@ const styles = StyleSheet.create({
     key: { width: '33.33%', height: 80, justifyContent: 'center', alignItems: 'center' },
     keyText: { fontSize: 28, fontWeight: '600', color: '#111' },
 
-    footer: { padding: 20, paddingBottom: Platform.OS === 'ios' ? 40 : 20 },
+    footer: { padding: 20 },
     nextButton: { backgroundColor: '#A3E635', height: 60, borderRadius: 20, justifyContent: 'center', alignItems: 'center', elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8 },
     nextButtonText: { fontSize: 18, fontWeight: 'bold', color: '#FFFFFF' },
 

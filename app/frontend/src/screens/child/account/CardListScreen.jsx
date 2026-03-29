@@ -59,7 +59,7 @@ const CardListScreen = ({ navigation }) => {
                 ) : (
                     myCards.map((card, idx) => (
                         <View key={idx} style={styles.cardItem}>
-                            <View style={[styles.cardGraphic, { backgroundColor: card.color || '#3B82F6' }]}>
+                            <View style={[styles.cardGraphic, { backgroundColor: card.color || '#A3E635' }]}>
                                 <CustomText style={styles.cardGraphicText}>{card.cardName || 'AKKU 카드'}</CustomText>
                                 <CustomText style={styles.cardNumber}>**** **** **** {card.cardNo?.slice(-4) || '1234'}</CustomText>
                             </View>
@@ -70,31 +70,29 @@ const CardListScreen = ({ navigation }) => {
                         </View>
                     ))
                 )}
-            </ScrollView>
-
-            <View style={styles.footer}>
-                <TouchableOpacity style={styles.mainButton} onPress={() => navigation.navigate('CardProductScreen')}>
+                {/* 카드 발급 버튼을 ScrollView 안으로 이동 */}
+                <TouchableOpacity style={[styles.mainButton, { marginTop: verticalScale(20) }]} onPress={() => navigation.navigate('CardProductScreen')}>
                     <CustomText style={styles.mainButtonText}>카드 새로 발급받기</CustomText>
                 </TouchableOpacity>
-            </View>
+            </ScrollView>
         </SafeAreaView>
     );
 };
 
 const styles = StyleSheet.create({
-    safeArea: { flex: 1, backgroundColor: '#F9FAFB' },
-    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: scale(16), paddingVertical: verticalScale(16) },
+    safeArea: { flex: 1, backgroundColor: '#FFFFFF' },
+    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: scale(16), paddingVertical: verticalScale(16), backgroundColor: '#FFFFFF' },
     backButton: { width: scale(32), height: scale(32), justifyContent: 'center' },
     backButtonText: { fontSize: scale(22), fontWeight: 'bold', color: '#111' },
     headerTitle: { fontSize: scale(18), fontWeight: 'bold', color: '#111' },
-    container: { flexGrow: 1, paddingHorizontal: scale(24), paddingTop: verticalScale(20) },
-    topSection: { marginBottom: verticalScale(30) },
-    pageTitle: { fontSize: scale(22), fontWeight: '900', color: '#111', marginBottom: verticalScale(8) },
-    pageSubtitle: { fontSize: scale(14), color: '#6B7280' },
-    emptyState: { alignItems: 'center', marginTop: verticalScale(40) },
+    container: { flexGrow: 1, backgroundColor: '#ECFCCB', paddingHorizontal: scale(24), paddingTop: verticalScale(20), paddingBottom: verticalScale(40) },
+    topSection: { backgroundColor: '#FFFFFF', padding: scale(24), borderRadius: scale(24), marginBottom: verticalScale(20), alignItems: 'center' },
+    pageTitle: { fontSize: scale(22), fontWeight: '900', color: '#111', marginBottom: verticalScale(8), textAlign: 'center' },
+    pageSubtitle: { fontSize: scale(14), color: '#6B7280', textAlign: 'center' },
+    emptyState: { backgroundColor: '#FFFFFF', padding: scale(30), borderRadius: scale(24), alignItems: 'center', marginTop: verticalScale(10) },
     emptyText: { fontSize: scale(16), fontWeight: 'bold', color: '#4B5563', marginBottom: verticalScale(8) },
     emptySubText: { fontSize: scale(14), color: '#9CA3AF' },
-    cardItem: { backgroundColor: '#F9FAFB', borderRadius: scale(16), padding: scale(16), marginBottom: verticalScale(16), borderWidth: 1, borderColor: '#F9FAFB' },
+    cardItem: { backgroundColor: '#FFFFFF', borderRadius: scale(24), padding: scale(16), marginBottom: verticalScale(16), shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 },
     cardGraphic: { height: verticalScale(120), borderRadius: scale(12), padding: scale(16), justifyContent: 'space-between', marginBottom: verticalScale(12) },
     cardGraphicText: { fontSize: scale(16), fontWeight: 'bold', color: '#FFF' },
     cardNumber: { fontSize: scale(14), color: '#FFF', letterSpacing: 2 },
@@ -102,7 +100,7 @@ const styles = StyleSheet.create({
     cardName: { fontSize: scale(16), fontWeight: 'bold', color: '#111', marginBottom: verticalScale(4) },
     cardDesc: { fontSize: scale(13), color: '#6B7280' },
     footer: { padding: scale(16), backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: '#F9FAFB' },
-    mainButton: { backgroundColor: '#3B82F6', paddingVertical: verticalScale(16), borderRadius: scale(16), alignItems: 'center' },
+    mainButton: { backgroundColor: '#A3E635', paddingVertical: verticalScale(16), borderRadius: scale(16), alignItems: 'center' },
     mainButtonText: { fontSize: scale(16), fontWeight: 'bold', color: '#FFF' }
 });
 

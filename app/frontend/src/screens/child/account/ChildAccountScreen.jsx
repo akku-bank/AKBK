@@ -49,10 +49,14 @@ const ChildAccountScreen = ({ navigation }) => {
     return (
         <SafeAreaView style={styles.safeArea}>
             <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
-                {/* 잔액 카드 */}
-                <View style={styles.balanceCard}>
+                {/* 잔액 텍스트 영역 - 흰색 (직선 컷) */}
+                <View style={styles.balanceTopArea}>
                     <CustomText style={styles.balanceLabel}>내 지갑 잔액</CustomText>
                     <CustomText style={styles.balanceValue}>{balance.toLocaleString()}원</CustomText>
+                </View>
+
+                {/* 버튼들 - 연두색 배경 위 */}
+                <View style={styles.actionRowContainer}>
                     <View style={styles.actionRow}>
                         <TouchableOpacity style={styles.actionBtn} onPress={() => navigation.navigate('Payment')}>
                             <CustomText style={styles.actionBtnText}>결제</CustomText>
@@ -137,18 +141,23 @@ const ChildAccountScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-    safeArea: { flex: 1, backgroundColor: '#F9FAFB' },
-    container: { padding: scale(20) },
-    balanceCard: {
-        backgroundColor: '#F9FAFB',
-        borderRadius: scale(24),
-        padding: scale(24),
-        marginBottom: verticalScale(30),
-        borderWidth: 1,
-        borderColor: '#F9FAFB'
+    safeArea: { flex: 1, backgroundColor: '#FFFFFF' },
+    container: { flexGrow: 1, backgroundColor: '#ECFCCB' },
+    balanceTopArea: {
+        backgroundColor: '#FFFFFF',
+        paddingHorizontal: scale(20),
+        paddingTop: verticalScale(20), // "살짝만 아래로 내려주고"
+        paddingBottom: verticalScale(15), // "0원 부분까지만 ... 직선으로 잘려야하고"
+        borderBottomWidth: 0,
     },
     balanceLabel: { fontSize: scale(15), color: '#6B7280', marginBottom: verticalScale(8), fontWeight: '600' },
-    balanceValue: { fontSize: scale(32), fontWeight: '900', color: '#111', marginBottom: verticalScale(20) },
+    balanceValue: { fontSize: scale(36), fontWeight: '900', color: '#111', marginBottom: 0 },
+
+    actionRowContainer: {
+        backgroundColor: '#ECFCCB',
+        paddingHorizontal: scale(20),
+        paddingTop: verticalScale(20), // 여백 조정
+    },
     actionRow: { flexDirection: 'row', gap: scale(10) },
     actionBtn: {
         flex: 1,
@@ -164,7 +173,16 @@ const styles = StyleSheet.create({
     },
     actionBtnText: { fontSize: scale(14), fontWeight: 'bold', color: '#374151' },
 
-    historyCard: { backgroundColor: '#FFFFFF', flex: 1 },
+    historyCard: {
+        backgroundColor: '#FFFFFF',
+        flex: 1,
+        marginHorizontal: scale(20),
+        marginBottom: verticalScale(5), // "아래 여백 좀 줄여도 될듯"
+        marginTop: verticalScale(20),
+        borderRadius: scale(24),
+        padding: scale(20),
+        shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2
+    },
     historyHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -175,7 +193,13 @@ const styles = StyleSheet.create({
     seeAllText: { color: '#84CC16', fontSize: scale(14), fontWeight: 'bold' },
 
     listSection: { minHeight: verticalScale(200) },
-    emptyState: { alignItems: 'center', justifyContent: 'center', paddingTop: verticalScale(40) },
+    emptyState: {
+        backgroundColor: '#F3F4F6',
+        borderRadius: scale(16),
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: verticalScale(40)
+    },
     emptyText: { color: '#9CA3AF', fontSize: scale(15) },
 
     yearDivider: {

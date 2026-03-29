@@ -156,7 +156,7 @@ const TransactionDetailScreen = ({ route, navigation }) => {
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
-        backgroundColor: '#F9FAFB',
+        backgroundColor: '#ECFCCB',
     },
     header: {
         flexDirection: 'row',

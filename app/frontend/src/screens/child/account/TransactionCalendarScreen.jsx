@@ -202,7 +202,7 @@ const TransactionCalendarScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
-        backgroundColor: '#F9FAFB',
+        backgroundColor: '#ECFCCB',
     },
     header: {
         flexDirection: 'row',
@@ -210,7 +210,7 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         paddingHorizontal: scale(16),
         paddingVertical: verticalScale(16),
-        backgroundColor: '#F9FAFB',
+        backgroundColor: '#FFFFFF',
     },
     backButton: {
         width: scale(32),
@@ -231,12 +231,15 @@ const styles = StyleSheet.create({
         flexGrow: 1,
         paddingHorizontal: scale(16),
         paddingBottom: verticalScale(40),
+        paddingTop: verticalScale(16),
     },
     calendarCard: {
         backgroundColor: '#FFFFFF',
         borderRadius: scale(20),
         paddingHorizontal: scale(16),
-        paddingVertical: verticalScale(20),
+        paddingTop: verticalScale(20),
+        paddingBottom: verticalScale(8),
+        marginTop: verticalScale(8),
         marginBottom: verticalScale(20),
         shadowColor: '#000',
         shadowOffset: { width: 0, height: verticalScale(2) },

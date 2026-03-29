@@ -9,12 +9,6 @@ import * as SplashScreen from 'expo-splash-screen';
 import ChildBottomTabNavigator from './src/navigation/ChildBottomTabNavigator';
 import AvatarCustomScreen from './src/screens/child/home/AvatarCustomScreen';
 import AvatarDictionaryScreen from './src/screens/child/home/AvatarDictionaryScreen';
-import TransactionCalendarScreen from './src/screens/child/account/TransactionCalendarScreen';
-import TransactionDetailScreen from './src/screens/child/account/TransactionDetailScreen';
-import TransferScreen from './src/screens/child/account/TransferScreen';
-import PaymentScreen from './src/screens/child/account/PaymentScreen';
-import CardListScreen from './src/screens/child/account/CardListScreen';
-import CardProductScreen from './src/screens/child/account/CardProductScreen';
 import QuizScreen from './src/screens/child/challenge/QuizScreen';
 import QuizDifficultySelectScreen from './src/screens/child/challenge/QuizDifficultySelectScreen';
 import ChallengeProposeScreen from './src/screens/child/challenge/ChallengeProposeScreen';
@@ -129,13 +123,6 @@ export default function App() {
               <Stack.Screen name="AttendanceScreen" component={AttendanceScreen} />
               <Stack.Screen name="ESGChallengeScreen" component={ESGChallengeScreen} />
               <Stack.Screen name="BadgeMap" component={BadgeMapScreen} />
-
-              <Stack.Screen name="TransactionCalendar" component={TransactionCalendarScreen} />
-              <Stack.Screen name="TransactionDetail" component={TransactionDetailScreen} />
-              <Stack.Screen name="Transfer" component={TransferScreen} />
-              <Stack.Screen name="Payment" component={PaymentScreen} />
-              <Stack.Screen name="CardListScreen" component={CardListScreen} />
-              <Stack.Screen name="CardProductScreen" component={CardProductScreen} />
 
               <Stack.Screen name="ParentHome" component={ParentHomeScreen} />
               <Stack.Screen name="ParentTransferScreen" component={ParentTransferScreen} />

@@ -100,7 +100,7 @@ const CardProductScreen = ({ navigation }) => {
                 </View>
 
                 {loading ? (
-                    <ActivityIndicator size="large" color="#3B82F6" style={{ marginTop: 40 }} />
+                    <ActivityIndicator size="large" color="#A3E635" style={{ marginTop: 40 }} />
                 ) : products.length === 0 ? (
                     <CustomText style={styles.emptyText}>현재 발급 가능한 카드가 없습니다.</CustomText>
                 ) : (
@@ -138,7 +138,7 @@ const CardProductScreen = ({ navigation }) => {
                         <ScrollView showsVerticalScrollIndicator={false} style={styles.modalScroll}>
                             {selectedProduct && (
                                 <View style={styles.cardPreview}>
-                                    <View style={[styles.cardGraphic, { backgroundColor: '#3B82F6' }]}>
+                                    <View style={[styles.cardGraphic, { backgroundColor: '#A3E635' }]}>
                                         <CustomText style={styles.cardGraphicText}>{selectedProduct.cardName}</CustomText>
                                         <View style={styles.cardChip} />
                                     </View>
@@ -211,7 +211,7 @@ const CardProductScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-    safeArea: { flex: 1, backgroundColor: '#F9FAFB' },
+    safeArea: { flex: 1, backgroundColor: '#ECFCCB' },
     header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: scale(16), paddingVertical: verticalScale(16), backgroundColor: '#FFFFFF' },
     backButton: { width: scale(32), height: scale(32), justifyContent: 'center' },
     backButtonText: { fontSize: scale(22), fontWeight: 'bold', color: '#111' },
@@ -225,7 +225,7 @@ const styles = StyleSheet.create({
     productInfo: { flex: 1, paddingRight: scale(16) },
     productName: { fontSize: scale(16), fontWeight: 'bold', color: '#111', marginBottom: verticalScale(4) },
     productDesc: { fontSize: scale(13), color: '#6B7280', lineHeight: 18 },
-    issueButton: { backgroundColor: '#3B82F6', paddingVertical: verticalScale(8), paddingHorizontal: scale(16), borderRadius: scale(12) },
+    issueButton: { backgroundColor: '#A3E635', paddingVertical: verticalScale(8), paddingHorizontal: scale(16), borderRadius: scale(12) },
     issueButtonText: { color: '#FFFFFF', fontWeight: 'bold', fontSize: scale(14) },
 
     // Modal Styles
@@ -246,23 +246,23 @@ const styles = StyleSheet.create({
     benefitsBox: { width: '100%', backgroundColor: '#F9FAFB', borderRadius: scale(12), padding: scale(16), marginTop: verticalScale(16) },
     benefitRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: verticalScale(4) },
     benefitName: { fontSize: scale(13), color: '#374151', fontWeight: 'bold' },
-    benefitDetail: { fontSize: scale(13), color: '#3B82F6', fontWeight: 'bold' },
+    benefitDetail: { fontSize: scale(13), color: '#A3E635', fontWeight: 'bold' },
 
     configSection: { marginTop: verticalScale(24) },
     sectionLabel: { fontSize: scale(15), fontWeight: 'bold', color: '#111', marginBottom: verticalScale(12) },
     daySelector: { flexDirection: 'row', justifyContent: 'space-between' },
     dayItem: { width: scale(40), height: scale(40), borderRadius: scale(12), backgroundColor: '#F9FAFB', alignItems: 'center', justifyContent: 'center' },
-    dayItemActive: { backgroundColor: '#3B82F6' },
+    dayItemActive: { backgroundColor: '#A3E635' },
     dayText: { fontSize: scale(14), fontWeight: 'bold', color: '#6B7280' },
     dayTextActive: { color: '#FFFFFF' },
 
     accountItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: scale(16), borderRadius: scale(16), backgroundColor: '#F9FAFB', marginBottom: verticalScale(8), borderWidth: 2, borderColor: 'transparent' },
-    accountItemActive: { borderColor: '#3B82F6', backgroundColor: '#EFF6FF' },
+    accountItemActive: { borderColor: '#A3E635', backgroundColor: '#ECFCCB' },
     accountName: { fontSize: scale(15), fontWeight: 'bold', color: '#111' },
     accountNo: { fontSize: scale(12), color: '#6B7280' },
     accountBalance: { fontSize: scale(14), fontWeight: 'bold', color: '#111' },
 
-    submitBtn: { backgroundColor: '#3B82F6', paddingVertical: verticalScale(16), borderRadius: scale(16), alignItems: 'center', marginTop: verticalScale(24) },
+    submitBtn: { backgroundColor: '#A3E635', paddingVertical: verticalScale(16), borderRadius: scale(16), alignItems: 'center', marginTop: verticalScale(24) },
     submitBtnText: { color: '#FFFFFF', fontSize: scale(16), fontWeight: 'bold' }
 });
 
