@@ -22,6 +22,9 @@ public class WeeklyReportResponse {
     
     // 요일별 지출 내역
     private DailySpending dailySpending;
+
+    // 요일별 수입 내역
+    private DailySpending dailyIncome;
     
     // 카테고리별 지출 비율
     private List<CategoryRatioData> categoryRatios;
