@@ -2,8 +2,7 @@ import axios from 'axios';
 import useAuthStore from '../store/useAuthStore';
 
 const api = axios.create({
-    // 백엔드는 기본 포트 8080을 사용합니다.
-    baseURL: 'http://10.0.2.2:8080/api',
+    baseURL: `${process.env.REACT_APP_API_URL}/api`,
     timeout: 10000,
 });
 

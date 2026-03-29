@@ -68,8 +68,11 @@ class HomeServiceTest {
             UUID itemId = UUID.randomUUID();
             int userLevel = 7;
 
+            int userScore = 75;
+
             User mockUser = mock(User.class);
             given(mockUser.getLevel()).willReturn(userLevel);
+            given(mockUser.getScore()).willReturn(userScore);
             given(userRepository.findById(userId)).willReturn(Optional.of(mockUser));
 
             Item mockItem = mock(Item.class);
@@ -90,6 +93,7 @@ class HomeServiceTest {
             // then
             assertNotNull(response);
             assertEquals(userLevel, response.level());                             // Real 데이터 검증
+            assertEquals(userScore, response.score());                             // Real 데이터 검증
             assertFalse(response.avatar().equippedItems().isEmpty());              // 장착 아이템 존재
             assertEquals(itemId, response.avatar().equippedItems().get(0).itemId());
             assertEquals("CLOTHES", response.avatar().equippedItems().get(0).category());
@@ -103,6 +107,7 @@ class HomeServiceTest {
 
             User mockUser = mock(User.class);
             given(mockUser.getLevel()).willReturn(3);
+            given(mockUser.getScore()).willReturn(40);
             given(userRepository.findById(userId)).willReturn(Optional.of(mockUser));
             given(userItemRepository.findEquippedItemsByUserId(userId)).willReturn(Collections.emptyList());
             given(accountService.getPrimaryAccountBalance(userId)).willReturn(0L);
