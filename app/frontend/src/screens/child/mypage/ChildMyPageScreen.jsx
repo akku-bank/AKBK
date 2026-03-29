@@ -97,17 +97,13 @@ const ChildMyPageScreen = ({ navigation }) => {
                     </TouchableOpacity>
                 </View>
 
-                <View style={styles.menuGroup}>
-                    <CustomText style={styles.menuGroupTitle}>데이터</CustomText>
-
-                    <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('WeeklyReport')}>
-                        <View style={styles.menuItemLeft}>
-                            <CustomText style={styles.menuIcon}>📊</CustomText>
-                            <CustomText style={styles.menuText}>주간 소비 리포트 보기</CustomText>
-                        </View>
-                        <CustomText style={styles.chevron}>›</CustomText>
-                    </TouchableOpacity>
-                </View>
+                <TouchableOpacity style={styles.reportGroup} onPress={() => navigation.navigate('WeeklyReport')} activeOpacity={0.8}>
+                    <View style={styles.reportTextContent}>
+                        <CustomText style={styles.reportGroupTitle}>주간 소비 리포트</CustomText>
+                        <CustomText style={styles.reportGroupSubtitle}>이번 주 나는 어떻게 소비했지?</CustomText>
+                    </View>
+                    <Image source={require('../../../assets/croco/akku-curious.png')} style={styles.reportImage} resizeMode="contain" />
+                </TouchableOpacity>
 
                 {/* 메뉴 리스트 */}
                 <View style={styles.menuGroup}>
@@ -120,7 +116,7 @@ const ChildMyPageScreen = ({ navigation }) => {
                         </View>
                         <Switch
                             value={true}
-                            trackColor={{ false: '#D1D5DB', true: '#3B82F6' }}
+                            trackColor={{ false: '#D1D5DB', true: '#A3E635' }}
                             thumbColor={'#FFFFFF'}
                         />
                     </View>
@@ -156,12 +152,13 @@ const ChildMyPageScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
-        backgroundColor: '#F3F4F6',
+        backgroundColor: '#ECFCCB',
     },
     header: {
         paddingHorizontal: scale(20),
         paddingVertical: verticalScale(16),
-        backgroundColor: '#F3F4F6',
+        backgroundColor: '#FFFFFF',
+        alignItems: 'center',
     },
     headerTitle: {
         fontSize: scale(20),
@@ -179,6 +176,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#FFFFFF',
         padding: scale(20),
         borderRadius: scale(20),
+        marginTop: verticalScale(16),
         marginBottom: verticalScale(24),
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
@@ -190,15 +188,17 @@ const styles = StyleSheet.create({
         width: scale(56),
         height: scale(56),
         borderRadius: scale(28),
-        backgroundColor: '#E5E7EB',
+        backgroundColor: '#FFFFFF',
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: scale(16),
         overflow: 'hidden'
     },
     profileAvatarImage: {
-        width: '80%',
-        height: '80%',
+        width: '110%',
+        height: '110%',
+        marginTop: verticalScale(22),
+        marginLeft: verticalScale(5),
     },
     profileInfo: {
         flex: 1,
@@ -214,15 +214,15 @@ const styles = StyleSheet.create({
         color: '#6B7280',
     },
     editButton: {
-        backgroundColor: '#F3F4F6',
+        backgroundColor: '#ECFCCB',
         paddingVertical: verticalScale(6),
         paddingHorizontal: scale(12),
         borderRadius: scale(8),
     },
     editButtonText: {
         fontSize: scale(13),
-        fontWeight: '600',
-        color: '#4B5563',
+        fontWeight: 'bold',
+        color: '#111827',
     },
     menuGroup: {
         backgroundColor: '#FFFFFF',
@@ -239,6 +239,41 @@ const styles = StyleSheet.create({
         marginBottom: verticalScale(4),
         marginLeft: scale(4),
     },
+    reportGroup: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        backgroundColor: '#FFFFFF',
+        borderRadius: scale(20),
+        paddingVertical: verticalScale(20),
+        paddingHorizontal: scale(20),
+        marginBottom: verticalScale(16),
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: verticalScale(2) },
+        shadowOpacity: 0.05,
+        shadowRadius: scale(8),
+        elevation: 2,
+    },
+    reportTextContent: {
+        flex: 1,
+        justifyContent: 'center',
+    },
+    reportGroupTitle: {
+        fontSize: scale(18),
+        fontWeight: '900',
+        color: '#111827',
+        marginBottom: verticalScale(6),
+    },
+    reportGroupSubtitle: {
+        fontSize: scale(13),
+        color: '#6B7280',
+        lineHeight: scale(18),
+    },
+    reportImage: {
+        width: scale(80),
+        height: scale(80),
+        marginLeft: scale(12),
+    },
     menuItem: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -246,7 +281,7 @@ const styles = StyleSheet.create({
         paddingVertical: verticalScale(14),
         paddingHorizontal: scale(4),
         borderBottomWidth: 1,
-        borderBottomColor: '#F3F4F6',
+        borderBottomColor: '#F9FAFB',
     },
     menuItemLeft: {
         flexDirection: 'row',
@@ -269,7 +304,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'center',
-        marginTop: verticalScale(24),
+        marginTop: verticalScale(8),
         marginBottom: verticalScale(16),
     },
     logoutText: {

@@ -202,7 +202,7 @@ const TransactionCalendarScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
-        backgroundColor: '#F3F4F6',
+        backgroundColor: '#F9FAFB',
     },
     header: {
         flexDirection: 'row',
@@ -210,7 +210,7 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         paddingHorizontal: scale(16),
         paddingVertical: verticalScale(16),
-        backgroundColor: '#F3F4F6',
+        backgroundColor: '#F9FAFB',
     },
     backButton: {
         width: scale(32),
@@ -349,13 +349,13 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingVertical: verticalScale(14),
         borderBottomWidth: 1,
-        borderBottomColor: '#F3F4F6',
+        borderBottomColor: '#F9FAFB',
     },
     transactionIconBox: {
         width: scale(40),
         height: scale(40),
         borderRadius: scale(20),
-        backgroundColor: '#F3F4F6',
+        backgroundColor: '#F9FAFB',
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: scale(12),

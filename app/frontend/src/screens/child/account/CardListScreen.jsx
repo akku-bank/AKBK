@@ -82,7 +82,7 @@ const CardListScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-    safeArea: { flex: 1, backgroundColor: '#FFFFFF' },
+    safeArea: { flex: 1, backgroundColor: '#F9FAFB' },
     header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: scale(16), paddingVertical: verticalScale(16) },
     backButton: { width: scale(32), height: scale(32), justifyContent: 'center' },
     backButtonText: { fontSize: scale(22), fontWeight: 'bold', color: '#111' },
@@ -94,14 +94,14 @@ const styles = StyleSheet.create({
     emptyState: { alignItems: 'center', marginTop: verticalScale(40) },
     emptyText: { fontSize: scale(16), fontWeight: 'bold', color: '#4B5563', marginBottom: verticalScale(8) },
     emptySubText: { fontSize: scale(14), color: '#9CA3AF' },
-    cardItem: { backgroundColor: '#F9FAFB', borderRadius: scale(16), padding: scale(16), marginBottom: verticalScale(16), borderWidth: 1, borderColor: '#F3F4F6' },
+    cardItem: { backgroundColor: '#F9FAFB', borderRadius: scale(16), padding: scale(16), marginBottom: verticalScale(16), borderWidth: 1, borderColor: '#F9FAFB' },
     cardGraphic: { height: verticalScale(120), borderRadius: scale(12), padding: scale(16), justifyContent: 'space-between', marginBottom: verticalScale(12) },
     cardGraphicText: { fontSize: scale(16), fontWeight: 'bold', color: '#FFF' },
     cardNumber: { fontSize: scale(14), color: '#FFF', letterSpacing: 2 },
     cardInfo: { paddingHorizontal: scale(4) },
     cardName: { fontSize: scale(16), fontWeight: 'bold', color: '#111', marginBottom: verticalScale(4) },
     cardDesc: { fontSize: scale(13), color: '#6B7280' },
-    footer: { padding: scale(16), backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: '#F3F4F6' },
+    footer: { padding: scale(16), backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: '#F9FAFB' },
     mainButton: { backgroundColor: '#3B82F6', paddingVertical: verticalScale(16), borderRadius: scale(16), alignItems: 'center' },
     mainButtonText: { fontSize: scale(16), fontWeight: 'bold', color: '#FFF' }
 });

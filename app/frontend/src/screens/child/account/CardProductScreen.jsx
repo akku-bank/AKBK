@@ -211,7 +211,7 @@ const CardProductScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-    safeArea: { flex: 1, backgroundColor: '#F3F4F6' },
+    safeArea: { flex: 1, backgroundColor: '#F9FAFB' },
     header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: scale(16), paddingVertical: verticalScale(16), backgroundColor: '#FFFFFF' },
     backButton: { width: scale(32), height: scale(32), justifyContent: 'center' },
     backButtonText: { fontSize: scale(22), fontWeight: 'bold', color: '#111' },
@@ -251,7 +251,7 @@ const styles = StyleSheet.create({
     configSection: { marginTop: verticalScale(24) },
     sectionLabel: { fontSize: scale(15), fontWeight: 'bold', color: '#111', marginBottom: verticalScale(12) },
     daySelector: { flexDirection: 'row', justifyContent: 'space-between' },
-    dayItem: { width: scale(40), height: scale(40), borderRadius: scale(12), backgroundColor: '#F3F4F6', alignItems: 'center', justifyContent: 'center' },
+    dayItem: { width: scale(40), height: scale(40), borderRadius: scale(12), backgroundColor: '#F9FAFB', alignItems: 'center', justifyContent: 'center' },
     dayItemActive: { backgroundColor: '#3B82F6' },
     dayText: { fontSize: scale(14), fontWeight: 'bold', color: '#6B7280' },
     dayTextActive: { color: '#FFFFFF' },

@@ -63,7 +63,7 @@ const ESGChallengeScreen = ({ navigation }) => {
     const renderMissionCard = (mission, isDummy = false) => {
         const status = isDummy ? mission.status : getEsgStatus();
         const reward = isDummy ? mission.reward : (esgChallenge?.rewardAmount ?? 50);
-        const title = isDummy ? mission.title : '이번 주 녹색 가맹점에서 1회 이상 구매';
+        const title = isDummy ? mission.title : '녹색 가맹점에서 1회 이상 구매';
         const description = isDummy ? mission.description : '친환경 가맹점 결제 시 자동 인증됩니다.';
 
         return (
@@ -79,7 +79,7 @@ const ESGChallengeScreen = ({ navigation }) => {
                 </View>
 
                 <View style={styles.rewardBox}>
-                    <CustomText style={styles.rewardText}>보상: 🍬 {reward} 젤링</CustomText>
+                    <CustomText style={styles.rewardText}>보상: {reward} 젤링</CustomText>
                     {status === '보상 대기' ? (
                         <TouchableOpacity style={styles.claimButton} onPress={handleClaimReward}>
                             <CustomText style={styles.claimButtonText}>받기</CustomText>
@@ -108,14 +108,14 @@ const ESGChallengeScreen = ({ navigation }) => {
 
             <ScrollView contentContainerStyle={styles.container}>
                 <View style={styles.topSection}>
-                    <CustomText style={styles.pageTitle}>지구를 위한 착한 소비 🌍</CustomText>
+                    <CustomText style={styles.pageTitle}>지구를 위한 착한 소비</CustomText>
                     <CustomText style={styles.pageSubtitle}>내가 한 친환경 결제가 자동으로 인증돼요!</CustomText>
                 </View>
 
                 {DUMMY_MISSIONS.map(mission => renderMissionCard(mission, true))}
 
                 {loading ? (
-                    <ActivityIndicator size="large" color="#10B981" style={{ marginTop: 16 }} />
+                    <ActivityIndicator size="large" color="#A3E635" style={{ marginTop: 16 }} />
                 ) : (
                     renderMissionCard({ id: 'esg-real' }, false)
                 )}
@@ -125,20 +125,20 @@ const ESGChallengeScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-    safeArea: { flex: 1, backgroundColor: '#F0FDF4' },
+    safeArea: { flex: 1, backgroundColor: '#ECFCCB' },
     header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: scale(16), paddingVertical: verticalScale(16), backgroundColor: '#FFFFFF' },
     backButton: { width: scale(32), height: scale(32), justifyContent: 'center' },
     backButtonText: { fontSize: scale(22), fontWeight: 'bold', color: '#111' },
     headerTitle: { fontSize: scale(18), fontWeight: 'bold', color: '#111' },
     container: { flexGrow: 1, paddingHorizontal: scale(20), paddingTop: verticalScale(20) },
     topSection: { marginBottom: verticalScale(24), backgroundColor: '#FFFFFF', padding: scale(20), borderRadius: scale(16), shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
-    pageTitle: { fontSize: scale(20), fontWeight: '900', color: '#065F46', marginBottom: verticalScale(8) },
-    pageSubtitle: { fontSize: scale(14), color: '#166534', lineHeight: scale(20) },
+    pageTitle: { fontSize: scale(20), fontWeight: '900', color: '#A3E635', marginBottom: verticalScale(8) },
+    pageSubtitle: { fontSize: scale(14), color: '#585b54ff', lineHeight: scale(20) },
     missionCard: { backgroundColor: '#FFFFFF', borderRadius: scale(16), padding: scale(20), marginBottom: verticalScale(16), shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
     missionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: verticalScale(16) },
     missionHeaderLeft: { flexDirection: 'row', alignItems: 'center', flex: 1 },
     badge: { paddingHorizontal: scale(10), paddingVertical: verticalScale(4), borderRadius: scale(12), borderWidth: 1 },
-    badgeSuccess: { backgroundColor: '#F3F4F6', borderColor: '#D1D5DB' },
+    badgeSuccess: { backgroundColor: '#F9FAFB', borderColor: '#D1D5DB' },
     badgeTextSuccess: { color: '#6B7280', fontSize: scale(11), fontWeight: 'bold' },
     badgeProgress: { backgroundColor: '#FEF9C3', borderColor: '#FACC15' },
     badgeTextProgress: { color: '#A16207', fontSize: scale(11), fontWeight: 'bold' },

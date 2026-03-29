@@ -214,6 +214,20 @@ const ParentInitialSetupScreen = ({ navigation, route }) => {
                 </ScrollView>
 
                 <View style={styles.buttonSection}>
+                    {/* 개발자용 강제 패스 버튼 */}
+                    <TouchableOpacity
+                        style={{ paddingVertical: 10, alignItems: 'center', marginBottom: 5 }}
+                        onPress={() => {
+                            setBankAccount('000000000000');
+                            setIsVerified(true);
+                        }}
+                        activeOpacity={0.7}
+                    >
+                        <CustomText style={{ color: '#9CA3AF', fontSize: 13, textDecorationLine: 'underline' }}>
+                            [개발자 전용] 실계좌 인증 없이 넘어가기
+                        </CustomText>
+                    </TouchableOpacity>
+
                     <TouchableOpacity
                         style={[styles.submitButton, (!isVerified || isLoading) ? styles.submitButtonDisabled : null]}
                         onPress={handleFinalize}
@@ -285,7 +299,7 @@ const styles = StyleSheet.create({
     input: { fontSize: RFValue(18), color: '#111', fontWeight: 'bold', borderBottomWidth: 2, borderBottomColor: '#111', paddingVertical: RFValue(12), marginBottom: RFValue(20) },
     disabledInput: { color: '#9CA3AF', borderBottomColor: '#E5E7EB' },
 
-    verifyRequestButton: { backgroundColor: '#F3F4F6', paddingVertical: RFValue(12), borderRadius: RFValue(12), alignItems: 'center' },
+    verifyRequestButton: { backgroundColor: '#F9FAFB', paddingVertical: RFValue(12), borderRadius: RFValue(12), alignItems: 'center' },
     verifyRequestButtonText: { color: '#4B5563', fontWeight: 'bold', fontSize: RFValue(14) },
 
     verificationSection: { marginTop: RFValue(10), backgroundColor: '#F9FAFB', padding: RFValue(20), borderRadius: RFValue(16) },
@@ -307,10 +321,10 @@ const styles = StyleSheet.create({
 
     modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
     modalContent: { backgroundColor: '#FFFFFF', borderTopLeftRadius: RFValue(24), borderTopRightRadius: RFValue(24), paddingHorizontal: RFValue(24), paddingBottom: RFValue(40), maxHeight: '60%' },
-    modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: RFValue(20), borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
+    modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: RFValue(20), borderBottomWidth: 1, borderBottomColor: '#F9FAFB' },
     modalTitle: { fontSize: RFValue(18), fontWeight: 'bold', color: '#111' },
     modalClose: { fontSize: RFValue(20), color: '#9CA3AF' },
-    bankItem: { paddingVertical: RFValue(18), borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
+    bankItem: { paddingVertical: RFValue(18), borderBottomWidth: 1, borderBottomColor: '#F9FAFB' },
     bankItemText: { fontSize: RFValue(16), color: '#111' }
 });
 

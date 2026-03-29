@@ -156,7 +156,7 @@ const TransactionDetailScreen = ({ route, navigation }) => {
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
-        backgroundColor: '#F3F4F6',
+        backgroundColor: '#F9FAFB',
     },
     header: {
         flexDirection: 'row',
@@ -164,7 +164,7 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         paddingHorizontal: scale(16),
         paddingVertical: verticalScale(16),
-        backgroundColor: '#F3F4F6',
+        backgroundColor: '#F9FAFB',
     },
     backButton: {
         width: scale(32),
@@ -207,7 +207,7 @@ const styles = StyleSheet.create({
         width: scale(64),
         height: scale(64),
         borderRadius: scale(32),
-        backgroundColor: '#F3F4F6',
+        backgroundColor: '#F9FAFB',
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: verticalScale(16),
@@ -241,7 +241,7 @@ const styles = StyleSheet.create({
     divider: {
         width: '100%',
         height: 1,
-        backgroundColor: '#F3F4F6',
+        backgroundColor: '#F9FAFB',
         marginBottom: verticalScale(20),
     },
     infoRow: {
@@ -319,7 +319,7 @@ const styles = StyleSheet.create({
         marginBottom: verticalScale(16),
     },
     memoInput: {
-        backgroundColor: '#F3F4F6',
+        backgroundColor: '#F9FAFB',
         borderRadius: scale(12),
         padding: scale(16),
         height: verticalScale(100),
@@ -339,7 +339,7 @@ const styles = StyleSheet.create({
         marginLeft: scale(10),
     },
     cancelButton: {
-        backgroundColor: '#F3F4F6',
+        backgroundColor: '#F9FAFB',
     },
     saveButton: {
         backgroundColor: '#A3E635',

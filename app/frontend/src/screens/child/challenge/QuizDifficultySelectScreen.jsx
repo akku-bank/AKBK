@@ -6,7 +6,7 @@ import CustomText from '../../../components/common/CustomText';
 const DIFFICULTIES = [
     {
         label: '\uD558',
-        value: 'easy',
+        value: 'EASY',
         title: '\uC26C\uC6B4 \uB09C\uC774\uB3C4',
         description: '\uAE30\uCD08 \uAE08\uC735 \uAC1C\uB150\uBD80\uD130 \uCC28\uADFC\uCC28\uADFC \uD480\uC5B4\uC694.',
         image: require('../../../assets/croco/kids_akku.png'),
@@ -15,7 +15,7 @@ const DIFFICULTIES = [
     },
     {
         label: '\uC911',
-        value: 'medium',
+        value: 'NORMAL',
         title: '\uBCF4\uD1B5 \uB09C\uC774\uB3C4',
         description: '\uC870\uAE08 \uB354 \uC0DD\uAC01\uC774 \uD544\uC694\uD55C \uBB38\uC81C\uB97C \uD480\uC5B4\uC694.',
         image: require('../../../assets/croco/students_akku.png'),
@@ -24,7 +24,7 @@ const DIFFICULTIES = [
     },
     {
         label: '\uC0C1',
-        value: 'hard',
+        value: 'HARD',
         title: '\uC5B4\uB824\uC6B4 \uB09C\uC774\uB3C4',
         description: '\uB3C4\uC804\uC801\uC778 \uAE08\uC735 \uD034\uC988\uC5D0 \uB3C4\uC804\uD574\uC694.',
         image: require('../../../assets/croco/adult_akku.png'),
@@ -36,6 +36,14 @@ const DIFFICULTIES = [
 const QuizDifficultySelectScreen = ({ navigation }) => {
     const handleSelectDifficulty = (difficulty) => {
         navigation.navigate('QuizScreen', { difficulty });
+    };
+    const formatDescription = (text) => {
+        if (!text) return '';
+        const words = text.split(' ');
+        if (words.length > 4) {
+            return words.slice(0, 4).join(' ') + '\n' + words.slice(4).join(' ');
+        }
+        return text;
     };
 
     return (
@@ -72,7 +80,7 @@ const QuizDifficultySelectScreen = ({ navigation }) => {
                                     <CustomText style={styles.cardTitle}>{item.title}</CustomText>
                                 </View>
                                 <CustomText style={styles.cardDescription}>
-                                    {item.description}
+                                    {formatDescription(item.description)}
                                 </CustomText>
                             </View>
                             <Image source={item.image} style={styles.cardImage} resizeMode="contain" />
@@ -85,7 +93,7 @@ const QuizDifficultySelectScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-    safeArea: { flex: 1, backgroundColor: '#FFFFFF' },
+    safeArea: { flex: 1, backgroundColor: '#ECFCCB' },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -100,14 +108,14 @@ const styles = StyleSheet.create({
     backButtonText: { fontSize: scale(22), fontWeight: 'bold', color: '#111' },
     headerTitle: { fontSize: scale(18), fontWeight: 'bold', color: '#111' },
     headerSpacer: { width: scale(32) },
-    container: { flex: 1, paddingHorizontal: scale(20), paddingTop: verticalScale(28), backgroundColor: '#FFFFFF' },
-    titleBox: { marginBottom: verticalScale(24) },
-    title: { fontSize: scale(26), fontWeight: 'bold', color: '#1F2937', marginBottom: verticalScale(8) },
-    subtitle: { fontSize: scale(14), color: '#6B7280', lineHeight: scale(22) },
+    container: { flex: 1, paddingHorizontal: scale(20), paddingTop: verticalScale(28), backgroundColor: '#ECFCCB' },
+    titleBox: { marginBottom: verticalScale(24), alignItems: 'center' },
+    title: { fontSize: scale(26), fontWeight: 'bold', color: '#1F2937', marginBottom: verticalScale(8), textAlign: 'center' },
+    subtitle: { fontSize: scale(14), color: '#6B7280', lineHeight: scale(22), textAlign: 'center' },
     card: {
-        backgroundColor: '#F8F9FB',
+        backgroundColor: '#FFFFFF',
         borderWidth: 1,
-        borderColor: '#D1D5DB',
+        borderColor: '#A3E635',
         borderRadius: scale(24),
         paddingHorizontal: scale(20),
         paddingVertical: verticalScale(18),

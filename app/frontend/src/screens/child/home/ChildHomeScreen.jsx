@@ -1,5 +1,5 @@
 import React, { useState, useContext, useEffect, useCallback } from 'react';
-import { View, StyleSheet, TouchableOpacity, SafeAreaView, Dimensions, Image, Modal, Platform, StatusBar, ImageBackground } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, SafeAreaView, Dimensions, Image, Modal, Platform, StatusBar, ImageBackground, Alert } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { scale, verticalScale } from 'react-native-size-matters';
 import ChildAvatar from '../../../components/child/avatar/ChildAvatar';
@@ -116,20 +116,35 @@ const ChildHomeScreen = ({ navigation }) => {
                 <View style={styles.divider} />
 
                 <ImageBackground
-                    source={require('../../../assets/background.png')}
+                    source={require('../../../assets/background2.jpg')}
                     style={styles.contentBackground}
                     imageStyle={{ left: -21, width: width + 30 }}
                     resizeMode="cover"
                 >
-                    {/* 친구, 알림 버튼 */}
-                    <View style={styles.actionRow}>
-                        <TouchableOpacity style={styles.pillButton} onPress={() => navigation.navigate('FriendList')}>
-                            <CustomText style={styles.pillButtonText}>친구</CustomText>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.pillButton}>
-                            <CustomText style={styles.pillButtonText}>알림</CustomText>
+                    {/* 좌측 알림 버튼 / 우측 플로팅 버튼 스택(내 도감, 꾸미기, 친구) */}
+                    <View style={[styles.actionRow, { alignItems: 'flex-start' }]}>
+                        <TouchableOpacity style={styles.squareIconButton} onPress={() => Alert.alert('알림', '아직 알림 기록이 없습니다.')}>
+                            <Image source={require('../../../assets/icon/alert2.png')} style={{ width: scale(28), height: scale(28) }} resizeMode="contain" />
+                            <CustomText style={styles.squareIconText}>알림</CustomText>
                             {homeData?.hasUnreadNotification && <View style={styles.redDot} />}
                         </TouchableOpacity>
+
+                        <View style={{ position: 'absolute', right: scale(20), top: 0, gap: verticalScale(8), zIndex: 100 }}>
+                            <TouchableOpacity style={styles.squareIconButton} onPress={() => navigation.navigate('AvatarDictionaryScreen')}>
+                                <Image source={require('../../../assets/icon/dic.png')} style={{ width: scale(28), height: scale(28) }} resizeMode="contain" />
+                                <CustomText style={styles.squareIconText}>도감</CustomText>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity style={styles.squareIconButton} onPress={() => navigation.navigate('Wardrobe')}>
+                                <Image source={require('../../../assets/icon/closet.png')} style={{ width: scale(28), height: scale(28) }} resizeMode="contain" />
+                                <CustomText style={styles.squareIconText}>옷장</CustomText>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity style={styles.squareIconButton} onPress={() => navigation.navigate('FriendList')}>
+                                <Image source={require('../../../assets/icon/friend.png')} style={{ width: scale(28), height: scale(28) }} resizeMode="contain" />
+                                <CustomText style={styles.squareIconText}>친구</CustomText>
+                            </TouchableOpacity>
+                        </View>
                     </View>
 
                     {/* ART_1 (벽그림 갤러리) - 구 기부처 카드 자리 */}
@@ -138,36 +153,48 @@ const ChildHomeScreen = ({ navigation }) => {
                             const artItem = AVATAR_ITEMS.art1.find(a => a.id === equipState.art1);
                             if (!artItem || !artItem.img) return null;
                             return (
-                                <Image source={artItem.img} style={{ width: scale(85), height: verticalScale(85) }} resizeMode="contain" />
+                                <Image source={artItem.img} style={{ width: scale(115), height: verticalScale(115), marginTop: verticalScale(45) }} resizeMode="contain" />
                             );
                         })()}
                     </View>
 
                     {/* 아바타 영역 */}
                     <View style={styles.avatarSection}>
-                        <CustomText style={styles.levelText}>LV.{homeData ? homeData.level : 1} | 소비점수 {homeData ? homeData.score : 0}점</CustomText>
-                        <CustomText style={styles.nameText}>{user ? user.name : '김싸피'}</CustomText>
+                        <View style={{ marginTop: verticalScale(-2), alignItems: 'center', zIndex: 10 }}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(8), marginBottom: verticalScale(-2), transform: [{ translateY: verticalScale(5) }], zIndex: 10 }}>
+                                <CustomText style={styles.levelText}>LV.{homeData ? homeData.level : 1}</CustomText>
+                                <CustomText style={styles.nameText}>{user ? user.name : '김싸피'}</CustomText>
+                            </View>
 
-                        <View style={styles.avatarActionRow}>
-                            <TouchableOpacity style={styles.avatarActionBtn} onPress={() => navigation.navigate('AvatarDictionaryScreen')}>
-                                <CustomText style={styles.avatarActionText}>내 도감</CustomText>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={styles.avatarActionBtn} onPress={() => navigation.navigate('Wardrobe')}>
-                                <CustomText style={styles.avatarActionText}>꾸미기</CustomText>
-                            </TouchableOpacity>
+                            <View style={{ width: scale(200), height: verticalScale(40), justifyContent: 'center', marginBottom: verticalScale(0), transform: [{ translateY: verticalScale(-6) }] }}>
+                                <Image source={require('../../../assets/gauge.png')} style={{ position: 'absolute', width: '100%', height: '100%' }} resizeMode="contain" />
+
+                                <View style={{
+                                    position: 'absolute',
+                                    left: '6%',
+                                    top: '37%',
+                                    height: '25%',
+                                    width: `${Math.min(100, Math.max(0, (homeData ? homeData.score : 0)))}%`,
+                                    maxWidth: '90%',
+                                    backgroundColor: '#7DF39D',
+                                    zIndex: 1
+                                }} />
+
+                                <CustomText style={{ position: 'absolute', width: '100%', textAlign: 'center', fontSize: scale(14), fontWeight: '900', color: '#111', zIndex: 2 }}>
+                                    {homeData ? homeData.score : 0} / 100
+                                </CustomText>
+                            </View>
                         </View>
 
                         <View style={styles.avatarWrapper}>
-                            <ChildAvatar equipState={equipState} size={avatarSize} />
+                            <ChildAvatar equipState={equipState} size={height > 750 ? 270 : 200} />
 
-                            {/* 펫 배치 (우측 하단) */}
                             {equipState.pet && equipState.pet !== 'none' && (
                                 <View style={{ position: 'absolute', right: scale(-150), bottom: verticalScale(-110), zIndex: 1 }}>
                                     <Pet petType={equipState.pet} size={scale(400)} />
                                 </View>
                             )}
 
-                            {/* ART_2 (나무들) 좌측 여백 배치 */}
                             {equipState.art2 && equipState.art2 !== 'none' && (() => {
                                 const treeItem = AVATAR_ITEMS.art2.find(a => a.id === equipState.art2);
                                 if (!treeItem || !treeItem.img) return null;
@@ -188,7 +215,7 @@ const ChildHomeScreen = ({ navigation }) => {
                     <TouchableOpacity style={styles.qrModalCloseBtn} onPress={() => setQrModalVisible(false)}>
                         <CustomText style={styles.qrModalCloseText}>✕</CustomText>
                     </TouchableOpacity>
-                    <Image source={require('../../../assets/qr.png')} style={styles.qrModalImage} />
+                    <Image source={require('../../../assets/qr-white.png')} style={styles.qrModalImage} />
                 </View>
             </Modal>
 
@@ -257,7 +284,7 @@ const styles = StyleSheet.create({
         height: scale(40),
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#F3F4F6',
+        backgroundColor: '#F9FAFB',
         borderRadius: scale(8),
         overflow: 'hidden',
     },
@@ -268,25 +295,28 @@ const styles = StyleSheet.create({
     },
     divider: {
         height: 1,
-        backgroundColor: '#F3F4F6',
+        backgroundColor: '#F9FAFB',
         width: '100%',
     },
     actionRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         paddingHorizontal: scale(20),
-        marginBottom: verticalScale(20),
+        marginBottom: verticalScale(16),
     },
-    pillButton: {
-        backgroundColor: '#F3F4F6',
-        paddingVertical: verticalScale(8),
-        paddingHorizontal: scale(24),
-        borderRadius: scale(20),
+    squareIconButton: {
+        width: scale(58),
+        height: scale(58),
+        backgroundColor: 'rgba(255, 255, 255, 0.65)',
+        borderRadius: scale(18),
+        justifyContent: 'center',
+        alignItems: 'center',
     },
-    pillButtonText: {
-        fontSize: scale(15),
-        fontWeight: '900',
-        color: '#374151',
+    squareIconText: {
+        fontSize: scale(11),
+        fontWeight: 'bold',
+        color: '#4B5563',
+        marginTop: verticalScale(2),
     },
     redDot: {
         position: 'absolute',
@@ -353,7 +383,7 @@ const styles = StyleSheet.create({
         elevation: 10,
     },
     avatarActionBtn: {
-        backgroundColor: '#F3F4F6',
+        backgroundColor: '#F9FAFB',
         paddingVertical: verticalScale(6),
         paddingHorizontal: scale(14),
         borderRadius: scale(16),

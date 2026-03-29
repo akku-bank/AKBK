@@ -156,7 +156,7 @@ const FriendListScreen = ({ navigation, route }) => {
             <ScrollView contentContainerStyle={styles.container}>
                 {inviteCode ? (
                     <View style={styles.inviteCard}>
-                        <CustomText style={styles.inviteTitle}>초대 코드 생성 완료</CustomText>
+                        <CustomText style={styles.inviteTitle}>초대 코드 생성 완료!</CustomText>
                         <View style={styles.inviteCodeRow}>
                             <CustomText style={styles.inviteCodeText} selectable>
                                 {inviteCode}
@@ -168,12 +168,8 @@ const FriendListScreen = ({ navigation, route }) => {
                     </View>
                 ) : null}
 
-                <View style={styles.searchBox}>
-                    <CustomText style={styles.searchText}>🔍 닉네임으로 친구 검색</CustomText>
-                </View>
-
                 <View style={styles.sectionHeader}>
-                    <CustomText style={styles.sectionTitle}>내 친구 ({friends.length}명)</CustomText>
+                    <CustomText style={styles.sectionTitle}>내 친구</CustomText>
                     <TouchableOpacity style={styles.sectionPlusButton} onPress={openInviteModal}>
                         <CustomText style={styles.sectionPlusText}>+</CustomText>
                     </TouchableOpacity>
@@ -209,7 +205,7 @@ const FriendListScreen = ({ navigation, route }) => {
                                     })
                                 }
                             >
-                                <CustomText style={styles.visitButtonText}>타운 방문</CustomText>
+                                <CustomText style={styles.visitButtonText}>방문하기</CustomText>
                             </TouchableOpacity>
                         </View>
                     ))
@@ -226,7 +222,7 @@ const FriendListScreen = ({ navigation, route }) => {
                     <View style={styles.modalCard}>
                         <CustomText style={styles.modalTitle}>초대 코드 입력</CustomText>
                         <CustomText style={styles.modalSubtitle}>
-                            친구에게 받은 초대 코드를 입력해 정보를 확인하세요.
+                            친구에게 받은 초대 코드를 입력해{'\n'}정보를 확인하세요.
                         </CustomText>
 
                         <TextInput
@@ -279,7 +275,7 @@ const FriendListScreen = ({ navigation, route }) => {
 };
 
 const styles = StyleSheet.create({
-    safeArea: { flex: 1, backgroundColor: '#FFFFFF' },
+    safeArea: { flex: 1, backgroundColor: '#ECFCCB' },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -292,7 +288,7 @@ const styles = StyleSheet.create({
     backButtonText: { fontSize: scale(22), fontWeight: 'bold', color: '#111' },
     headerTitle: { fontSize: scale(18), fontWeight: 'bold', color: '#111' },
     addButton: {
-        backgroundColor: '#F3F4F6',
+        backgroundColor: '#ECFCCB',
         paddingHorizontal: scale(12),
         paddingVertical: verticalScale(6),
         borderRadius: scale(12),
@@ -300,7 +296,7 @@ const styles = StyleSheet.create({
         alignItems: 'center'
     },
     addButtonDisabled: { opacity: 0.6 },
-    addButtonText: { fontSize: scale(14), fontWeight: 'bold', color: '#4B5563' },
+    addButtonText: { fontSize: scale(14), fontWeight: 'bold', color: '#4D7C0F' },
 
     container: {
         flexGrow: 1,
@@ -310,12 +306,12 @@ const styles = StyleSheet.create({
     },
 
     inviteCard: {
-        backgroundColor: '#F8FBFF',
+        backgroundColor: '#F7FEE7',
         borderRadius: scale(18),
         paddingHorizontal: scale(18),
         paddingVertical: verticalScale(18),
         borderWidth: 1,
-        borderColor: '#D8E8FF',
+        borderColor: '#D9F99D',
         marginBottom: verticalScale(16)
     },
     inviteTitle: {
@@ -334,7 +330,7 @@ const styles = StyleSheet.create({
     inviteCodeText: {
         fontSize: scale(15),
         fontWeight: '700',
-        color: '#2563EB'
+        color: '#4D7C0F'
     },
     inviteHint: {
         marginTop: verticalScale(10),
@@ -344,7 +340,7 @@ const styles = StyleSheet.create({
     },
 
     searchBox: {
-        backgroundColor: '#F3F4F6',
+        backgroundColor: '#F9FAFB',
         paddingHorizontal: scale(16),
         paddingVertical: verticalScale(12),
         borderRadius: scale(12),
@@ -363,14 +359,14 @@ const styles = StyleSheet.create({
         width: scale(28),
         height: scale(28),
         borderRadius: scale(14),
-        backgroundColor: '#DBEAFE',
+        backgroundColor: '#FFFFFF',
         alignItems: 'center',
         justifyContent: 'center'
     },
     sectionPlusText: {
         fontSize: scale(18),
         fontWeight: 'bold',
-        color: '#2563EB',
+        color: '#4D7C0F',
         lineHeight: scale(18)
     },
 
@@ -397,17 +393,24 @@ const styles = StyleSheet.create({
         width: scale(48),
         height: scale(48),
         borderRadius: scale(24),
-        backgroundColor: '#E5E7EB',
+        backgroundColor: '#FFFFFF',
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: scale(16),
         overflow: 'hidden'
     },
-    avatarImage: { width: '80%', height: '80%' },
+    avatarImage: {
+        width: '110%',
+        height: '110%',
+        marginTop: verticalScale(22),
+        marginLeft: verticalScale(5),
+    },
     friendInfo: { flex: 1 },
     friendName: { fontSize: scale(18), fontWeight: 'bold', color: '#111' },
     visitButton: {
-        backgroundColor: '#A3E635',
+        backgroundColor: '#FFFFFF',
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
         paddingHorizontal: scale(12),
         paddingVertical: verticalScale(8),
         borderRadius: scale(8)
@@ -447,10 +450,11 @@ const styles = StyleSheet.create({
         paddingVertical: verticalScale(12),
         fontSize: scale(14),
         color: '#111',
-        marginBottom: verticalScale(12)
+        marginBottom: verticalScale(12),
+        fontFamily: 'Mulmaru'
     },
     lookupButton: {
-        backgroundColor: '#2563EB',
+        backgroundColor: '#A3E635',
         borderRadius: scale(14),
         paddingVertical: verticalScale(12),
         alignItems: 'center'
@@ -461,10 +465,10 @@ const styles = StyleSheet.create({
     lookupButtonText: {
         fontSize: scale(14),
         fontWeight: 'bold',
-        color: '#FFFFFF'
+        color: '#111'
     },
     lookupCard: {
-        backgroundColor: '#F8FBFF',
+        backgroundColor: '#F7FEE7',
         borderRadius: scale(16),
         paddingHorizontal: scale(16),
         paddingVertical: verticalScale(16),

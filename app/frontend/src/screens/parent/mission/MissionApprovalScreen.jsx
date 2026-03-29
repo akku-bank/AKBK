@@ -121,8 +121,8 @@ const MissionApprovalScreen = ({ navigation, route }) => {
 };
 
 const styles = StyleSheet.create({
-    safeArea: { flex: 1, backgroundColor: '#F3F4F6' },
-    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: scale(16), paddingVertical: verticalScale(16), backgroundColor: '#F3F4F6' },
+    safeArea: { flex: 1, backgroundColor: '#F9FAFB' },
+    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: scale(16), paddingVertical: verticalScale(16), backgroundColor: '#F9FAFB' },
     backButton: { width: scale(32), height: scale(32), justifyContent: 'center' },
     backButtonText: { fontSize: scale(22), fontWeight: 'bold', color: '#111' },
     headerTitle: { fontSize: scale(18), fontWeight: 'bold', color: '#111' },
@@ -143,7 +143,7 @@ const styles = StyleSheet.create({
 
     actionRow: { flexDirection: 'row', gap: scale(12) },
     actionBtn: { flex: 1, paddingVertical: verticalScale(16), borderRadius: scale(12), alignItems: 'center' },
-    rejectBtn: { backgroundColor: '#F3F4F6', borderWidth: 1, borderColor: '#E5E7EB' },
+    rejectBtn: { backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#E5E7EB' },
     rejectBtnText: { fontSize: scale(16), fontWeight: 'bold', color: '#4B5563' },
     approveBtn: { backgroundColor: '#A3E635' },
     approveBtnText: { fontSize: scale(16), fontWeight: 'bold', color: '#111' },

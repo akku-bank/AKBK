@@ -58,7 +58,7 @@ const QrCheckScreen = ({ navigation, route }) => {
                         activeOpacity={0.8}
                         onPress={handleNoQr}
                     >
-                        <View style={[styles.iconWrapper, { backgroundColor: '#F3F4F6' }]}>
+                        <View style={[styles.iconWrapper, { backgroundColor: '#F9FAFB' }]}>
                             <Image source={require('../../assets/croco/croco_parents.png')} style={styles.cardIconImage} resizeMode="contain" />
                         </View>
                         <View style={styles.cardTextContainer}>
@@ -83,7 +83,7 @@ const styles = StyleSheet.create({
     title: { fontSize: RFValue(26), fontWeight: 'bold', color: '#111', marginBottom: RFValue(12) },
     subtitle: { fontSize: RFValue(15), color: '#6B7280', fontWeight: '500', lineHeight: RFValue(22) },
     cardSection: { flex: 1, gap: RFValue(16) },
-    card: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F9FAFB', paddingVertical: RFValue(24), paddingHorizontal: RFValue(20), borderRadius: RFValue(16), borderWidth: 1, borderColor: '#F3F4F6' },
+    card: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F9FAFB', paddingVertical: RFValue(24), paddingHorizontal: RFValue(20), borderRadius: RFValue(16), borderWidth: 1, borderColor: '#F9FAFB' },
     iconWrapper: { width: RFValue(60), height: RFValue(60), borderRadius: RFValue(30), backgroundColor: '#EFF6FF', justifyContent: 'center', alignItems: 'center', marginRight: RFValue(16) },
     iconText: { fontSize: RFValue(28) },
     cardIconImage: { width: '70%', height: '70%' },

@@ -299,7 +299,7 @@ const ParentReportScreen = ({ navigation, route }) => {
 };
 
 const styles = StyleSheet.create({
-    safeArea: { flex: 1, backgroundColor: '#F3F4F6' },
+    safeArea: { flex: 1, backgroundColor: '#F9FAFB' },
     header: {
         flexDirection: 'row',
         alignItems: 'center',

@@ -137,21 +137,21 @@ export const AVATAR_ASSETS = {
     }
 };
 
-// 화면 렌더링용 도감 배열 (기획 레벨 매핑 완료)
+// 화면 렌더링용 도감 배열
 export const AVATAR_ITEMS = {
     face: [
-        { id: 'boy1', name: '소년1', img: AVATAR_ASSETS.face.base.boy1, level: 1 },
-        { id: 'boy2', name: '소년2', img: AVATAR_ASSETS.face.base.boy2, level: 1 },
-        { id: 'girl1', name: '소녀1', img: AVATAR_ASSETS.face.base.girl1, level: 1 },
-        { id: 'girl2', name: '소녀2', img: AVATAR_ASSETS.face.base.girl2, level: 1 },
+        { id: 'boy1', name: '온화한 얼굴', img: AVATAR_ASSETS.face.base.boy1, level: 1 },
+        { id: 'boy2', name: '날카로운 얼굴', img: AVATAR_ASSETS.face.base.boy2, level: 1 },
+        { id: 'girl1', name: '화려한 얼굴', img: AVATAR_ASSETS.face.base.girl1, level: 1 },
+        { id: 'girl2', name: '시크한 얼굴', img: AVATAR_ASSETS.face.base.girl2, level: 1 },
     ],
     hair: [
-        { id: 'boy1', name: '남자머리1', img: AVATAR_ASSETS.hair.boy1, level: 1 },
-        { id: 'boy2', name: '남자머리2', img: AVATAR_ASSETS.hair.boy2, level: 1 },
-        { id: 'boy3', name: '남자머리3', img: AVATAR_ASSETS.hair.boy3, level: 1 },
-        { id: 'girl1', name: '여자머리1', img: AVATAR_ASSETS.hair.girl1, level: 1 },
-        { id: 'girl2', name: '여자머리2', img: AVATAR_ASSETS.hair.girl2, level: 1 },
-        { id: 'girl3', name: '여자머리3', img: AVATAR_ASSETS.hair.girl3, level: 1 },
+        { id: 'boy1', name: '댄디 헤어', img: AVATAR_ASSETS.hair.boy1, level: 1 },
+        { id: 'boy2', name: '탈색 헤어', img: AVATAR_ASSETS.hair.boy2, level: 1 },
+        { id: 'boy3', name: '바람 헤어', img: AVATAR_ASSETS.hair.boy3, level: 1 },
+        { id: 'girl1', name: '단발 헤어', img: AVATAR_ASSETS.hair.girl1, level: 1 },
+        { id: 'girl2', name: '탈색 헤어', img: AVATAR_ASSETS.hair.girl2, level: 1 },
+        { id: 'girl3', name: '포니테일 헤어', img: AVATAR_ASSETS.hair.girl3, level: 1 },
         { id: 'none', name: '해제', img: null, level: 1 },
     ],
     upper: [
@@ -167,8 +167,8 @@ export const AVATAR_ITEMS = {
         { id: 'lower4', name: '정장 하의', img: AVATAR_ASSETS.lower.lower4, level: 4 },
     ],
     hat: [
-        { id: 'hat1', name: '기본 모자', img: AVATAR_ASSETS.hat.hat1, level: 1 },
-        { id: 'farmer', name: '농부 모자', img: AVATAR_ASSETS.hat.farmer, level: 4 },
+        { id: 'hat1', name: '캡 모자', img: AVATAR_ASSETS.hat.hat1, level: 1 },
+        { id: 'farmer', name: '밀짚 모자', img: AVATAR_ASSETS.hat.farmer, level: 4 },
         { id: 'astronaut', name: '우주인 헬멧', img: AVATAR_ASSETS.hat.astronaut, level: 5 },
         { id: 'akku', name: '아꾸 모자', img: AVATAR_ASSETS.hat.akku, level: 5 },
         { id: 'none', name: '해제', img: null, level: 1 },
@@ -176,15 +176,15 @@ export const AVATAR_ITEMS = {
     shoe: [
         { id: 'shoe1', name: '슬리퍼', img: AVATAR_ASSETS.shoe.shoe1, level: 1 },
         { id: 'shoe2', name: '스니커즈', img: AVATAR_ASSETS.shoe.shoe2, level: 2 },
-        { id: 'shoe3', name: '검은 운동화', img: AVATAR_ASSETS.shoe.shoe3, level: 3 },
+        { id: 'shoe3', name: '검정 운동화', img: AVATAR_ASSETS.shoe.shoe3, level: 3 },
         { id: 'shoe4', name: '구두', img: AVATAR_ASSETS.shoe.shoe4, level: 4 },
         { id: 'none', name: '해제', img: null, level: 1 },
     ],
     back: [
         { id: 'wing', name: '날개', img: AVATAR_ASSETS.decoration.wing, level: 2 },
-        { id: 'babo', name: '바보', img: AVATAR_ASSETS.decoration.babo, level: 3 },
-        { id: 'flag', name: '깃발', img: AVATAR_ASSETS.decoration.flag, level: 4 },
-        { id: 'watergun', name: '물총', img: AVATAR_ASSETS.decoration.watergun, level: 5 },
+        { id: 'babo', name: '바보 팻말', img: AVATAR_ASSETS.decoration.babo, level: 3 },
+        { id: 'flag', name: '우주인 깃발', img: AVATAR_ASSETS.decoration.flag, level: 4 },
+        { id: 'watergun', name: '아꾸 물총', img: AVATAR_ASSETS.decoration.watergun, level: 5 },
         { id: 'none', name: '해제', img: null, level: 1 },
     ],
     outfit: [
@@ -202,9 +202,9 @@ export const AVATAR_ITEMS = {
     art1: [
         { id: 'lastmeal', name: '최후의 만찬', img: AVATAR_ASSETS.art1.lastmeal, level: 3 },
         { id: 'monalisa', name: '모나리자', img: AVATAR_ASSETS.art1.monalisa, level: 3 },
-        { id: 'pearl', name: '진주귀걸이', img: AVATAR_ASSETS.art1.pearl, level: 3 },
+        { id: 'pearl', name: '진주 귀걸이', img: AVATAR_ASSETS.art1.pearl, level: 3 },
         { id: 'scream', name: '절규', img: AVATAR_ASSETS.art1.scream, level: 3 },
-        { id: 'starnight', name: '별이빛나는밤', img: AVATAR_ASSETS.art1.starnight, level: 3 },
+        { id: 'starnight', name: '별이 빛나는 밤', img: AVATAR_ASSETS.art1.starnight, level: 3 },
         { id: 'none', name: '해제', img: null, level: 1 },
     ],
     art2: [

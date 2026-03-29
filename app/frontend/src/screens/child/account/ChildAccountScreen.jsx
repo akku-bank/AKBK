@@ -137,7 +137,7 @@ const ChildAccountScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-    safeArea: { flex: 1, backgroundColor: '#FFFFFF' },
+    safeArea: { flex: 1, backgroundColor: '#F9FAFB' },
     container: { padding: scale(20) },
     balanceCard: {
         backgroundColor: '#F9FAFB',
@@ -145,7 +145,7 @@ const styles = StyleSheet.create({
         padding: scale(24),
         marginBottom: verticalScale(30),
         borderWidth: 1,
-        borderColor: '#F3F4F6'
+        borderColor: '#F9FAFB'
     },
     balanceLabel: { fontSize: scale(15), color: '#6B7280', marginBottom: verticalScale(8), fontWeight: '600' },
     balanceValue: { fontSize: scale(32), fontWeight: '900', color: '#111', marginBottom: verticalScale(20) },

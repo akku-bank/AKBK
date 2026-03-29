@@ -304,7 +304,7 @@ const TransferScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-    safeArea: { flex: 1, backgroundColor: '#FFFFFF' },
+    safeArea: { flex: 1, backgroundColor: '#F9FAFB' },
     header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, height: 60 },
     backButton: { width: 40, height: 40, justifyContent: 'center' },
     backButtonText: { fontSize: 24, color: '#111' },
@@ -323,7 +323,7 @@ const styles = StyleSheet.create({
     nameInput: { backgroundColor: '#F9FAFB', padding: 16, borderRadius: 16, fontSize: 16, color: '#111', borderWidth: 1, borderColor: '#E5E7EB' },
 
     // Step 2
-    recipientBadge: { backgroundColor: '#F3F4F6', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, fontSize: 13, color: '#6B7280', alignSelf: 'flex-start', marginBottom: 12 },
+    recipientBadge: { backgroundColor: '#F9FAFB', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, fontSize: 13, color: '#6B7280', alignSelf: 'flex-start', marginBottom: 12 },
     amountContainer: { flexDirection: 'row', alignItems: 'center', borderBottomWidth: 3, borderBottomColor: '#A3E635', paddingBottom: 10, marginBottom: 20 },
     amountInput: { flex: 1, fontSize: 40, fontWeight: '900', color: '#111' },
     currencyText: { fontSize: 24, fontWeight: 'bold', color: '#111' },
@@ -349,7 +349,7 @@ const styles = StyleSheet.create({
     // Modals
     modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
     bankModal: { backgroundColor: '#FFFFFF', borderTopLeftRadius: 32, borderTopRightRadius: 32, paddingBottom: 40, height: height * 0.6 },
-    modalHeader: { flexDirection: 'row', justifyContent: 'space-between', padding: 24, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
+    modalHeader: { flexDirection: 'row', justifyContent: 'space-between', padding: 24, borderBottomWidth: 1, borderBottomColor: '#F9FAFB' },
     modalTitle: { fontSize: 18, fontWeight: 'bold' },
     modalClose: { fontSize: 20, color: '#9CA3AF' },
     bankGrid: { flexDirection: 'row', flexWrap: 'wrap', padding: 12 },
@@ -362,7 +362,7 @@ const styles = StyleSheet.create({
     confirmText: { fontSize: 22, color: '#4B5563', textAlign: 'center', lineHeight: 32, marginBottom: 32 },
     confirmButtons: { flexDirection: 'row', gap: 12 },
     confirmBtn: { flex: 1, height: 56, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
-    cancelBtn: { backgroundColor: '#F3F4F6' },
+    cancelBtn: { backgroundColor: '#F9FAFB' },
     cancelBtnText: { color: '#6B7280', fontSize: 16, fontWeight: 'bold' },
     okBtn: { backgroundColor: '#111' },
     okBtnText: { color: '#FFFFFF', fontSize: 16, fontWeight: 'bold' }

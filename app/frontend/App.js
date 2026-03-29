@@ -69,6 +69,8 @@ const Stack = createNativeStackNavigator();
 export default function App() {
   const [fontsLoaded] = useFonts({
     'Mulmaru': require('./src/assets/Mulmaru.ttf'),
+    'Pretendard-Regular': require('./src/assets/Pretendard-Regular.ttf'),
+    'Pretendard-Bold': require('./src/assets/Pretendard-Bold.ttf'),
   });
 
   useEffect(() => {

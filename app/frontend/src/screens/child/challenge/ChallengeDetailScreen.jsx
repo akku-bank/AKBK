@@ -193,7 +193,7 @@ const ChallengeDetailScreen = ({ navigation, route }) => {
 };
 
 const styles = StyleSheet.create({
-    safeArea: { flex: 1, backgroundColor: '#F3F4F6' },
+    safeArea: { flex: 1, backgroundColor: '#ECFCCB' },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -249,7 +249,7 @@ const styles = StyleSheet.create({
         fontWeight: '700',
     },
     ddayBadge: {
-        backgroundColor: '#F3F4F6',
+        backgroundColor: '#F9FAFB',
         borderRadius: scale(999),
         paddingHorizontal: scale(10),
         paddingVertical: verticalScale(5),
@@ -299,7 +299,7 @@ const styles = StyleSheet.create({
     },
     progressTrack: {
         height: verticalScale(10),
-        backgroundColor: '#F3F4F6',
+        backgroundColor: '#F9FAFB',
         borderRadius: scale(999),
         overflow: 'hidden',
     },
