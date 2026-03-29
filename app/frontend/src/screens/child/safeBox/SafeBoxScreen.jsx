@@ -23,12 +23,6 @@ const CHARITY_EMOJI_MAP = {
     '유기동물 보호소': '🐶',
 };
 
-const CHARITY_DESCRIPTION_MAP = {
-    '문화 예술': '아이들을 위한 공연과 전시를 후원해요.',
-    나무심기: '도시 숲 조성과 나무 식재 활동에 기부해요.',
-    '유기동물 보호소': '보호소 사료와 치료비를 지원해요.',
-};
-
 const SafeBoxScreen = ({ navigation }) => {
     const [isLoading, setIsLoading] = useState(true);
     const [hubInfo, setHubInfo] = useState(null);
@@ -167,8 +161,8 @@ const SafeBoxScreen = ({ navigation }) => {
                 behavior={Platform.OS === 'ios' ? 'padding' : undefined}
             >
                 <ScrollView contentContainerStyle={styles.container}>
-                    <View style={styles.balanceHeader}>
-                        <View style={{ flexDirection: 'row', alignItems: 'baseline', marginBottom: RFValue(-5) }}>
+                    <View style={[styles.balanceHeader, activeCharity && { marginBottom: 0 }]}>
+                        <View style={{ flexDirection: 'row', alignItems: 'baseline', marginBottom: RFValue(15), zIndex: 10 }}>
                             <CustomText style={styles.balanceValue}>
                                 {remainJelling.toLocaleString()}
                             </CustomText>
@@ -185,9 +179,7 @@ const SafeBoxScreen = ({ navigation }) => {
 
                     {!activeCharity ? (
                         <View style={styles.charitySelectionBox}>
-                            <CustomText style={[styles.sectionTitle, { textAlign: 'center' }]}>원하는 기부처를 선택해보세요!</CustomText>
-                            <CustomText style={[styles.selectionDescription, { textAlign: 'center' }]}>
-                            </CustomText>
+                            <CustomText style={[styles.sectionTitle, { textAlign: 'center', marginBottom: RFValue(16) }]}>원하는 기부처를 선택해보세요!</CustomText>
 
                             {charities.map((charity) => (
                                 <TouchableOpacity
@@ -207,7 +199,7 @@ const SafeBoxScreen = ({ navigation }) => {
                             ))}
                         </View>
                     ) : (
-                        <View style={styles.donationTargetBox}>
+                        <View style={[styles.donationTargetBox, { marginTop: RFValue(25) }]}>
                             <CustomText style={[styles.sectionTitle, { textAlign: 'center' }]}>현재 기부 목표</CustomText>
 
                             <View style={[styles.activeTargetCard, { flexDirection: 'column', marginBottom: RFValue(10), paddingBottom: RFValue(10) }]}>
@@ -216,7 +208,7 @@ const SafeBoxScreen = ({ navigation }) => {
                                         {activeCharity.name}
                                     </CustomText>
                                     <CustomText style={[styles.targetDesc, { textAlign: 'center' }]}>
-                                        {formatDescription(CHARITY_DESCRIPTION_MAP[activeCharity.name] || activeCharity.description || '기부를 진행해보세요!')}
+                                        {formatDescription(activeCharity.description)}
                                     </CustomText>
                                 </View>
 
@@ -280,7 +272,8 @@ const styles = StyleSheet.create({
         padding: RFValue(16),
         alignItems: 'center',
         paddingBottom: 0,
-        marginBottom: RFValue(12),
+        marginBottom: RFValue(40),
+        zIndex: 1,
     },
     balanceLabel: {
         fontSize: RFValue(14),

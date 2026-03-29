@@ -62,7 +62,21 @@ const FriendTownScreen = ({ route, navigation }) => {
                 const data = res?.data?.data;
 
                 setFriendTownInfo(data);
-                setEquipState(mapAvatarUrlsToEquipState(data?.avatar?.equippedItems || []));
+
+                const equipped = data?.avatar?.equippedItems || [];
+                if (equipped.length === 0) {
+                    setEquipState({
+                        hair: 'hair_boy',
+                        face: 'base_boy',
+                        upper: 'upper_1',
+                        lower: 'lower_1',
+                        shoe: 'shoe',
+                        hat: 'none',
+                        wing: 'none'
+                    });
+                } else {
+                    setEquipState(mapAvatarUrlsToEquipState(equipped));
+                }
             } catch (e) {
                 console.error('Friend Town Fetch Error', e);
                 Alert.alert('오류', e.response?.data?.message || '친구 타운 정보를 불러오지 못했습니다.');

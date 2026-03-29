@@ -97,10 +97,12 @@ const TransactionCalendarScreen = ({ navigation }) => {
             days.push(
                 <TouchableOpacity
                     key={i}
-                    style={[styles.dayCell, isSelected && styles.selectedDayCell]}
+                    style={styles.dayCell}
                     onPress={() => setSelectedDate(i)}
                 >
-                    <CustomText style={[styles.dayText, isSelected && styles.selectedDayText]}>{i}</CustomText>
+                    <View style={[styles.dayCircle, isSelected && styles.selectedDayCircle]}>
+                        <CustomText style={[styles.dayText, isSelected && styles.selectedDayText]}>{i}</CustomText>
+                    </View>
                     {hasHistory && !isSelected && <View style={styles.historyDot} />}
                 </TouchableOpacity>
             );
@@ -245,9 +247,9 @@ const styles = StyleSheet.create({
         borderRadius: scale(20),
         paddingHorizontal: scale(16),
         paddingTop: verticalScale(20),
-        paddingBottom: verticalScale(8),
+        paddingBottom: 0,
         marginTop: verticalScale(8),
-        marginBottom: verticalScale(20),
+        marginBottom: verticalScale(12),
         shadowColor: '#000',
         shadowOffset: { width: 0, height: verticalScale(2) },
         shadowOpacity: 0.05,
@@ -299,14 +301,20 @@ const styles = StyleSheet.create({
     },
     dayCell: {
         width: '14.28%', // 7등분
-        aspectRatio: 1,
+        height: verticalScale(40),
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: verticalScale(4),
     },
-    selectedDayCell: {
-        backgroundColor: '#111',
-        borderRadius: scale(20), // 둥근 원형 선택 표시
+    dayCircle: {
+        width: scale(32),
+        height: scale(32),
+        borderRadius: scale(16),
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    selectedDayCircle: {
+        backgroundColor: '#ECFCCB',
     },
     dayText: {
         fontSize: scale(15),
@@ -314,7 +322,8 @@ const styles = StyleSheet.create({
         color: '#4B5563',
     },
     selectedDayText: {
-        color: '#FFFFFF',
+        color: '#111',
+        fontWeight: '900',
     },
     historyDot: {
         width: scale(4),

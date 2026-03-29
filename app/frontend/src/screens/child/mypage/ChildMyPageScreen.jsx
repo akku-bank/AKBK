@@ -111,7 +111,6 @@ const ChildMyPageScreen = ({ navigation }) => {
 
                     <View style={styles.menuItem}>
                         <View style={styles.menuItemLeft}>
-                            <CustomText style={styles.menuIcon}>🔔</CustomText>
                             <CustomText style={styles.menuText}>푸시 알림</CustomText>
                         </View>
                         <Switch
@@ -123,7 +122,6 @@ const ChildMyPageScreen = ({ navigation }) => {
 
                     <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('ChildChangePassword')}>
                         <View style={styles.menuItemLeft}>
-                            <CustomText style={styles.menuIcon}>🔒</CustomText>
                             <CustomText style={styles.menuText}>비밀번호 변경</CustomText>
                         </View>
                         <CustomText style={styles.chevron}>›</CustomText>
