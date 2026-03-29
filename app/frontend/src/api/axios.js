@@ -2,7 +2,7 @@ import axios from 'axios';
 import useAuthStore from '../store/useAuthStore';
 
 const api = axios.create({
-    baseURL: `${process.env.REACT_APP_API_URL}/api`,
+    baseURL: 'http://j14b101.p.ssafy.io:8080/api',
     timeout: 10000,
 });
 
