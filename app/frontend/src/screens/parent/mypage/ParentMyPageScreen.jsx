@@ -169,7 +169,7 @@ const styles = StyleSheet.create({
     headerTitle: { fontSize: scale(20), fontWeight: 'bold', color: '#111' },
     container: { flexGrow: 1, paddingHorizontal: scale(16), paddingBottom: verticalScale(100) },
 
-    profileCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', padding: scale(20), borderRadius: scale(20), marginBottom: verticalScale(24), shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.03, shadowRadius: 8, elevation: 1 },
+    profileCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', padding: scale(20), borderRadius: scale(20), marginBottom: verticalScale(24), shadowColor: '#000', shadowOffset: { width: 0, height: verticalScale(2) }, shadowOpacity: 0.08, shadowRadius: scale(8), elevation: 3 },
     profileAvatarBox: { width: scale(56), height: scale(56), borderRadius: scale(28), backgroundColor: '#E5E7EB', justifyContent: 'center', alignItems: 'center', marginRight: scale(16), overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2, },
     profileAvatarImage: { width: '80%', height: '80%' },
     profileInfo: { flex: 1 },
@@ -179,7 +179,7 @@ const styles = StyleSheet.create({
     editButton: { backgroundColor: '#F9FAFB', paddingVertical: verticalScale(6), paddingHorizontal: scale(12), borderRadius: scale(8), shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2, },
     editButtonText: { fontSize: scale(13), fontWeight: '600', color: '#4B5563' },
 
-    menuGroup: { backgroundColor: '#FFFFFF', borderRadius: scale(20), paddingVertical: verticalScale(8), paddingHorizontal: scale(16), marginBottom: verticalScale(16) },
+    menuGroup: { backgroundColor: '#FFFFFF', borderRadius: scale(20), paddingVertical: verticalScale(8), paddingHorizontal: scale(16), marginBottom: verticalScale(16), shadowColor: '#000', shadowOffset: { width: 0, height: verticalScale(2) }, shadowOpacity: 0.08, shadowRadius: scale(8), elevation: 3 },
     menuGroupTitle: { fontSize: scale(13), fontWeight: 'bold', color: '#9CA3AF', marginTop: verticalScale(8), marginBottom: verticalScale(4), marginLeft: scale(4) },
     menuItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: verticalScale(14), paddingHorizontal: scale(4), borderBottomWidth: 1, borderBottomColor: '#F9FAFB' },
     menuItemLeft: { flexDirection: 'row', alignItems: 'center' },
