@@ -192,6 +192,35 @@ class QuizServiceTest {
         }
 
         @Test
+        void chatWithAi_Fail_AiReturnsNullChatJson_ThrowsAiServerError() {
+            UUID userId = UUID.randomUUID();
+            UUID quizId = UUID.randomUUID();
+            ChatRequest request = new ChatRequest(quizId, "힌트 주세요");
+
+            UserQuiz userQuiz = UserQuiz.builder().userId(userId).quizId(quizId).build();
+            given(userQuizRepository.findByUserIdAndQuizId(userId, quizId)).willReturn(Optional.of(userQuiz));
+
+            Quiz mockQuiz = mock(Quiz.class);
+            given(mockQuiz.getDifficulty()).willReturn("HIGH");
+            given(quizRepository.findById(quizId)).willReturn(Optional.of(mockQuiz));
+
+            User mockUser = mock(User.class);
+            given(mockUser.getBirthDate()).willReturn(LocalDate.of(2015, 3, 10));
+            given(userRepository.findById(userId)).willReturn(Optional.of(mockUser));
+            given(chatLogRepository.findByUserIdAndQuizId(userId, quizId)).willReturn(Optional.empty());
+            given(quizAiClient.requestHint(any(QuizChatEvent.class), isNull()))
+                    .willReturn(new ChatResponse("AI 힌트", 10, null)); // chatJson이 null
+
+            ApiException ex = assertThrows(ApiException.class, () -> quizService.chatWithAi(userId, request));
+            assertEquals(QuizErrorCode.AI_SERVER_ERROR, ex.getErrorCode());
+
+            // chatJson이 null이면 크레딧 차감, DB 저장, SSE 전송이 발생하지 않아야 함
+            assertEquals(100, userQuiz.getRemainingCredits());
+            verifyNoInteractions(sseConnectionManager);
+            verify(chatLogRepository, never()).upsertChatJson(any(), any(), any());
+        }
+
+        @Test
         void chatWithAi_Fail_AlreadySubmitted() {
             UUID userId = UUID.randomUUID();
             UUID quizId = UUID.randomUUID();
@@ -219,7 +248,7 @@ class QuizServiceTest {
             assertNotNull(quizService, "quizService should not be null");
             UUID userId = UUID.randomUUID();
             UUID quizId = UUID.randomUUID();
-            AnswerRequest request = new AnswerRequest(quizId, 1);
+            AnswerRequest request = new AnswerRequest(quizId, 0);
 
             UserQuiz userQuiz = UserQuiz.builder().userId(userId).quizId(quizId).build();
             given(userQuizRepository.findByUserIdAndQuizIdForUpdate(userId, quizId)).willReturn(Optional.of(userQuiz));

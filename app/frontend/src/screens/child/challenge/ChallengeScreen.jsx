@@ -50,8 +50,8 @@ const ChallengeScreen = ({ navigation }) => {
     const [isLoading, setIsLoading] = useState(true);
     const [isRewardSuccessVisible, setIsRewardSuccessVisible] = useState(false);
 
-    const fetchChallenges = useCallback(async () => {
-        setIsLoading(true);
+    const fetchChallenges = useCallback(async (silent = false) => {
+        if (!silent) setIsLoading(true);
 
         try {
             const [weeklyRes, nextWeekRes, pastRes] = await Promise.all([
@@ -65,18 +65,22 @@ const ChallengeScreen = ({ navigation }) => {
             setPastChallenges(pastRes.data?.data?.challenges || []);
         } catch (error) {
             console.error('Challenge Fetch Error', error);
-            setThisWeekChallenges([]);
-            setNextWeekChallenges([]);
-            setPastChallenges([]);
-            Alert.alert('오류', '챌린지 목록을 불러오지 못했습니다.');
+            if (!silent) {
+                setThisWeekChallenges([]);
+                setNextWeekChallenges([]);
+                setPastChallenges([]);
+                Alert.alert('오류', '챌린지 목록을 불러오지 못했습니다.');
+            }
         } finally {
-            setIsLoading(false);
+            if (!silent) setIsLoading(false);
         }
     }, []);
 
     useFocusEffect(
         useCallback(() => {
             fetchChallenges();
+            const interval = setInterval(() => fetchChallenges(true), 5000);
+            return () => clearInterval(interval);
         }, [fetchChallenges])
     );
 
