@@ -72,6 +72,8 @@ const SafeBoxScreen = ({ navigation }) => {
     useFocusEffect(
         useCallback(() => {
             fetchHubInfo();
+            const interval = setInterval(() => fetchHubInfo(), 5000);
+            return () => clearInterval(interval);
         }, [])
     );
 
