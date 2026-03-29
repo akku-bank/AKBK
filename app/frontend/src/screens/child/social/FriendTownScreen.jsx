@@ -278,6 +278,11 @@ const styles = StyleSheet.create({
         paddingHorizontal: scale(16),
         paddingVertical: verticalScale(14),
         alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
+        elevation: 2,
     },
     recentLabel: {
         fontSize: scale(12),

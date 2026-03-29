@@ -103,7 +103,7 @@ const styles = StyleSheet.create({
     avatarSection: { alignItems: 'center', marginBottom: verticalScale(40) },
     avatarCircle: { width: scale(100), height: scale(100), borderRadius: scale(50), backgroundColor: '#FFFFFF', justifyContent: 'center', alignItems: 'center', marginBottom: verticalScale(16), overflow: 'hidden' },
     avatarImage: { width: '110%', height: '110%', marginTop: verticalScale(40), marginLeft: verticalScale(10) },
-    avatarEditBtn: { paddingVertical: verticalScale(8), paddingHorizontal: scale(16), backgroundColor: '#F9FAFB', borderRadius: scale(20) },
+    avatarEditBtn: { paddingVertical: verticalScale(8), paddingHorizontal: scale(16), backgroundColor: '#F9FAFB', borderRadius: scale(20), shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 1, },
     avatarEditBtnText: { fontSize: scale(13), fontWeight: 'bold', color: '#4B5563' },
 
     inputSection: { marginBottom: verticalScale(30) },

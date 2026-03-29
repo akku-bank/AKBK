@@ -170,13 +170,13 @@ const styles = StyleSheet.create({
     container: { flexGrow: 1, paddingHorizontal: scale(16), paddingBottom: verticalScale(100) },
 
     profileCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', padding: scale(20), borderRadius: scale(20), marginBottom: verticalScale(24), shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.03, shadowRadius: 8, elevation: 1 },
-    profileAvatarBox: { width: scale(56), height: scale(56), borderRadius: scale(28), backgroundColor: '#E5E7EB', justifyContent: 'center', alignItems: 'center', marginRight: scale(16), overflow: 'hidden' },
+    profileAvatarBox: { width: scale(56), height: scale(56), borderRadius: scale(28), backgroundColor: '#E5E7EB', justifyContent: 'center', alignItems: 'center', marginRight: scale(16), overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2, },
     profileAvatarImage: { width: '80%', height: '80%' },
     profileInfo: { flex: 1 },
     profileName: { fontSize: scale(18), fontWeight: 'bold', color: '#111', marginBottom: verticalScale(2) },
     profileStatus: { fontSize: scale(13), color: '#6B7280' },
 
-    editButton: { backgroundColor: '#F9FAFB', paddingVertical: verticalScale(6), paddingHorizontal: scale(12), borderRadius: scale(8) },
+    editButton: { backgroundColor: '#F9FAFB', paddingVertical: verticalScale(6), paddingHorizontal: scale(12), borderRadius: scale(8), shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2, },
     editButtonText: { fontSize: scale(13), fontWeight: '600', color: '#4B5563' },
 
     menuGroup: { backgroundColor: '#FFFFFF', borderRadius: scale(20), paddingVertical: verticalScale(8), paddingHorizontal: scale(16), marginBottom: verticalScale(16) },

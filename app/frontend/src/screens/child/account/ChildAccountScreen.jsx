@@ -167,9 +167,9 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 4,
-        elevation: 2
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+        elevation: 3
     },
     actionBtnText: { fontSize: scale(14), fontWeight: 'bold', color: '#374151' },
 
@@ -198,7 +198,12 @@ const styles = StyleSheet.create({
         borderRadius: scale(16),
         alignItems: 'center',
         justifyContent: 'center',
-        paddingVertical: verticalScale(40)
+        paddingVertical: verticalScale(40),
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
+        elevation: 3
     },
     emptyText: { color: '#9CA3AF', fontSize: scale(15) },
 

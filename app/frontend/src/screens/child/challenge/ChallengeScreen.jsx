@@ -467,7 +467,7 @@ const styles = StyleSheet.create({
         lineHeight: scale(18),
     },
 
-    rewardBtn: { backgroundColor: '#3B82F6', paddingVertical: verticalScale(12), borderRadius: scale(12), alignItems: 'center', marginTop: verticalScale(16) },
+    rewardBtn: { backgroundColor: '#3B82F6', paddingVertical: verticalScale(12), borderRadius: scale(12), alignItems: 'center', marginTop: verticalScale(16), shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 1, },
     rewardBtnText: { color: '#FFF', fontSize: scale(14), fontWeight: 'bold' },
 
     actionRow: { flexDirection: 'row', justifyContent: 'flex-end', marginTop: verticalScale(12) },
@@ -484,6 +484,11 @@ const styles = StyleSheet.create({
         paddingVertical: verticalScale(12),
         paddingHorizontal: scale(24),
         borderRadius: scale(25),
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
+        elevation: 2,
     },
     emptyAddBtnText: { fontSize: scale(16), fontWeight: 'bold', color: '#111' },
     scheduledSection: { marginBottom: verticalScale(8) },
@@ -509,7 +514,7 @@ const styles = StyleSheet.create({
     },
 
     menuTitle: { fontSize: scale(16), fontWeight: 'bold', color: '#4B5563', marginBottom: verticalScale(12), textAlign: 'center' },
-    menuBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#F9FAFB', padding: scale(16), borderRadius: scale(12), marginBottom: verticalScale(12) },
+    menuBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#F9FAFB', padding: scale(16), borderRadius: scale(12), marginBottom: verticalScale(12), shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 1, },
     menuBtnIcon: { fontSize: scale(24), marginRight: scale(16) },
     menuBtnTitle: { fontSize: scale(15), fontWeight: 'bold', color: '#111', marginBottom: verticalScale(2), textAlign: 'center' },
     menuBtnSub: { fontSize: scale(13), color: '#6B7280', textAlign: 'center' },

@@ -182,7 +182,7 @@ const styles = StyleSheet.create({
     backButton: { width: scale(32), height: scale(32), justifyContent: 'center' },
     backButtonText: { fontSize: scale(22), fontWeight: 'bold', color: '#111' },
     headerTitle: { fontSize: scale(18), fontWeight: 'bold', color: '#111' },
-    levelBox: { backgroundColor: '#ECFCCB', paddingHorizontal: scale(12), paddingVertical: verticalScale(6), borderRadius: scale(12) },
+    levelBox: { backgroundColor: '#ECFCCB', paddingHorizontal: scale(12), paddingVertical: verticalScale(6), borderRadius: scale(12), shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 1, },
     levelText: { fontSize: scale(14), fontWeight: 'bold', color: '#4D7C0F' },
 
     categoryRowWrapper: { backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#E5E7EB' },

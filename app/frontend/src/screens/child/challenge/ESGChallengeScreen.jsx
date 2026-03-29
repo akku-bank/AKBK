@@ -146,7 +146,7 @@ const styles = StyleSheet.create({
     badgeTextPending: { color: '#059669', fontSize: scale(11), fontWeight: 'bold' },
     missionTitle: { fontSize: scale(15), fontWeight: 'bold', color: '#111', marginBottom: verticalScale(2) },
     missionDesc: { fontSize: scale(12), color: '#6B7280' },
-    rewardBox: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#F9FAFB', padding: scale(12), borderRadius: scale(12) },
+    rewardBox: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#F9FAFB', padding: scale(12), borderRadius: scale(12), shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 1, },
     rewardText: { fontSize: scale(14), fontWeight: 'bold', color: '#111' },
     claimButton: { backgroundColor: '#10B981', paddingVertical: verticalScale(8), paddingHorizontal: scale(16), borderRadius: scale(12) },
     disabledButton: { backgroundColor: '#E5E7EB' },
