@@ -14,8 +14,8 @@ const parseProblemJson = (problemJson) => {
         const parsed = JSON.parse(problemJson);
         return {
             question: parsed.question || '문제를 불러오지 못했습니다.',
-            options: Array.isArray(parsed.options) ? parsed.options : ['...', '...', '...', '...'],
-            answerIndex: Number.isInteger(parsed.answer_index) ? parsed.answer_index : 0,
+            options: Array.isArray(parsed.options) ? parsed.options : (Array.isArray(parsed.choices) ? parsed.choices : ['...', '...', '...', '...']),
+            answerIndex: Number.isInteger(parsed.answer_index) ? parsed.answer_index : (Number.isInteger(parsed.answerIndex) ? parsed.answerIndex : 0),
             hint: parsed.hint || '힌트를 생성해드릴게요.',
         };
     } catch (error) {
@@ -28,7 +28,7 @@ const normalizeQuizData = (qData) => {
     const parsedProblem = parseProblemJson(qData?.problemJson);
     const isSubmitted = Boolean(qData?.isSubmitted);
     const isCorrect = qData?.isCorrect;
-    const answerIndex = parsedProblem?.answerIndex ?? 0;
+    const answerIndex = qData?.correctAnswer ?? qData?.correctChoiceNo ?? parsedProblem?.answerIndex ?? 0;
 
     return {
         id: qData?.quizId ?? null,
@@ -541,12 +541,12 @@ const styles = StyleSheet.create({
     creditText: { fontSize: scale(12), fontWeight: 'bold', color: '#4D7C0F' },
 
     chatBubble: { backgroundColor: '#FFFFFF', padding: scale(16), borderRadius: scale(20), marginBottom: verticalScale(10), shadowColor: '#000', shadowOffset: { width: 0, height: verticalScale(2) }, shadowOpacity: 0.05, shadowRadius: scale(4), elevation: 2 },
-    questionText: { fontSize: scale(18), fontWeight: '900', color: '#111', lineHeight: 28 },
+    questionText: { fontSize: scale(18), fontWeight: '900', color: '#111', lineHeight: scale(32) },
 
     optionsContainer: { gap: verticalScale(8), marginBottom: verticalScale(14) },
 
     optionBtn: { backgroundColor: '#FFFFFF', padding: scale(14), borderRadius: scale(12), borderWidth: 2, borderColor: '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 1, },
-    optionText: { fontSize: scale(16), fontWeight: '600', color: '#4B5563' },
+    optionText: { fontSize: scale(16), fontWeight: '600', color: '#4B5563', lineHeight: scale(24) },
 
     selectedBtn: { borderColor: '#A3E635', backgroundColor: '#F7FEE7' },
     selectedText: { color: '#4D7C0F' },
@@ -576,26 +576,30 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'flex-end',
         minHeight: verticalScale(120),
+        marginBottom: verticalScale(24),
     },
     chatSection: { marginTop: verticalScale(8), marginBottom: verticalScale(10) },
     chatRow: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: verticalScale(8) },
     chatRowUser: { justifyContent: 'flex-end', marginLeft: scale(32) },
     chatRowAi: { justifyContent: 'flex-start', marginRight: scale(32) },
     aiAvatar: { width: scale(32), height: scale(32), marginRight: scale(8), marginTop: verticalScale(1), resizeMode: 'contain' },
-    chatMsgBubble: { paddingHorizontal: scale(14), paddingVertical: verticalScale(10), borderRadius: scale(16) },
-    userMsgBubble: { backgroundColor: '#FFFFFF', borderBottomRightRadius: 0, borderWidth: 1, borderColor: '#E5E7EB' },
-    aiMsgBubble: { backgroundColor: '#F7FEE7', borderTopLeftRadius: 0, borderWidth: 1, borderColor: '#A3E635' },
+    chatMsgBubble: { paddingHorizontal: scale(14), paddingVertical: verticalScale(10), borderRadius: scale(16), shadowColor: '#000', shadowOffset: { width: 0, height: verticalScale(2) }, shadowOpacity: 0.08, shadowRadius: scale(4), elevation: 2 },
+    userMsgBubble: { backgroundColor: '#FFFFFF', borderBottomRightRadius: 0 },
+    aiMsgBubble: { backgroundColor: '#F7FEE7', borderTopLeftRadius: 0 },
     explanationMsgBubble: {
         backgroundColor: '#FFFFFF',
         borderTopLeftRadius: 0,
-        borderWidth: 2,
-        borderColor: '#A3E635',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: verticalScale(2) },
+        shadowOpacity: 0.08,
+        shadowRadius: scale(4),
+        elevation: 2,
     },
-    chatMsgText: { fontSize: scale(14), fontWeight: '600', lineHeight: 20 },
+    chatMsgText: { fontSize: scale(14), fontWeight: '600', lineHeight: scale(24) },
     userMsgText: { color: '#111827' },
     aiMsgText: { color: '#4D7C0F' },
 
-    chatInputWrapper: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: scale(16), padding: scale(4), borderWidth: 2, borderColor: '#A3E635' },
+    chatInputWrapper: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: scale(16), paddingLeft: scale(4), paddingVertical: scale(4), paddingRight: scale(4), shadowColor: '#000', shadowOffset: { width: 0, height: verticalScale(2) }, shadowOpacity: 0.08, shadowRadius: scale(8), elevation: 3 },
     chatInput: { flex: 1, paddingHorizontal: scale(12), paddingVertical: verticalScale(12), fontSize: scale(14), color: '#111' },
     sendBtn: { backgroundColor: '#A3E635', paddingHorizontal: scale(16), paddingVertical: verticalScale(10), borderRadius: scale(12), justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 1, },
     sendBtnDisabled: { backgroundColor: '#E5E7EB' },
@@ -654,6 +658,11 @@ const styles = StyleSheet.create({
         paddingVertical: verticalScale(12),
         paddingHorizontal: scale(24),
         alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: verticalScale(2) },
+        shadowOpacity: 0.1,
+        shadowRadius: scale(4),
+        elevation: 3,
     },
     resultButtonText: {
         fontSize: scale(15),

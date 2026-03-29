@@ -89,7 +89,7 @@ const ChildEditProfileScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-    safeArea: { flex: 1, backgroundColor: '#FFFFFF' },
+    safeArea: { flex: 1, backgroundColor: '#ECFCCB' },
     header: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
         paddingHorizontal: scale(16), paddingVertical: verticalScale(16), backgroundColor: '#FFFFFF'
@@ -101,17 +101,17 @@ const styles = StyleSheet.create({
     container: { flexGrow: 1, paddingHorizontal: scale(24), paddingTop: verticalScale(20) },
 
     avatarSection: { alignItems: 'center', marginBottom: verticalScale(40) },
-    avatarCircle: { width: scale(100), height: scale(100), borderRadius: scale(50), backgroundColor: '#FFFFFF', justifyContent: 'center', alignItems: 'center', marginBottom: verticalScale(16), overflow: 'hidden' },
+    avatarCircle: { width: scale(100), height: scale(100), borderRadius: scale(50), backgroundColor: '#FFFFFF', justifyContent: 'center', alignItems: 'center', marginBottom: verticalScale(16), shadowColor: '#000', shadowOffset: { width: 0, height: verticalScale(4) }, shadowOpacity: 0.1, shadowRadius: scale(8), elevation: 4 },
     avatarImage: { width: '110%', height: '110%', marginTop: verticalScale(40), marginLeft: verticalScale(10) },
     avatarEditBtn: { paddingVertical: verticalScale(8), paddingHorizontal: scale(16), backgroundColor: '#F9FAFB', borderRadius: scale(20), shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 1, },
     avatarEditBtnText: { fontSize: scale(13), fontWeight: 'bold', color: '#4B5563' },
 
     inputSection: { marginBottom: verticalScale(30) },
     label: { fontSize: scale(14), fontWeight: 'bold', color: '#4B5563', marginBottom: verticalScale(8) },
-    input: { backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: scale(12), paddingHorizontal: scale(16), paddingVertical: verticalScale(14), fontSize: scale(16), color: '#111', marginBottom: verticalScale(24) },
+    input: { backgroundColor: '#FFFFFF', borderRadius: scale(16), paddingHorizontal: scale(16), paddingVertical: verticalScale(14), fontSize: scale(16), color: '#111', marginBottom: verticalScale(24), shadowColor: '#000', shadowOffset: { width: 0, height: verticalScale(2) }, shadowOpacity: 0.05, shadowRadius: scale(4), elevation: 2 },
 
-    footer: { padding: scale(16), backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: '#F9FAFB' },
-    saveButton: { backgroundColor: '#A3E635', paddingVertical: verticalScale(16), borderRadius: scale(16), alignItems: 'center' },
+    footer: { padding: scale(16), backgroundColor: '#ECFCCB', paddingBottom: verticalScale(20) },
+    saveButton: { backgroundColor: '#A3E635', paddingVertical: verticalScale(16), borderRadius: scale(16), alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: verticalScale(2) }, shadowOpacity: 0.1, shadowRadius: scale(4), elevation: 3 },
     saveButtonText: { fontSize: scale(16), fontWeight: 'bold', color: '#111' }
 });
 
