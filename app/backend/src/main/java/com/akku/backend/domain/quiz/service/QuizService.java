@@ -128,6 +128,9 @@ public class QuizService {
         );
 
         ChatResponse response = quizAiClient.requestHint(event, currentChatJson);
+        if (response.chatJson() == null) {
+            throw new ApiException(QuizErrorCode.AI_SERVER_ERROR);
+        }
         userQuiz.deductCredits(response.deductedCredits());
         upsertChatLog(userId, request.quizId(), response.chatJson());
         sseConnectionManager.send(userId, response, "chat-response");
@@ -146,7 +149,7 @@ public class QuizService {
         Quiz quiz = quizRepository.findById(request.quizId())
                 .orElseThrow(() -> new ApiException(QuizErrorCode.QUIZ_NOT_FOUND));
 
-        boolean isCorrect = quiz.getCorrectAnswer() == request.selectedAnswer();
+        boolean isCorrect = quiz.getCorrectAnswer() == request.selectedAnswer() + 1;
         userQuiz.submit(isCorrect, LocalDate.now(clock));
 
         Long jellingReward = null;
