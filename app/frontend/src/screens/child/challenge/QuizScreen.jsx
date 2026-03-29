@@ -28,7 +28,9 @@ const normalizeQuizData = (qData) => {
     const parsedProblem = parseProblemJson(qData?.problemJson);
     const isSubmitted = Boolean(qData?.isSubmitted);
     const isCorrect = qData?.isCorrect;
-    const answerIndex = qData?.correctAnswer ?? qData?.correctChoiceNo ?? parsedProblem?.answerIndex ?? 0;
+    const answerIndex = qData?.correctChoiceNo != null
+        ? qData.correctChoiceNo - 1
+        : parsedProblem?.answerIndex ?? 0;
 
     return {
         id: qData?.quizId ?? null,
@@ -294,7 +296,6 @@ const QuizScreen = ({ navigation, route }) => {
             return;
         }
 
-        setIsAnswerRevealed(true);
         const submitTask = async () => {
             try {
                 if (!quiz.id) {
@@ -307,7 +308,9 @@ const QuizScreen = ({ navigation, route }) => {
                     Alert.alert('안내', '정답 확인 중 데이터가 반환되지 않았습니다.');
                     return;
                 }
-                const { isCorrect: isServerCorrect, jellingReward } = ansData;
+                const { isCorrect: isServerCorrect, jellingReward, correctChoiceNo } = ansData;
+                setQuiz(prev => ({ ...prev, answerIndex: correctChoiceNo - 1 }));
+                setIsAnswerRevealed(true);
                 setIsQuizSubmitted(true);
                 setSubmittedResult(isServerCorrect);
 
