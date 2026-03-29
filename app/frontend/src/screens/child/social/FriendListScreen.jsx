@@ -222,7 +222,7 @@ const FriendListScreen = ({ navigation, route }) => {
                     <View style={styles.modalCard}>
                         <CustomText style={styles.modalTitle}>초대 코드 입력</CustomText>
                         <CustomText style={styles.modalSubtitle}>
-                            친구에게 받은 초대 코드를 입력해{'\n'}정보를 확인하세요.
+                            친구에게 받은 코드를 입력해 추가해보세요!
                         </CustomText>
 
                         <TextInput

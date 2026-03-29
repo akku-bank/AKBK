@@ -31,8 +31,8 @@ const QrCheckScreen = ({ navigation, route }) => {
                     <CustomText style={styles.title}>가족 연결하기</CustomText>
                     <CustomText style={styles.subtitle}>
                         {role === 'CHILD'
-                            ? '부모님이 공유해주신\n초대 QR 코드가 있나요?'
-                            : '배우자가 공유한\n초대 QR 코드가 있나요?'}
+                            ? '부모님이 공유해주신 QR 코드가 있나요?'
+                            : '배우자가 공유한 QR 코드가 있나요?'}
                     </CustomText>
                 </View>
 
@@ -48,7 +48,7 @@ const QrCheckScreen = ({ navigation, route }) => {
                         </View>
                         <View style={styles.cardTextContainer}>
                             <CustomText style={styles.cardTitle}>네, QR 코드가 있어요</CustomText>
-                            <CustomText style={styles.cardDesc}>카메라폰으로 바로 스캔할게요.</CustomText>
+                            <CustomText style={styles.cardDesc}>카메라로 바로 스캔할게요.</CustomText>
                         </View>
                     </TouchableOpacity>
 
@@ -65,7 +65,7 @@ const QrCheckScreen = ({ navigation, route }) => {
                             <CustomText style={styles.cardTitle}>아니요, 아직 없어요</CustomText>
                             <CustomText style={styles.cardDesc}>
                                 {role === 'CHILD'
-                                    ? '부모님이 먼저 가입하셔야 해요.'
+                                    ? '부모님이 가입하셔야 해요.'
                                     : '새로운 가족 그룹을 만들게요.'}
                             </CustomText>
                         </View>
