@@ -50,7 +50,7 @@ class CardPaymentTransactionEventListenerTest {
         Account account = mock(Account.class);
         given(account.getId()).willReturn(UUID.randomUUID());
 
-        given(accountRepository.findByAccountNumberAndBankCode(anyString(), eq("001")))
+        given(accountRepository.findByAccountNumberAndBankCode(anyString(), eq("999")))
                 .willReturn(Optional.of(account));
         given(transactionRepository.existsByTransactionUniqueNo(anyString())).willReturn(false);
         given(merchantRepository.findById(any())).willReturn(Optional.empty());
@@ -59,8 +59,10 @@ class CardPaymentTransactionEventListenerTest {
                 userId,
                 accountNo,
                 "111111",
+                "withdraw-123",
                 "편의점",
                 5000L,
+                95000L,
                 "1",
                 "CU",
                 LocalDate.now(),

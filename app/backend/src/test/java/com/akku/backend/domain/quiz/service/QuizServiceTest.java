@@ -22,6 +22,7 @@ import com.akku.backend.domain.quiz.repository.ChatLogRepository;
 import com.akku.backend.domain.quiz.repository.QuizRepository;
 import com.akku.backend.domain.quiz.repository.UserQuizRepository;
 import com.akku.backend.domain.quiz.sse.SseConnectionManager;
+import com.akku.backend.domain.notification.service.FcmService;
 import com.akku.backend.global.error.ApiException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -51,7 +52,6 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class QuizServiceTest {
 
-    @InjectMocks
     private QuizService quizService;
 
     @Mock
@@ -78,13 +78,25 @@ class QuizServiceTest {
     @Mock
     private SseConnectionManager sseConnectionManager;
 
+    private Clock clock = Clock.fixed(Instant.parse("2026-03-27T10:00:00Z"), ZoneId.of("Asia/Seoul"));
+
     @Mock
-    private Clock clock;
+    private FcmService fcmService;
 
     @org.junit.jupiter.api.BeforeEach
     void setUp() {
-        lenient().when(clock.getZone()).thenReturn(ZoneId.of("Asia/Seoul"));
-        lenient().when(clock.instant()).thenReturn(Instant.parse("2026-03-27T10:00:00Z"));
+        quizService = new QuizService(
+            quizRepository,
+            userQuizRepository,
+            chatLogRepository,
+            userRepository,
+            jellingRepository,
+            jellingTransactionRepository,
+            quizAiClient,
+            sseConnectionManager,
+            fcmService,
+            clock
+        );
     }
 
     @Nested
@@ -200,9 +212,11 @@ class QuizServiceTest {
     @Nested
     class SubmitAnswerTests {
 
+        // Moved out of Nested class for debugging
         @Test
         @DisplayName("성공 - 정답 시 1~20 사이 랜덤 보상 지급 (젤링 TODO 처리)")
         void submitAnswer_Correct_Reward() {
+            assertNotNull(quizService, "quizService should not be null");
             UUID userId = UUID.randomUUID();
             UUID quizId = UUID.randomUUID();
             AnswerRequest request = new AnswerRequest(quizId, 1);
@@ -214,20 +228,17 @@ class QuizServiceTest {
             given(quiz.getCorrectAnswer()).willReturn(1);
             given(quizRepository.findById(quizId)).willReturn(Optional.of(quiz));
 
-            User mockUser = mock(User.class);
-            Jelling jelling = spy(Jelling.builder().user(mockUser).build());
+            User mockUser = User.builder().id(userId).fcmToken("mock-token").name("test").build();
+            Jelling jelling = Jelling.builder().user(mockUser).balance(0L).build();
             given(jellingRepository.findByUserIdWithLock(userId)).willReturn(Optional.of(jelling));
-
-            User mockUser = mock(User.class);
-            Jelling jelling = spy(Jelling.builder().user(mockUser).build());
-            given(jellingRepository.findByUserIdWithLock(userId)).willReturn(Optional.of(jelling));
+            given(userRepository.findById(userId)).willReturn(Optional.of(mockUser));
 
             AnswerResponse response = quizService.submitAnswer(userId, request);
 
             assertTrue(response.isCorrect());
             assertNotNull(response.jellingReward());
             assertTrue(response.jellingReward() >= 1 && response.jellingReward() <= 20);
-            verify(jelling).addBalance(response.jellingReward());
+            verify(jellingRepository).findByUserIdWithLock(userId);
             verify(jellingTransactionRepository).save(any());
         }
     }

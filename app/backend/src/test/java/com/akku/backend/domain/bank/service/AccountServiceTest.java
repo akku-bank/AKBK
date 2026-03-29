@@ -19,6 +19,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.util.List;
 import java.util.Optional;
@@ -50,6 +51,9 @@ class AccountServiceTest {
 
     @Mock
     private PasswordEncoder passwordEncoder;
+
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
 
     @Nested
     @DisplayName("계좌 생성 및 연동")
@@ -148,6 +152,41 @@ class AccountServiceTest {
             TransferResponse res = accountService.transfer(userId, request);
             assertNotNull(res.transactionId());
             assertEquals(40000L, res.remainBalance());
+            
+            // 이벤트 발행 검증
+            verify(eventPublisher).publishEvent(any(com.akku.backend.domain.bank.event.RemittanceEvent.class));
+        }
+
+        @Test
+        @DisplayName("내부 계좌 이체 - 양측 이벤트 발행 성공")
+        void transfer_Internal_Success() {
+            UUID senderId = UUID.randomUUID();
+            UUID receiverId = UUID.randomUUID();
+            UUID withdrawalId = UUID.randomUUID();
+            TransferRequest request = new TransferRequest(withdrawalId.toString(), "001", "22222", "받는분", 10000L, "123456");
+
+            User sender = User.builder().id(senderId).name("송신자").userKey("sender-key").pinPassword("encoded-pin").build();
+            Account withdrawalAcc = Account.builder().id(withdrawalId).userId(senderId).accountNumber("11111").bankCode("001").balance(50000L).type("EXTERNAL").build();
+            Account depositAcc = Account.builder().userId(receiverId).accountNumber("22222").bankCode("001").balance(30000L).build();
+
+            given(userRepository.findById(senderId)).willReturn(Optional.of(sender));
+            given(passwordEncoder.matches(eq("123456"), anyString())).willReturn(true);
+            given(accountRepository.findById(withdrawalId)).willReturn(Optional.of(withdrawalAcc));
+            given(accountRepository.findByAccountNumberAndBankCode("22222", "001")).willReturn(Optional.of(depositAcc));
+
+            FinanceAccountListResponse.AccountDetails details = new FinanceAccountListResponse.AccountDetails(
+                "001", "한국은행", "사용자", "11111", "계좌", "1", "입출금", "20240401", "20241231", 1000000L, 1000000L, 50000L, "20240401", "KRW"
+            );
+            given(ssafyFinanceService.getAccounts(anyString())).willReturn(List.of(details));
+
+            FinanceTransferResponse.Rec mockRes = new FinanceTransferResponse.Rec("tx-123", "20240326", "TRANS", "이체", "22222");
+            given(ssafyFinanceService.transfer(anyString(), anyString(), anyString(), anyString(), anyString(), anyLong(), anyString(), anyString())).willReturn(mockRes);
+
+            accountService.transfer(senderId, request);
+
+            // 두 명의 유저에게 각각 다른 이벤트가 발행되어야 함
+            verify(eventPublisher).publishEvent(any(com.akku.backend.domain.bank.event.RemittanceEvent.class));
+            verify(eventPublisher).publishEvent(any(com.akku.backend.domain.bank.event.DepositReceivedEvent.class));
         }
     }
 

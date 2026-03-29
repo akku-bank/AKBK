@@ -1,5 +1,5 @@
 ﻿import React, { useState, useEffect, useCallback } from 'react';
-import { View, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, Alert, Modal, Image, Dimensions, Animated, Platform } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, Alert, Modal, Image, Dimensions, Animated, Platform, DeviceEventEmitter } from 'react-native';
 import { scale, verticalScale } from 'react-native-size-matters';
 import CustomText from '../../../components/common/CustomText';
 import CustomTextInput from '../../../components/common/CustomTextInput';
@@ -33,17 +33,26 @@ const TransferScreen = ({ navigation }) => {
     const [isBankModalVisible, setIsBankModalVisible] = useState(false);
 
     // 내 계좌 정보 로드
+    const fetchMyAccount = useCallback(() => {
+        api.get('/bank/accounts/me').then(res => {
+            if (res.data?.data) {
+                const accs = res.data.data.accounts || [];
+                if (accs.length > 0) setMyAccount(accs[0]);
+                else setMyAccount(res.data.data);
+            }
+        }).catch(err => console.error('Account Load Error', err));
+    }, []);
+
     useFocusEffect(
         useCallback(() => {
-            api.get('/bank/accounts/me').then(res => {
-                if (res.data?.data) {
-                    const accs = res.data.data.accounts || [];
-                    if (accs.length > 0) setMyAccount(accs[0]);
-                    else setMyAccount(res.data.data);
-                }
-            }).catch(err => console.error('Account Load Error', err));
-        }, [])
+            fetchMyAccount();
+        }, [fetchMyAccount])
     );
+
+    useEffect(() => {
+        const subscription = DeviceEventEmitter.addListener('refresh_transactions', fetchMyAccount);
+        return () => subscription.remove();
+    }, [fetchMyAccount]);
 
     const handleNextStep = async () => {
         if (step === 'RECIPIENT') {
@@ -111,6 +120,9 @@ const TransferScreen = ({ navigation }) => {
                 amount: parseInt(amount),
                 pin: finalPin
             });
+
+            // 송금 성공 후 즉시 내역 갱신 이벤트 발행
+            DeviceEventEmitter.emit('refresh_transactions');
 
             Alert.alert('송금 완료', `${targetName}님께 ${parseInt(amount).toLocaleString()}원을 보냈어요!`, [
                 { text: '확인', onPress: () => navigation.goBack() }

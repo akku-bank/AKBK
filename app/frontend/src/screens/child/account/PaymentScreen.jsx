@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, StyleSheet, TouchableOpacity, SafeAreaView, Alert, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, SafeAreaView, Alert, ActivityIndicator, DeviceEventEmitter } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { scale, verticalScale } from 'react-native-size-matters';
 import CustomText from '../../../components/common/CustomText';
@@ -53,6 +53,10 @@ const PaymentScreen = ({ navigation }) => {
                 merchantId: 16350,
                 paymentBalance: 1500
             });
+
+            // 결제 성공 후 즉시 내역 갱신 이벤트 발행
+            DeviceEventEmitter.emit('refresh_transactions');
+
             Alert.alert('결제 성공', '1,500원 결제가 완료되었습니다!', [
                 { text: '확인', onPress: () => navigation.goBack() }
             ]);

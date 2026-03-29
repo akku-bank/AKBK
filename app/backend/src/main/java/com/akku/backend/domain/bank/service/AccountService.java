@@ -24,6 +24,7 @@ import com.akku.backend.global.finance.dto.FinanceAccountListResponse;
 import com.akku.backend.global.finance.dto.FinanceTransferResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -39,6 +40,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import com.akku.backend.global.finance.dto.FinanceTransactionHistoryResponse;
+import com.akku.backend.domain.bank.event.DepositReceivedEvent;
+import com.akku.backend.domain.bank.event.RemittanceEvent;
 
 @Slf4j
 @Service
@@ -52,6 +55,7 @@ public class AccountService {
     private final SsafyFinanceService ssafyFinanceService;
     private final PasswordEncoder passwordEncoder;
     private final Clock clock;
+    private final ApplicationEventPublisher eventPublisher;
  
     private static final String DEFAULT_ACCOUNT_TYPE_UNIQUE_NO = "999-1-98000e5fd8024b";
 
@@ -379,6 +383,29 @@ public class AccountService {
         withdrawalAccount.deductBalance(request.amount());
         if (depositAccount != null) {
             depositAccount.addBalance(request.amount());
+        }
+
+        // 송금인(발신자) 이벤트 발행
+        eventPublisher.publishEvent(new RemittanceEvent(
+                userId,
+                withdrawalAccount.getAccountNumber(),
+                request.targetBankCode(),
+                request.targetAccountNumber(),
+                request.targetName(),
+                request.amount(),
+                withdrawalAccount.getBalance(),
+                finRec.transactionUniqueNo()
+        ));
+
+        // 수취인(수신자) 이벤트 발행
+        if (depositAccount != null) {
+            eventPublisher.publishEvent(new DepositReceivedEvent(
+                    depositAccount.getUserId(),
+                    user.getName(),
+                    request.amount(),
+                    depositAccount.getBalance(),
+                    finRec.transactionUniqueNo()
+            ));
         }
 
         return new TransferResponse(finRec.transactionUniqueNo(), withdrawalAccount.getBalance());

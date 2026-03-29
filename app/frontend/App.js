@@ -6,6 +6,9 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 
+import * as Notifications from 'expo-notifications';
+import { DeviceEventEmitter } from 'react-native';
+
 import ChildBottomTabNavigator from './src/navigation/ChildBottomTabNavigator';
 import AvatarCustomScreen from './src/screens/child/home/AvatarCustomScreen';
 import AvatarDictionaryScreen from './src/screens/child/home/AvatarDictionaryScreen';
@@ -56,6 +59,15 @@ import ChildChangePasswordScreen from './src/screens/child/mypage/ChildChangePas
 import ParentChildEditScreen from './src/screens/parent/family/ParentChildEditScreen';
 import ParentChangePasswordScreen from './src/screens/parent/mypage/ParentChangePasswordScreen';
 
+// 앱이 포그라운드(실행 중)일 때도 알림 배너가 뜨도록 설정
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+  }),
+});
+
 SplashScreen.preventAutoHideAsync().catch(() => { });
 
 const Stack = createNativeStackNavigator();
@@ -68,6 +80,13 @@ export default function App() {
   });
 
   useEffect(() => {
+    // 알림 수신 리스너 등록
+    const subscription = Notifications.addNotificationReceivedListener(notification => {
+      console.log('🔔 알림 수신:', notification.request.content.title);
+      // 알림이 오면 전역적으로 내역 갱신 이벤트 발생
+      DeviceEventEmitter.emit('refresh_transactions');
+    });
+
     if (fontsLoaded) {
       SplashScreen.hideAsync();
 
@@ -84,6 +103,8 @@ export default function App() {
         }
       }
     }
+
+    return () => subscription.remove();
   }, [fontsLoaded]);
 
   if (!fontsLoaded) return null;
