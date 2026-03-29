@@ -69,7 +69,7 @@ public class HomeService {
                 currentBalance,  // Real 데이터 (현금 잔액)
                 1500L,           // TODO: WalletService 연동 시 교체 (젤링 잔액)
                 user.getLevel(), // Real 데이터 (현재 레벨)
-                450,             // TODO: UserService/LevelService 연동 시 교체 (현재 점수)
+                user.getScore(), // 현재 점수
                 true,            // TODO: 레벨업 상태 검증 로직 연동 시 교체
                 false,           // TODO: NotificationService 연동 시 교체 (알림 여부)
                 350,             // TODO: DonationService 연동 시 교체 (기부 게이지)
