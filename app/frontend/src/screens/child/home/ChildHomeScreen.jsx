@@ -160,7 +160,7 @@ const ChildHomeScreen = ({ navigation }) => {
 
                     {/* 아바타 영역 */}
                     <View style={styles.avatarSection}>
-                        <View style={{ marginTop: verticalScale(-2), alignItems: 'center', zIndex: 10 }}>
+                        <View style={{ marginTop: verticalScale(-2), alignItems: 'center', zIndex: 10, transform: [{ translateY: verticalScale(25) }] }}>
                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(8), marginBottom: verticalScale(-2), transform: [{ translateY: verticalScale(5) }], zIndex: 10 }}>
                                 <CustomText style={styles.levelText}>LV.{homeData ? homeData.level : 1}</CustomText>
                                 <CustomText style={styles.nameText}>{user ? user.name : '김싸피'}</CustomText>
