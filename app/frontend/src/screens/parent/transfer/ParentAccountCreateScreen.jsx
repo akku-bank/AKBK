@@ -138,7 +138,7 @@ const styles = StyleSheet.create({
     infoTitle: { fontSize: scale(14), fontWeight: 'bold', color: '#166534', marginBottom: verticalScale(8) },
     infoText: { fontSize: scale(13), color: '#14532D', lineHeight: 20 },
 
-    footer: { padding: scale(16), backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: '#F3F4F6' },
+    footer: { padding: scale(16), backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: '#F9FAFB' },
     mainButton: { backgroundColor: '#A3E635', paddingVertical: verticalScale(16), borderRadius: scale(16), alignItems: 'center' },
     disabledButton: { backgroundColor: '#D1D5DB' },
     mainButtonText: { fontSize: scale(16), fontWeight: 'bold', color: '#111' }

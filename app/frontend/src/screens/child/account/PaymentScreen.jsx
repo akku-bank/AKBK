@@ -81,7 +81,7 @@ const PaymentScreen = ({ navigation }) => {
                     </CustomText>
                     <View style={styles.badgeDivider} />
                     <CustomText style={styles.jellingBadgeText}>
-                        보유 젤링 <CustomText style={styles.jellingAmount}>🍬 {currentJellings}</CustomText>
+                        보유 젤링 <CustomText style={styles.jellingAmount}> {currentJellings}</CustomText>
                     </CustomText>
                 </View>
 
@@ -114,12 +114,11 @@ const PaymentScreen = ({ navigation }) => {
                 {/* 하단 혜택 안내 */}
                 <View style={styles.benefitCard}>
                     <View style={styles.benefitIconBox}>
-                        <CustomText style={styles.benefitIcon}>🎉</CustomText>
                     </View>
                     <View style={styles.benefitTextContent}>
                         <CustomText style={styles.benefitTitle}>결제하면 젤링이 쌓여요!</CustomText>
                         <CustomText style={styles.benefitSubtitle}>
-                            이번 결제로 <CustomText style={styles.highlightText}>🍬 {expectedCashback}개</CustomText>를 귀여운 아바타 젤링으로 돌려받아요.
+                            이번 결제로 <CustomText style={styles.highlightText}> {expectedCashback}개</CustomText>를 귀여운 아바타 젤링으로 돌려받아요.
                         </CustomText>
                     </View>
                 </View>

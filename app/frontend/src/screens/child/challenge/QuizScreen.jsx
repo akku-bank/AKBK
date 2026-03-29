@@ -78,31 +78,15 @@ const parseChatHistory = (chatJson) => {
     }
 };
 
-const appendExplanationMessage = (history, explanation) => {
-    if (!explanation) return history;
-
-    const explanationMessage = {
-        sender: 'ai',
-        text: `해설: ${explanation}`,
-        kind: 'explanation',
-    };
-
-    const alreadyIncluded = history.some(
-        (item) => item.kind === 'explanation' || item.text === explanationMessage.text
-    );
-
-    return alreadyIncluded ? history : [...history, explanationMessage];
-};
-
 const difficultyLabelMap = {
-    easy: '쉬움',
-    medium: '보통',
-    hard: '어려움',
+    EASY: '쉬움',
+    NORMAL: '보통',
+    HARD: '어려움',
 };
 
 const QuizScreen = ({ navigation, route }) => {
     const sseRef = useRef(null);
-    const difficulty = route?.params?.difficulty || 'medium';
+    const difficulty = route?.params?.difficulty || 'NORMAL';
     const [quiz, setQuiz] = useState({
         id: null,
         question: "불러오는 중...",
@@ -187,11 +171,7 @@ const QuizScreen = ({ navigation, route }) => {
                     rewardAmount: normalizedQuiz.rewardAmount,
                 });
                 setAiCredits(normalizedQuiz.remainingCredits);
-                setChatHistory(
-                    normalizedQuiz.isSubmitted
-                        ? appendExplanationMessage(normalizedQuiz.chatHistory, normalizedQuiz.explanation)
-                        : normalizedQuiz.chatHistory
-                );
+                setChatHistory(normalizedQuiz.chatHistory);
                 setIsQuizSubmitted(normalizedQuiz.isSubmitted);
                 setSubmittedResult(normalizedQuiz.isCorrect);
                 setSelectedOption(normalizedQuiz.submittedOptionIndex);
@@ -208,20 +188,8 @@ const QuizScreen = ({ navigation, route }) => {
         };
     }, []);
 
-    // 퀴즈 화면에서 뒤로가기는 항상 홈으로 보낸다.
-    useEffect(() => {
-        const unsubscribe = navigation.addListener('beforeRemove', (e) => {
-            const actionType = e.data?.action?.type;
-            if (actionType === 'GO_BACK' || actionType === 'POP') {
-                e.preventDefault();
-                navigateToHome();
-            }
-        });
-        return unsubscribe;
-    }, [navigation]);
-
     const handleGoBack = () => {
-        navigateToHome();
+        navigation.goBack();
     };
 
     const handleSelectOption = (index) => {
@@ -235,7 +203,7 @@ const QuizScreen = ({ navigation, route }) => {
         if (isAiTyping) return;
 
         if (aiCredits <= 0) {
-            Alert.alert('알림', '더 이상 AI 크레딧을 사용할 수 없어요.');
+            Alert.alert('알림', '더 이상 힌트를 사용할 수 없어요.');
             return;
         }
 
@@ -342,7 +310,6 @@ const QuizScreen = ({ navigation, route }) => {
                 const { isCorrect: isServerCorrect, jellingReward } = ansData;
                 setIsQuizSubmitted(true);
                 setSubmittedResult(isServerCorrect);
-                setChatHistory((prev) => appendExplanationMessage(prev, q.explanation));
 
                 if (isServerCorrect) {
                     setResultModal({
@@ -375,7 +342,7 @@ const QuizScreen = ({ navigation, route }) => {
                 <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
                     <CustomText style={styles.backButtonText}>←</CustomText>
                 </TouchableOpacity>
-                <CustomText style={styles.headerTitle}>AI 금융 퀴즈</CustomText>
+                <CustomText style={styles.headerTitle}>금융 퀴즈</CustomText>
                 <View style={{ width: scale(32) }} />
             </View>
 
@@ -390,7 +357,7 @@ const QuizScreen = ({ navigation, route }) => {
                             <CustomText style={styles.progressText}>{difficultyLabel}</CustomText>
                         </View>
                         <View style={styles.creditBox}>
-                            <CustomText style={styles.creditText}>🤖 힌트 크레딧: {aiCredits}개</CustomText>
+                            <CustomText style={styles.creditText}>힌트 크레딧: {aiCredits}개</CustomText>
                         </View>
                     </View>
 
@@ -443,63 +410,77 @@ const QuizScreen = ({ navigation, route }) => {
                                 style={[styles.answerCheckButton, selectedOption === null && styles.disabledButton]}
                                 onPress={handleSubmit}
                             >
-                                <CustomText style={styles.answerCheckButtonText}>정답확인</CustomText>
+                                <CustomText style={styles.answerCheckButtonText}>정답 확인</CustomText>
                             </TouchableOpacity>
                         </View>
                     )}
 
-                    <View style={styles.divider} />
+                    {isAnswerRevealed && q.explanation ? (
+                        <View style={styles.explanationContainer}>
+                            <View style={styles.explanationHeaderRow}>
+                                <Image source={require('../../../assets/croco/quiz_akku.png')} style={styles.aiAvatar} />
+                                <CustomText style={styles.explanationTitleText}>아꾸의 해설</CustomText>
+                            </View>
+                            <View style={[styles.chatMsgBubble, styles.explanationMsgBubble]}>
+                                <CustomText style={[styles.chatMsgText, styles.aiMsgText]}>{q.explanation}</CustomText>
+                            </View>
+                        </View>
+                    ) : null}
+
+                    {!isAnswerRevealed && <View style={styles.divider} />}
 
                     {/* 하단 채팅 영역 (문제와 보기 아래) */}
-                    <View style={styles.chatArea}>
-                        {chatHistory.length > 0 && (
-                            <View style={styles.chatSection}>
-                                {chatHistory.map((chat, idx) => (
-                                    <View key={idx} style={[styles.chatRow, chat.sender === 'user' ? styles.chatRowUser : styles.chatRowAi]}>
-                                        {chat.sender === 'ai' && <Image source={require('../../../assets/croco/quiz_akku.png')} style={styles.aiAvatar} />}
-                                        <View
-                                            style={[
-                                                styles.chatMsgBubble,
-                                                chat.sender === 'user'
-                                                    ? styles.userMsgBubble
-                                                    : chat.kind === 'explanation'
-                                                        ? styles.explanationMsgBubble
-                                                        : styles.aiMsgBubble
-                                            ]}
-                                        >
-                                            <CustomText style={[styles.chatMsgText, chat.sender === 'user' ? styles.userMsgText : styles.aiMsgText]}>
-                                                {chat.text}
-                                            </CustomText>
+                    {!isAnswerRevealed && (
+                        <View style={styles.chatArea}>
+                            {chatHistory.length > 0 && (
+                                <View style={styles.chatSection}>
+                                    {chatHistory.map((chat, idx) => (
+                                        <View key={idx} style={[styles.chatRow, chat.sender === 'user' ? styles.chatRowUser : styles.chatRowAi]}>
+                                            {chat.sender === 'ai' && <Image source={require('../../../assets/croco/quiz_akku.png')} style={styles.aiAvatar} />}
+                                            <View
+                                                style={[
+                                                    styles.chatMsgBubble,
+                                                    chat.sender === 'user'
+                                                        ? styles.userMsgBubble
+                                                        : chat.kind === 'explanation'
+                                                            ? styles.explanationMsgBubble
+                                                            : styles.aiMsgBubble
+                                                ]}
+                                            >
+                                                <CustomText style={[styles.chatMsgText, chat.sender === 'user' ? styles.userMsgText : styles.aiMsgText]}>
+                                                    {chat.text}
+                                                </CustomText>
+                                            </View>
                                         </View>
-                                    </View>
-                                ))}
-                                {isAiTyping && (
-                                    <View style={[styles.chatRow, styles.chatRowAi]}>
-                                        <Image source={require('../../../assets/croco/quiz_akku.png')} style={styles.aiAvatar} />
-                                        <View style={[styles.chatMsgBubble, styles.aiMsgBubble]}>
-                                            <CustomText style={[styles.chatMsgText, styles.aiMsgText]}>답변을 생각 중이에요...</CustomText>
+                                    ))}
+                                    {isAiTyping && (
+                                        <View style={[styles.chatRow, styles.chatRowAi]}>
+                                            <Image source={require('../../../assets/croco/quiz_akku.png')} style={styles.aiAvatar} />
+                                            <View style={[styles.chatMsgBubble, styles.aiMsgBubble]}>
+                                                <CustomText style={[styles.chatMsgText, styles.aiMsgText]}>답변을 생각 중이에요...</CustomText>
+                                            </View>
                                         </View>
-                                    </View>
-                                )}
-                            </View>
-                        )}
+                                    )}
+                                </View>
+                            )}
 
-                        {!isAnswerRevealed && (
-                            <View style={styles.chatInputWrapper}>
-                                <CustomTextInput
-                                    style={styles.chatInput}
-                                    placeholder="힌트가 필요하면 물어보세요!"
-                                    placeholderTextColor="#9CA3AF"
-                                    value={chatInput}
-                                    onChangeText={setChatInput}
-                                    editable={!isAnswerRevealed && !isAiTyping}
-                                />
-                                <TouchableOpacity style={[styles.sendBtn, (!chatInput.trim() || isAiTyping) && styles.sendBtnDisabled]} onPress={handleSendChat}>
-                                    <CustomText style={styles.sendBtnText}>전송</CustomText>
-                                </TouchableOpacity>
-                            </View>
-                        )}
-                    </View>
+                            {!isAnswerRevealed && (
+                                <View style={styles.chatInputWrapper}>
+                                    <CustomTextInput
+                                        style={styles.chatInput}
+                                        placeholder="힌트가 필요하면 물어보세요!"
+                                        placeholderTextColor="#9CA3AF"
+                                        value={chatInput}
+                                        onChangeText={setChatInput}
+                                        editable={!isAnswerRevealed && !isAiTyping}
+                                    />
+                                    <TouchableOpacity style={[styles.sendBtn, (!chatInput.trim() || isAiTyping) && styles.sendBtnDisabled]} onPress={handleSendChat}>
+                                        <CustomText style={styles.sendBtnText}>전송</CustomText>
+                                    </TouchableOpacity>
+                                </View>
+                            )}
+                        </View>
+                    )}
 
                 </ScrollView>
             </KeyboardAvoidingView>
@@ -542,7 +523,7 @@ const QuizScreen = ({ navigation, route }) => {
 };
 
 const styles = StyleSheet.create({
-    safeArea: { flex: 1, backgroundColor: '#F3F4F6' },
+    safeArea: { flex: 1, backgroundColor: '#ECFCCB' },
     header: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
         paddingHorizontal: scale(16), paddingVertical: verticalScale(16), backgroundColor: '#FFFFFF'
@@ -554,10 +535,10 @@ const styles = StyleSheet.create({
     container: { flexGrow: 1, paddingHorizontal: scale(16), paddingTop: verticalScale(14), paddingBottom: verticalScale(8) },
 
     topInfoRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: verticalScale(10) },
-    progressBox: { backgroundColor: '#E5E7EB', paddingHorizontal: scale(12), paddingVertical: verticalScale(6), borderRadius: scale(16) },
-    progressText: { fontSize: scale(12), fontWeight: 'bold', color: '#4B5563' },
-    creditBox: { backgroundColor: '#F3E8FF', paddingHorizontal: scale(12), paddingVertical: verticalScale(6), borderRadius: scale(16) },
-    creditText: { fontSize: scale(12), fontWeight: 'bold', color: '#7E22CE' },
+    progressBox: { backgroundColor: '#FFFFFF', paddingHorizontal: scale(12), paddingVertical: verticalScale(6), borderRadius: scale(16) },
+    progressText: { fontSize: scale(12), fontWeight: 'bold', color: '#4D7C0F' },
+    creditBox: { backgroundColor: '#FFFFFF', paddingHorizontal: scale(12), paddingVertical: verticalScale(6), borderRadius: scale(16) },
+    creditText: { fontSize: scale(12), fontWeight: 'bold', color: '#4D7C0F' },
 
     chatBubble: { backgroundColor: '#FFFFFF', padding: scale(16), borderRadius: scale(20), marginBottom: verticalScale(10), shadowColor: '#000', shadowOffset: { width: 0, height: verticalScale(2) }, shadowOpacity: 0.05, shadowRadius: scale(4), elevation: 2 },
     questionText: { fontSize: scale(18), fontWeight: '900', color: '#111', lineHeight: 28 },
@@ -585,6 +566,10 @@ const styles = StyleSheet.create({
     },
     answerCheckButtonText: { fontSize: scale(14), fontWeight: 'bold', color: '#111' },
 
+    explanationContainer: { marginTop: verticalScale(16), marginBottom: verticalScale(16) },
+    explanationHeaderRow: { flexDirection: 'row', alignItems: 'center', marginBottom: verticalScale(8) },
+    explanationTitleText: { fontSize: scale(16), fontWeight: 'bold', color: '#111827' },
+
     divider: { height: 1, backgroundColor: '#E5E7EB', marginVertical: verticalScale(10) },
 
     chatArea: {
@@ -598,16 +583,16 @@ const styles = StyleSheet.create({
     chatRowAi: { justifyContent: 'flex-start', marginRight: scale(32) },
     aiAvatar: { width: scale(32), height: scale(32), marginRight: scale(8), marginTop: verticalScale(1), resizeMode: 'contain' },
     chatMsgBubble: { paddingHorizontal: scale(14), paddingVertical: verticalScale(10), borderRadius: scale(16) },
-    userMsgBubble: { backgroundColor: '#111', borderBottomRightRadius: 0 },
+    userMsgBubble: { backgroundColor: '#FFFFFF', borderBottomRightRadius: 0, borderWidth: 1, borderColor: '#E5E7EB' },
     aiMsgBubble: { backgroundColor: '#F7FEE7', borderTopLeftRadius: 0, borderWidth: 1, borderColor: '#A3E635' },
     explanationMsgBubble: {
-        backgroundColor: '#FEF3C7',
+        backgroundColor: '#FFFFFF',
         borderTopLeftRadius: 0,
         borderWidth: 2,
-        borderColor: '#F59E0B',
+        borderColor: '#A3E635',
     },
     chatMsgText: { fontSize: scale(14), fontWeight: '600', lineHeight: 20 },
-    userMsgText: { color: '#FFFFFF' },
+    userMsgText: { color: '#111827' },
     aiMsgText: { color: '#4D7C0F' },
 
     chatInputWrapper: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: scale(16), padding: scale(4), borderWidth: 2, borderColor: '#A3E635' },
@@ -676,7 +661,7 @@ const styles = StyleSheet.create({
         color: '#1F2937',
     },
 
-    disabledButton: { backgroundColor: '#D1D5DB' },
+    disabledButton: { opacity: 0.5 },
 });
 
 export default QuizScreen;

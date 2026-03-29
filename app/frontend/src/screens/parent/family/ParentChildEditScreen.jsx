@@ -79,7 +79,7 @@ const styles = StyleSheet.create({
 
     inputGroup: { marginBottom: verticalScale(24) },
     label: { fontSize: scale(14), fontWeight: 'bold', color: '#4B5563', marginBottom: verticalScale(8) },
-    input: { backgroundColor: '#F3F4F6', borderRadius: scale(12), padding: scale(16), fontSize: scale(16), fontWeight: 'bold', color: '#111' },
+    input: { backgroundColor: '#F9FAFB', borderRadius: scale(12), padding: scale(16), fontSize: scale(16), fontWeight: 'bold', color: '#111' },
 
     submitButton: { marginTop: verticalScale(20), paddingVertical: verticalScale(16), borderRadius: scale(12), alignItems: 'center' },
     submitButtonActive: { backgroundColor: '#A3E635' },

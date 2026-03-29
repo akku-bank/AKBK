@@ -102,7 +102,6 @@ const PinNumberSetupScreen = ({ navigation, route }) => {
 
                 {isSuccess ? (
                     <View style={styles.successContainer}>
-                        <CustomText style={styles.successIcon}>🎉</CustomText>
                         <CustomText style={styles.successText}>가입을 환영합니다!</CustomText>
                     </View>
                 ) : (

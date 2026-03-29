@@ -7,8 +7,8 @@ import CustomText from '../../../components/common/CustomText';
 const MOCK_MAP_DATA = [
     { id: 1, title: '지구 수호대', description: '지구 살리기 캠페인 기부', icon: '🌍', unlocked: true, color: '#D1FAE5' },
     { id: 2, title: '동물 친구들', description: '유기동물 보호소 기부', icon: '🐶', unlocked: true, color: '#FEF3C7' },
-    { id: 3, title: '따뜻한 한 끼', description: '결식아동 지원 기부', icon: '🍲', unlocked: false, color: '#F3F4F6' },
-    { id: 4, title: '희망의 숲', description: '나무 심기 기부', icon: '🌳', unlocked: false, color: '#F3F4F6' },
+    { id: 3, title: '따뜻한 한 끼', description: '결식아동 지원 기부', icon: '🍲', unlocked: false, color: '#F9FAFB' },
+    { id: 4, title: '희망의 숲', description: '나무 심기 기부', icon: '🌳', unlocked: false, color: '#F9FAFB' },
 ];
 
 const BadgeMapScreen = ({ navigation }) => {
@@ -45,7 +45,7 @@ const BadgeMapScreen = ({ navigation }) => {
                                     {/* 뱃지 아이콘 */}
                                     <View style={[
                                         styles.iconWrapper,
-                                        { backgroundColor: badge.unlocked ? badge.color : '#F3F4F6' },
+                                        { backgroundColor: badge.unlocked ? badge.color : '#F9FAFB' },
                                         !badge.unlocked && styles.iconWrapperLocked
                                     ]}>
                                         <CustomText style={[styles.nodeIcon, !badge.unlocked && styles.nodeIconLocked]}>
@@ -74,7 +74,7 @@ const BadgeMapScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
-        backgroundColor: '#F3F4F6',
+        backgroundColor: '#ECFCCB',
     },
     header: {
         flexDirection: 'row',
@@ -82,7 +82,7 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         paddingHorizontal: scale(16),
         paddingVertical: verticalScale(16),
-        backgroundColor: '#F3F4F6',
+        backgroundColor: '#F9FAFB',
     },
     backButton: {
         width: scale(32),
@@ -166,7 +166,7 @@ const styles = StyleSheet.create({
         elevation: 4,
     },
     iconWrapperLocked: {
-        backgroundColor: '#F3F4F6',
+        backgroundColor: '#F9FAFB',
         shadowOpacity: 0,
         elevation: 0,
         borderWidth: 1,

@@ -14,20 +14,24 @@ const CustomText = forwardRef((props, ref) => {
         flattenStyle.fontWeight === '700' ||
         flattenStyle.fontWeight >= 600;
 
-    const parentFontFamily = isBold ? 'Pretendard-Bold' : 'Pretendard-Regular';
+    const parentFontFamily = 'Pretendard-Bold';
 
     return (
         <Text
             {...props}
             ref={ref}
             allowFontScaling={false}
+            textBreakStrategy="simple"
+            lineBreakStrategyIOS="hangul-word"
             style={[
                 isParent ? { fontFamily: parentFontFamily } : styles.defaultFont,
                 props.style,
                 (!isParent && Platform.OS === 'android') ? { fontWeight: 'normal', fontStyle: 'normal' } : {},
-                (isParent && Platform.OS === 'android') ? { fontWeight: 'normal', fontStyle: 'normal' } : {} // 안드로이드에서 폰트 패밀리와 웨이트 충돌 방지
+                (isParent && Platform.OS === 'android') ? { fontWeight: 'normal', fontStyle: 'normal' } : {},
+                Platform.OS === 'web' ? { wordBreak: 'keep-all', overflowWrap: 'break-word' } : {}
             ]}
         >
+
             {props.children}
         </Text>
     );

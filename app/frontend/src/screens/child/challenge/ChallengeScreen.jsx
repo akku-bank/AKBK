@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+﻿import React, { useCallback, useState } from 'react';
 import { View, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Alert, Image, Modal } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { scale, verticalScale } from 'react-native-size-matters';
@@ -25,7 +25,7 @@ const TABS = {
     COMPLETED: 'COMPLETED',
 };
 
-const QUIZ_DIFFICULTIES = ['easy', 'medium', 'hard'];
+const QUIZ_DIFFICULTIES = ['EASY', 'NORMAL', 'HARD'];
 
 const getDdayLabel = (item, activeTab) => {
     if (!item?.startDate || !item?.endDate) return null;
@@ -253,7 +253,7 @@ const ChallengeScreen = ({ navigation }) => {
                     <View style={styles.actionRow}>
                         {canEdit && (
                             <TouchableOpacity style={[styles.actionBtn, styles.editBtn]} onPress={() => handleEdit(item)}>
-                                <CustomText style={styles.editBtnText}>수정하기</CustomText>
+                                <CustomText style={styles.editBtnText}>수정</CustomText>
                             </TouchableOpacity>
                         )}
                         <TouchableOpacity style={[styles.actionBtn, styles.deleteBtn]} onPress={() => handleDelete(item.challengeId)}>
@@ -290,7 +290,7 @@ const ChallengeScreen = ({ navigation }) => {
                     style={[styles.tabBtn, activeTab === TABS.IN_PROGRESS && styles.tabBtnActive]}
                     onPress={() => { setActiveTab(TABS.IN_PROGRESS); setIsFabOpen(false); }}
                 >
-                    <CustomText style={[styles.tabText, activeTab === TABS.IN_PROGRESS && styles.tabTextActive]}>진행중</CustomText>
+                    <CustomText style={[styles.tabText, activeTab === TABS.IN_PROGRESS && styles.tabTextActive]}>진행 중</CustomText>
                 </TouchableOpacity>
                 <TouchableOpacity
                     style={[styles.tabBtn, activeTab === TABS.COMPLETED && styles.tabBtnActive]}
@@ -345,19 +345,17 @@ const ChallengeScreen = ({ navigation }) => {
                     )
                 )}
 
-                <View style={[styles.card, { marginTop: verticalScale(24), backgroundColor: '#F9FAFB' }]}>
-                    <CustomText style={styles.menuTitle}>매일매일 미션</CustomText>
+                <View style={[styles.card, { marginTop: verticalScale(24), backgroundColor: '#FFFFFF' }]} >
+                    <CustomText style={styles.menuTitle}>데일리 미션</CustomText>
 
                     <TouchableOpacity style={styles.menuBtn} onPress={handleOpenQuizDifficulty}>
-                        <CustomText style={styles.menuBtnIcon}>🎓</CustomText>
                         <View style={{ flex: 1 }}>
                             <CustomText style={styles.menuBtnTitle}>주간 금융 퀴즈</CustomText>
-                            <CustomText style={styles.menuBtnSub}>퀴즈를 풀고 랜덤 젤링 받기</CustomText>
+                            <CustomText style={styles.menuBtnSub}>퀴즈 풀고 랜덤 젤링 받기</CustomText>
                         </View>
                     </TouchableOpacity>
 
                     <TouchableOpacity style={styles.menuBtn} onPress={() => navigation.navigate('AttendanceScreen')}>
-                        <CustomText style={styles.menuBtnIcon}>📅</CustomText>
                         <View style={{ flex: 1 }}>
                             <CustomText style={styles.menuBtnTitle}>출석체크</CustomText>
                             <CustomText style={styles.menuBtnSub}>매일 출석하고 보상 받기</CustomText>
@@ -365,32 +363,27 @@ const ChallengeScreen = ({ navigation }) => {
                     </TouchableOpacity>
 
                     <TouchableOpacity style={styles.menuBtn} onPress={() => navigation.navigate('ESGChallengeScreen')}>
-                        <CustomText style={styles.menuBtnIcon}>🌍</CustomText>
                         <View style={{ flex: 1 }}>
-                            <CustomText style={styles.menuBtnTitle}>주간 ESG 챌린지</CustomText>
-                            <CustomText style={styles.menuBtnSub}>착한 소비 인증하고 젤링 받기</CustomText>
+                            <CustomText style={styles.menuBtnTitle}>ESG 챌린지</CustomText>
+                            <CustomText style={styles.menuBtnSub}>착한 소비 인증하기</CustomText>
                         </View>
                     </TouchableOpacity>
                 </View>
             </ScrollView>
 
-            {activeTab === TABS.REQUESTED && (
-                <>
-                    {isFabOpen && (
-                        <View style={styles.fabMenuContainer}>
-                            <TouchableOpacity
-                                style={styles.fabMenuItem}
-                                onPress={() => { setIsFabOpen(false); navigation.navigate('ChallengePropose'); }}
-                            >
-                                <CustomText style={styles.fabMenuItemText}>새 챌린지 제안하기</CustomText>
-                            </TouchableOpacity>
-                        </View>
-                    )}
-                    <TouchableOpacity style={[styles.fab, isFabOpen && styles.fabOpen]} onPress={() => setIsFabOpen(!isFabOpen)}>
-                        <CustomText style={[styles.fabIcon, isFabOpen && styles.fabIconOpen]}>{isFabOpen ? '×' : '+'}</CustomText>
+            {isFabOpen && (
+                <View style={styles.fabMenuContainer}>
+                    <TouchableOpacity
+                        style={styles.fabMenuItem}
+                        onPress={() => { setIsFabOpen(false); navigation.navigate('ChallengePropose'); }}
+                    >
+                        <CustomText style={styles.fabMenuItemText}>새 챌린지 제안하기</CustomText>
                     </TouchableOpacity>
-                </>
+                </View>
             )}
+            <TouchableOpacity style={[styles.fab, isFabOpen && styles.fabOpen]} onPress={() => setIsFabOpen(!isFabOpen)}>
+                <CustomText style={[styles.fabIcon, isFabOpen && styles.fabIconOpen]}>{isFabOpen ? '×' : '+'}</CustomText>
+            </TouchableOpacity>
             <Modal
                 visible={isRewardSuccessVisible}
                 transparent
@@ -421,9 +414,9 @@ const ChallengeScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-    safeArea: { flex: 1, backgroundColor: '#F3F4F6' },
+    safeArea: { flex: 1, backgroundColor: '#ECFCCB' },
     header: {
-        flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
         paddingHorizontal: scale(16), paddingVertical: verticalScale(16), backgroundColor: '#FFFFFF'
     },
     headerTitle: { fontSize: scale(22), fontWeight: 'bold', color: '#111' },
@@ -443,8 +436,8 @@ const styles = StyleSheet.create({
 
     badgeProgress: { backgroundColor: '#FEF9C3', borderColor: '#FACC15', borderWidth: 1 },
     badgeTextProgress: { color: '#A16207', fontSize: scale(11), fontWeight: 'bold' },
-    badgePending: { backgroundColor: '#F3F4F6', borderColor: '#D1D5DB', borderWidth: 1 },
-    badgeTextPending: { color: '#6B7280', fontSize: scale(11), fontWeight: 'bold' },
+    badgePending: { backgroundColor: '#ECFCCB', borderColor: '#A3E635', borderWidth: 1 },
+    badgeTextPending: { color: '#4D7C0F', fontSize: scale(11), fontWeight: 'bold' },
     badgeSuccess: { backgroundColor: '#D1FAE5', borderColor: '#34D399', borderWidth: 1 },
     badgeTextSuccess: { color: '#059669', fontSize: scale(11), fontWeight: 'bold' },
     badgeFailed: { backgroundColor: '#FEE2E2', borderColor: '#F87171', borderWidth: 1 },
@@ -479,12 +472,12 @@ const styles = StyleSheet.create({
 
     actionRow: { flexDirection: 'row', justifyContent: 'flex-end', marginTop: verticalScale(12) },
     actionBtn: { paddingHorizontal: scale(12), paddingVertical: verticalScale(6), borderRadius: scale(8), marginLeft: scale(8) },
-    editBtn: { backgroundColor: '#DBEAFE' },
-    editBtnText: { color: '#2563EB', fontWeight: 'bold' },
+    editBtn: { backgroundColor: '#ECFCCB' },
+    editBtnText: { color: '#4D7C0F', fontWeight: 'bold' },
     deleteBtn: { backgroundColor: '#FEE2E2' },
     deleteBtnText: { color: '#DC2626', fontWeight: 'bold' },
 
-    emptyView: { flex: 1, justifyContent: 'center', alignItems: 'center', minHeight: verticalScale(150), paddingVertical: verticalScale(40) },
+    emptyView: { alignItems: 'center', marginTop: verticalScale(32), marginBottom: verticalScale(8) },
     emptyText: { fontSize: scale(16), color: '#6B7280', marginBottom: verticalScale(16) },
     emptyAddBtn: {
         backgroundColor: '#A3E635',
@@ -502,7 +495,7 @@ const styles = StyleSheet.create({
     },
     scheduledTitle: { fontSize: scale(16), fontWeight: 'bold', color: '#374151' },
     scheduledNotice: {
-        backgroundColor: '#F3F4F6',
+        backgroundColor: '#F9FAFB',
         borderRadius: scale(12),
         paddingHorizontal: scale(14),
         paddingVertical: verticalScale(5),
@@ -515,11 +508,11 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
 
-    menuTitle: { fontSize: scale(16), fontWeight: 'bold', color: '#4B5563', marginBottom: verticalScale(12) },
-    menuBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', padding: scale(16), borderRadius: scale(12), marginBottom: verticalScale(12), borderWidth: 1, borderColor: '#E5E7EB' },
+    menuTitle: { fontSize: scale(16), fontWeight: 'bold', color: '#4B5563', marginBottom: verticalScale(12), textAlign: 'center' },
+    menuBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#F9FAFB', padding: scale(16), borderRadius: scale(12), marginBottom: verticalScale(12) },
     menuBtnIcon: { fontSize: scale(24), marginRight: scale(16) },
-    menuBtnTitle: { fontSize: scale(15), fontWeight: 'bold', color: '#111', marginBottom: verticalScale(2) },
-    menuBtnSub: { fontSize: scale(13), color: '#6B7280' },
+    menuBtnTitle: { fontSize: scale(15), fontWeight: 'bold', color: '#111', marginBottom: verticalScale(2), textAlign: 'center' },
+    menuBtnSub: { fontSize: scale(13), color: '#6B7280', textAlign: 'center' },
 
     fab: {
         position: 'absolute',

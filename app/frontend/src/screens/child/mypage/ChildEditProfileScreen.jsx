@@ -48,7 +48,7 @@ const ChildEditProfileScreen = ({ navigation }) => {
                 <View style={{ width: scale(32) }} />
             </View>
 
-            <ScrollView contentContainerStyle={styles.container}>
+            <ScrollView style={{ backgroundColor: '#ECFCCB' }} contentContainerStyle={styles.container}>
                 <View style={styles.avatarSection}>
                     <View style={styles.avatarCircle}>
                         <Image source={require('../../../assets/croco/croco_face.png')} style={styles.avatarImage} resizeMode="contain" />
@@ -92,7 +92,7 @@ const styles = StyleSheet.create({
     safeArea: { flex: 1, backgroundColor: '#FFFFFF' },
     header: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-        paddingHorizontal: scale(16), paddingVertical: verticalScale(16)
+        paddingHorizontal: scale(16), paddingVertical: verticalScale(16), backgroundColor: '#FFFFFF'
     },
     backButton: { width: scale(32), height: scale(32), justifyContent: 'center' },
     backButtonText: { fontSize: scale(22), fontWeight: 'bold', color: '#111' },
@@ -101,16 +101,16 @@ const styles = StyleSheet.create({
     container: { flexGrow: 1, paddingHorizontal: scale(24), paddingTop: verticalScale(20) },
 
     avatarSection: { alignItems: 'center', marginBottom: verticalScale(40) },
-    avatarCircle: { width: scale(100), height: scale(100), borderRadius: scale(50), backgroundColor: '#E5E7EB', justifyContent: 'center', alignItems: 'center', marginBottom: verticalScale(16), overflow: 'hidden' },
-    avatarImage: { width: '80%', height: '80%' },
-    avatarEditBtn: { paddingVertical: verticalScale(8), paddingHorizontal: scale(16), backgroundColor: '#F3F4F6', borderRadius: scale(20) },
+    avatarCircle: { width: scale(100), height: scale(100), borderRadius: scale(50), backgroundColor: '#FFFFFF', justifyContent: 'center', alignItems: 'center', marginBottom: verticalScale(16), overflow: 'hidden' },
+    avatarImage: { width: '110%', height: '110%', marginTop: verticalScale(40), marginLeft: verticalScale(10) },
+    avatarEditBtn: { paddingVertical: verticalScale(8), paddingHorizontal: scale(16), backgroundColor: '#F9FAFB', borderRadius: scale(20) },
     avatarEditBtnText: { fontSize: scale(13), fontWeight: 'bold', color: '#4B5563' },
 
     inputSection: { marginBottom: verticalScale(30) },
     label: { fontSize: scale(14), fontWeight: 'bold', color: '#4B5563', marginBottom: verticalScale(8) },
     input: { backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: scale(12), paddingHorizontal: scale(16), paddingVertical: verticalScale(14), fontSize: scale(16), color: '#111', marginBottom: verticalScale(24) },
 
-    footer: { padding: scale(16), backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: '#F3F4F6' },
+    footer: { padding: scale(16), backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: '#F9FAFB' },
     saveButton: { backgroundColor: '#A3E635', paddingVertical: verticalScale(16), borderRadius: scale(16), alignItems: 'center' },
     saveButtonText: { fontSize: scale(16), fontWeight: 'bold', color: '#111' }
 });

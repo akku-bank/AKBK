@@ -240,7 +240,8 @@ const WeeklyReportScreen = ({ navigation }) => {
                                                             y={labelPosition.y}
                                                             fontSize={scale(12)}
                                                             fontWeight="700"
-                                                            fill="#FFFFFF"
+                                                            fontFamily="Mulmaru"
+                                                            fill="#111827"
                                                             textAnchor="middle"
                                                             alignmentBaseline="middle"
                                                         >
@@ -281,7 +282,7 @@ const WeeklyReportScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-    safeArea: { flex: 1, backgroundColor: '#F3F4F6' },
+    safeArea: { flex: 1, backgroundColor: '#ECFCCB' },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -449,12 +450,12 @@ const styles = StyleSheet.create({
         borderRadius: scale(16),
         marginBottom: verticalScale(16),
     },
-    aiReviewTitle: { fontSize: scale(16), fontWeight: 'bold', color: '#166534', marginBottom: verticalScale(8) },
-    aiReviewText: { fontSize: scale(14), color: '#14532D', lineHeight: 22 },
+    aiReviewTitle: { fontSize: scale(16), fontWeight: 'bold', color: '#166534', marginBottom: verticalScale(8), fontFamily: 'Mulmaru' },
+    aiReviewText: { fontSize: scale(14), color: '#14532D', lineHeight: 26, fontFamily: 'Mulmaru', wordBreak: 'keep-all' },
     aiQuizCard: { backgroundColor: '#EFF6FF' },
-    aiQuizTitle: { color: '#1E3A8A' },
-    aiQuizText: { color: '#1E40AF' },
-    bodyCopyText: { fontFamily: bodyFontFamily, letterSpacing: 0 },
+    aiQuizTitle: { color: '#1E3A8A', fontFamily: 'Mulmaru' },
+    aiQuizText: { color: '#1E40AF', fontFamily: 'Mulmaru', wordBreak: 'keep-all' },
+    bodyCopyText: { fontFamily: 'Mulmaru', letterSpacing: 0 },
     categoryCard: {
         backgroundColor: '#FFFFFF',
         padding: scale(20),

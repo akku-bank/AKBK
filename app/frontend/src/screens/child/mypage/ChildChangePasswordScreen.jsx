@@ -52,7 +52,7 @@ const ChildChangePasswordScreen = ({ navigation }) => {
             <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
                 <View style={styles.container}>
                     <CustomText style={styles.description}>
-                        현재 비밀번호와 새롭게 사용할 6자리 숫자 비밀번호를 입력해주세요.
+                        간편하게 비밀번호를 변경해보세요.
                     </CustomText>
 
                     <View style={styles.inputGroup}>
@@ -129,17 +129,17 @@ const ChildChangePasswordScreen = ({ navigation }) => {
 
 const styles = StyleSheet.create({
     safeArea: { flex: 1, backgroundColor: '#FFFFFF' },
-    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: scale(16), paddingVertical: verticalScale(16) },
+    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: scale(16), paddingVertical: verticalScale(16), backgroundColor: '#FFFFFF' },
     backButton: { width: scale(32), height: scale(32), justifyContent: 'center' },
     backButtonText: { fontSize: scale(22), fontWeight: 'bold', color: '#111' },
     headerTitle: { fontSize: scale(18), fontWeight: 'bold', color: '#111' },
 
-    container: { flex: 1, paddingHorizontal: scale(20), paddingTop: verticalScale(20) },
+    container: { flex: 1, backgroundColor: '#ECFCCB', paddingHorizontal: scale(20), paddingTop: verticalScale(20) },
     description: { fontSize: scale(14), color: '#6B7280', marginBottom: verticalScale(30), lineHeight: 20 },
 
     inputGroup: { marginBottom: verticalScale(24) },
     label: { fontSize: scale(14), fontWeight: 'bold', color: '#4B5563', marginBottom: verticalScale(8) },
-    input: { backgroundColor: '#F3F4F6', borderRadius: scale(12), padding: scale(16), fontSize: scale(18), letterSpacing: 4, fontWeight: 'bold', color: '#111' },
+    input: { backgroundColor: '#F9FAFB', borderRadius: scale(12), padding: scale(16), fontSize: scale(18), letterSpacing: 4, fontWeight: 'bold', color: '#111' },
 
     submitButton: { marginTop: verticalScale(20), paddingVertical: verticalScale(16), borderRadius: scale(12), alignItems: 'center' },
     submitButtonActive: { backgroundColor: '#A3E635' },

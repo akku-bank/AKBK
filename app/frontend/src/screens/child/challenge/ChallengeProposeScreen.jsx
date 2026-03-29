@@ -85,7 +85,7 @@ const ChallengeProposeScreen = ({ navigation, route }) => {
                         <CustomText style={styles.instructionDesc}>
                             {isEditMode
                                 ? '반려되었거나 승인 대기 중인 챌린지를 수정해서 다시 요청할 수 있어요.'
-                                : '이번 주에 내가 얼마까지 사용할지 카테고리와 목표 금액을 정해 부모님께 제안해보세요.'}
+                                : '이번 주에 내가 얼마까지 사용할지 카테고리와 \n목표 금액을 정해 부모님께 제안해보세요.'}
                         </CustomText>
                     </View>
 
@@ -102,7 +102,7 @@ const ChallengeProposeScreen = ({ navigation, route }) => {
                         ))}
                     </View>
 
-                    <CustomText style={styles.sectionLabel}>얼마까지 쓸까요? (소비 목표 금액)</CustomText>
+                    <CustomText style={styles.sectionLabel}>얼마까지 쓸까요?</CustomText>
                     <View style={styles.inputContainer}>
                         <CustomTextInput
                             style={styles.amountInput}
@@ -115,7 +115,7 @@ const ChallengeProposeScreen = ({ navigation, route }) => {
                         <CustomText style={styles.currencyText}>원</CustomText>
                     </View>
 
-                    <CustomText style={styles.sectionLabel}>성공하면 얼마를 받을까요? (보상 금액)</CustomText>
+                    <CustomText style={styles.sectionLabel}>성공하면 얼마를 받을까요?</CustomText>
                     <View style={styles.inputContainer}>
                         <CustomTextInput
                             style={styles.amountInput}
@@ -139,15 +139,15 @@ const ChallengeProposeScreen = ({ navigation, route }) => {
 };
 
 const styles = StyleSheet.create({
-    safeArea: { flex: 1, backgroundColor: '#F3F4F6' },
+    safeArea: { flex: 1, backgroundColor: '#ECFCCB' },
     header: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-        paddingHorizontal: scale(16), paddingVertical: verticalScale(16), backgroundColor: '#F3F4F6'
+        paddingHorizontal: scale(16), paddingVertical: verticalScale(16), backgroundColor: '#FFFFFF'
     },
     backButton: { width: scale(32), height: scale(32), justifyContent: 'center' },
     backButtonText: { fontSize: scale(22), fontWeight: 'bold', color: '#111' },
     headerTitle: { fontSize: scale(18), fontWeight: 'bold', color: '#111' },
-    container: { flexGrow: 1, paddingHorizontal: scale(16), paddingBottom: verticalScale(40) },
+    container: { flexGrow: 1, paddingHorizontal: scale(16), paddingTop: verticalScale(20), paddingBottom: verticalScale(40) },
 
     instructionCard: {
         backgroundColor: '#FFFFFF', borderRadius: scale(16), padding: scale(20), marginBottom: verticalScale(24),
@@ -173,7 +173,7 @@ const styles = StyleSheet.create({
     },
     amountInput: { flex: 1, fontSize: scale(18), fontWeight: 'bold', color: '#111', paddingVertical: verticalScale(16) },
     currencyText: { fontSize: scale(16), fontWeight: 'bold', color: '#111' },
-    footer: { paddingHorizontal: scale(16), paddingBottom: verticalScale(24), paddingTop: verticalScale(12), backgroundColor: '#F3F4F6' },
+    footer: { paddingHorizontal: scale(16), paddingBottom: verticalScale(24), paddingTop: verticalScale(12), backgroundColor: '#F9FAFB' },
     submitButton: { backgroundColor: '#A3E635', paddingVertical: verticalScale(16), borderRadius: scale(12), alignItems: 'center' },
     submitButtonText: { fontSize: scale(16), fontWeight: 'bold', color: '#111' }
 });
