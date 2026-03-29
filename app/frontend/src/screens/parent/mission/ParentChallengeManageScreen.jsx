@@ -391,9 +391,9 @@ const styles = StyleSheet.create({
         paddingVertical: verticalScale(10),
         alignItems: 'center',
     },
-    tabButtonActive: { backgroundColor: '#111827' },
+    tabButtonActive: { backgroundColor: '#ECFCCB' },
     tabButtonText: { fontSize: scale(12), fontWeight: '700', color: '#6B7280' },
-    tabButtonTextActive: { color: '#FFFFFF' },
+    tabButtonTextActive: { color: '#111827' },
 
     sectionTitle: {
         fontSize: scale(16),

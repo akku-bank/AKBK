@@ -71,9 +71,7 @@ const ParentHistoryScreen = ({ navigation, route }) => {
                     <CustomText style={styles.backButtonText}>←</CustomText>
                 </TouchableOpacity>
                 <CustomText style={styles.headerTitle}>전체 ▽</CustomText>
-                <TouchableOpacity style={styles.searchButton}>
-                    <CustomText style={styles.searchIcon}>🔍</CustomText>
-                </TouchableOpacity>
+                <View style={{ width: scale(32) }} />
             </View>
 
             <ScrollView contentContainerStyle={styles.container}>
