@@ -75,7 +75,7 @@ const ParentMyPageScreen = ({ navigation }) => {
     return (
         <SafeAreaView style={styles.safeArea}>
             <View style={styles.header}>
-                <CustomText style={styles.headerTitle}>전체</CustomText>
+                <CustomText style={styles.headerTitle}>마이페이지</CustomText>
             </View>
 
             <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
@@ -101,7 +101,6 @@ const ParentMyPageScreen = ({ navigation }) => {
                     <CustomText style={styles.menuGroupTitle}>가족</CustomText>
                     <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('FamilyManagementScreen')}>
                         <View style={styles.menuItemLeft}>
-                            <CustomText style={styles.menuIcon}>👨‍👩‍👧‍👦</CustomText>
                             <CustomText style={styles.menuText}>가족/구성원 관리</CustomText>
                         </View>
                         <CustomText style={styles.chevron}>›</CustomText>
@@ -113,14 +112,12 @@ const ParentMyPageScreen = ({ navigation }) => {
                     <CustomText style={styles.menuGroupTitle}>데이터</CustomText>
                     <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('ParentReportScreen')}>
                         <View style={styles.menuItemLeft}>
-                            <CustomText style={styles.menuIcon}>📊</CustomText>
                             <CustomText style={styles.menuText}>우리 아이 주간 소비 리포트</CustomText>
                         </View>
                         <CustomText style={styles.chevron}>›</CustomText>
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('ParentHistoryScreen')}>
                         <View style={styles.menuItemLeft}>
-                            <CustomText style={styles.menuIcon}>🗓️</CustomText>
                             <CustomText style={styles.menuText}>소비 내역 상세</CustomText>
                         </View>
                         <CustomText style={styles.chevron}>›</CustomText>
@@ -133,28 +130,20 @@ const ParentMyPageScreen = ({ navigation }) => {
 
                     <View style={styles.menuItem}>
                         <View style={styles.menuItemLeft}>
-                            <CustomText style={styles.menuIcon}>🔔</CustomText>
                             <CustomText style={styles.menuText}>푸시 알림</CustomText>
                         </View>
                         <Switch
                             value={true}
-                            trackColor={{ false: '#D1D5DB', true: '#3B82F6' }}
+                            trackColor={{ false: '#D1D5DB', true: '#A3E635' }}
                             thumbColor={'#FFFFFF'}
                         />
                     </View>
 
                     <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('ParentChangePassword')}>
                         <View style={styles.menuItemLeft}>
-                            <CustomText style={styles.menuIcon}>🔒</CustomText>
                             <CustomText style={styles.menuText}>비밀번호 변경</CustomText>
                         </View>
                         <CustomText style={styles.chevron}>›</CustomText>
-                    </TouchableOpacity>
-                </View>
-
-                {/* 기타 추가 메뉴용 예비 공간 */}
-                <View style={[styles.menuGroup, { opacity: 0 }]} pointerEvents="none">
-                    <TouchableOpacity style={styles.menuItem}>
                     </TouchableOpacity>
                 </View>
 
@@ -175,8 +164,8 @@ const ParentMyPageScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-    safeArea: { flex: 1, backgroundColor: '#F3F4F6' },
-    header: { paddingHorizontal: scale(20), paddingVertical: verticalScale(16), backgroundColor: '#F3F4F6' },
+    safeArea: { flex: 1, backgroundColor: '#F9FAFB' },
+    header: { paddingHorizontal: scale(20), paddingVertical: verticalScale(16), backgroundColor: '#F9FAFB' },
     headerTitle: { fontSize: scale(20), fontWeight: 'bold', color: '#111' },
     container: { flexGrow: 1, paddingHorizontal: scale(16), paddingBottom: verticalScale(100) },
 
@@ -187,12 +176,12 @@ const styles = StyleSheet.create({
     profileName: { fontSize: scale(18), fontWeight: 'bold', color: '#111', marginBottom: verticalScale(2) },
     profileStatus: { fontSize: scale(13), color: '#6B7280' },
 
-    editButton: { backgroundColor: '#F3F4F6', paddingVertical: verticalScale(6), paddingHorizontal: scale(12), borderRadius: scale(8) },
+    editButton: { backgroundColor: '#F9FAFB', paddingVertical: verticalScale(6), paddingHorizontal: scale(12), borderRadius: scale(8) },
     editButtonText: { fontSize: scale(13), fontWeight: '600', color: '#4B5563' },
 
     menuGroup: { backgroundColor: '#FFFFFF', borderRadius: scale(20), paddingVertical: verticalScale(8), paddingHorizontal: scale(16), marginBottom: verticalScale(16) },
     menuGroupTitle: { fontSize: scale(13), fontWeight: 'bold', color: '#9CA3AF', marginTop: verticalScale(8), marginBottom: verticalScale(4), marginLeft: scale(4) },
-    menuItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: verticalScale(14), paddingHorizontal: scale(4), borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
+    menuItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: verticalScale(14), paddingHorizontal: scale(4), borderBottomWidth: 1, borderBottomColor: '#F9FAFB' },
     menuItemLeft: { flexDirection: 'row', alignItems: 'center' },
     menuIcon: { fontSize: scale(18), marginRight: scale(12) },
     menuText: { fontSize: scale(15), color: '#111', fontWeight: '500' },

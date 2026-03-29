@@ -115,16 +115,6 @@ const ParentEditProfileScreen = ({ navigation }) => {
                     />
                     <CustomText style={styles.helperText}>* 번호 변경은 고객센터에 문의해주세요.</CustomText>
                 </View>
-
-                <View style={styles.utilitySection}>
-                    <TouchableOpacity onPress={handleLogout}>
-                        <CustomText style={styles.logoutText}>로그아웃</CustomText>
-                    </TouchableOpacity>
-                    <View style={styles.divider} />
-                    <TouchableOpacity onPress={handleWithdraw}>
-                        <CustomText style={styles.withdrawalText}>회원 탈퇴</CustomText>
-                    </TouchableOpacity>
-                </View>
             </ScrollView>
 
             <View style={styles.footer}>
@@ -154,7 +144,7 @@ const styles = StyleSheet.create({
     disabledInput: { backgroundColor: '#E5E7EB', color: '#6B7280' },
     helperText: { fontSize: scale(12), color: '#9CA3AF', marginTop: verticalScale(-4), marginBottom: verticalScale(24) },
 
-    footer: { padding: scale(16), backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: '#F3F4F6' },
+    footer: { padding: scale(16), backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: '#F9FAFB' },
     saveButton: { backgroundColor: '#A3E635', paddingVertical: verticalScale(16), borderRadius: scale(16), alignItems: 'center' },
     saveButtonText: { fontSize: scale(16), fontWeight: 'bold', color: '#111' },
 

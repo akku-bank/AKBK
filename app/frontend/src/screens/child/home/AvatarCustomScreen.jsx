@@ -1,5 +1,5 @@
-﻿import React, { useContext, useState } from 'react';
-import { View, StyleSheet, TouchableOpacity, ScrollView, Image, Dimensions, Alert } from 'react-native';
+﻿import React, { useContext, useState, useRef } from 'react';
+import { View, StyleSheet, TouchableOpacity, ScrollView, Image, Dimensions, Alert, ImageBackground } from 'react-native';
 import { AvatarContext } from '../../../components/child/avatar/AvatarContext';
 import { AVATAR_ITEMS, AVATAR_ASSETS } from '../../../components/child/avatar/AvatarAssets';
 import ChildAvatar from '../../../components/child/avatar/ChildAvatar';
@@ -31,6 +31,14 @@ const AvatarCustomScreen = ({ navigation }) => {
     const [ownedItemIds, setOwnedItemIds] = useState({});
     const [frontendToUuidMap, setFrontendToUuidMap] = useState({});
     const [userLevel, setUserLevel] = useState(1);
+    const initialEquipState = React.useRef(null);
+
+    // 컴포넌트 마운트 시 최초 장착 상태를 백업하여 취소/뒤로가기 시 복원용으로 사용
+    React.useEffect(() => {
+        if (!initialEquipState.current) {
+            initialEquipState.current = { ...equipState };
+        }
+    }, []);
 
     // 백엔드 아이템 도감 페칭 및 레벨 조회
     React.useEffect(() => {
@@ -115,8 +123,7 @@ const AvatarCustomScreen = ({ navigation }) => {
             const isEquipCat = ['upper', 'lower', 'hat', 'shoe', 'back', 'outfit', 'pet', 'art1', 'art2'].includes(selectedCategory);
             const isBaseOrNone = item.id.includes('base') || item.id === 'none' || item.level === 1;
             const isLevelUnlocked = item.level <= userLevel && item.level !== 99;
-            const isForcedArt = selectedCategory === 'art1' || selectedCategory === 'art2'; // 강제 해금(테스트용)
-            return !isEquipCat || isBaseOrNone || ownedItemIds[item.id] || isLevelUnlocked || isForcedArt;
+            return !isEquipCat || isBaseOrNone || ownedItemIds[item.id] || isLevelUnlocked;
         });
 
         return (
@@ -126,31 +133,41 @@ const AvatarCustomScreen = ({ navigation }) => {
 
                     const isOwned = true; // 필터링을 거쳤으므로 전부 owned
 
+                    let imageSize = item.id.includes('akku') ? '75%' : '90%';
+                    if (selectedCategory === 'pet') {
+                        imageSize = item.id.includes('akku') ? '240%' : '180%';
+                    }
+
                     return (
                         <TouchableOpacity
                             key={item.id}
-                            style={[
-                                styles.itemCard,
-                                isSelected && styles.selectedItemCard
-                            ]}
                             onPress={() => {
                                 updateEquip(selectedCategory, item.id);
                             }}
                         >
-                            <View style={styles.itemImageContainer}>
-                                {Array.isArray(item.img) ? (
-                                    <View style={{ width: item.id.includes('akku') ? 45 : 60, height: item.id.includes('akku') ? 45 : 60, position: 'relative', marginTop: -20 }}>
-                                        {item.img.map((imgSrc, idx) => (
-                                            <Image key={idx} source={imgSrc} style={[{ width: '100%', height: '100%' }, { position: 'absolute' }]} resizeMode="contain" />
-                                        ))}
-                                    </View>
-                                ) : item.img ? (
-                                    <Image source={item.img} style={[styles.itemThumbnail, item.id.includes('akku') ? { width: 45, height: 45, marginTop: -20 } : { marginTop: -20 }]} resizeMode="contain" />
-                                ) : (
-                                    <CustomText style={styles.noneText}>X</CustomText>
-                                )}
-                            </View>
-                            <CustomText style={styles.itemName} numberOfLines={1}>{item.name}</CustomText>
+                            <ImageBackground
+                                source={require('../../../assets/box.png')}
+                                style={[
+                                    styles.itemCard,
+                                    isSelected && styles.selectedItemCard
+                                ]}
+                                resizeMode="stretch"
+                            >
+                                <View style={styles.itemImageContainer}>
+                                    {Array.isArray(item.img) ? (
+                                        <View style={{ width: imageSize, height: imageSize, position: 'relative' }}>
+                                            {item.img.map((imgSrc, idx) => (
+                                                <Image key={idx} source={imgSrc} style={[{ width: '100%', height: '100%' }, { position: 'absolute' }]} resizeMode="contain" />
+                                            ))}
+                                        </View>
+                                    ) : item.img ? (
+                                        <Image source={item.img} style={{ width: imageSize, height: imageSize }} resizeMode="contain" />
+                                    ) : (
+                                        <CustomText style={styles.noneText}>X</CustomText>
+                                    )}
+                                </View>
+                                <CustomText style={styles.itemName} numberOfLines={1}>{item.name}</CustomText>
+                            </ImageBackground>
                         </TouchableOpacity>
                     );
                 })}
@@ -162,7 +179,21 @@ const AvatarCustomScreen = ({ navigation }) => {
         <View style={styles.fullscreen}>
             {/* 상단 헤더 */}
             <View style={styles.header}>
-                <TouchableOpacity style={styles.backButton} onPress={async () => {
+                {/* 좌측: 순수 뒤로가기 (저장 안 된 변경사항 롤백) */}
+                <TouchableOpacity style={styles.backButton} onPress={() => {
+                    if (initialEquipState.current) {
+                        setEquipState(initialEquipState.current); // 원본 상태로 강제 복구
+                    }
+                    navigation.goBack();
+                }}>
+                    <CustomText style={styles.backButtonText}>←</CustomText>
+                </TouchableOpacity>
+
+                {/* 중앙 타이틀 */}
+                <CustomText style={styles.headerTitle}>아바타 꾸미기</CustomText>
+
+                {/* 우측: 순수 저장 버튼 */}
+                <TouchableOpacity style={styles.saveHeaderButton} onPress={async () => {
                     // 백엔드에 아바타 장착 옷차림 저장
                     try {
                         const equippedUUIDs = [];
@@ -173,17 +204,23 @@ const AvatarCustomScreen = ({ navigation }) => {
                         });
 
                         await api.patch('/avatars/me/equipment', { equippedItemIds: equippedUUIDs });
-                    } catch (e) { console.error('Avatar Save Error', e); }
-                    navigation.goBack();
+                        initialEquipState.current = { ...equipState }; // 저장이 성공하면 기준점을 현재 상태로 업데이트!
+                        Alert.alert('저장 완료', '저장되었습니다!');
+                    } catch (e) {
+                        console.error('Avatar Save Error', e);
+                        Alert.alert('저장 실패', '저장 중 오류가 발생했습니다.');
+                    }
                 }}>
-                    <CustomText style={styles.backButtonText}>저장 & 뒤로</CustomText>
+                    <CustomText style={styles.saveHeaderText}>저장</CustomText>
                 </TouchableOpacity>
-                <CustomText style={styles.headerTitle}>아바타 꾸미기</CustomText>
-                <View style={{ width: 60 }} />
             </View>
 
             {/* 아바타 영역 */}
-            <View style={styles.previewSection}>
+            <ImageBackground
+                source={require('../../../assets/closet.jpg')}
+                style={[styles.previewSection, { width: '100%' }]}
+                resizeMode="cover"
+            >
                 <View style={styles.avatarWrapper}>
                     <ChildAvatar equipState={equipState} size={280} />
 
@@ -199,14 +236,14 @@ const AvatarCustomScreen = ({ navigation }) => {
                         const treeItem = AVATAR_ITEMS.art2.find(a => a.id === equipState.art2);
                         if (!treeItem || !treeItem.img) return null;
                         return (
-                            <View style={{ position: 'absolute', left: scale(-70), bottom: verticalScale(-65) }} pointerEvents="none">
-                                <Image source={treeItem.img} style={{ width: scale(140), height: scale(190) }} resizeMode="contain" />
+                            <View style={{ position: 'absolute', right: scale(180), bottom: verticalScale(-35) }} pointerEvents="none">
+                                <Image source={treeItem.img} style={{ width: scale(80), height: scale(110) }} resizeMode="contain" />
                             </View>
                         );
                     })()}
 
                 </View>
-            </View>
+            </ImageBackground>
 
             {/* 인벤토리 영역 */}
             <View style={styles.inventorySection}>
@@ -242,7 +279,7 @@ const AvatarCustomScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
     fullscreen: {
         flex: 1,
-        backgroundColor: '#F3F4F6',
+        backgroundColor: '#ECFCCB',
     },
     header: {
         flexDirection: 'row',
@@ -254,25 +291,36 @@ const styles = StyleSheet.create({
         backgroundColor: '#FFFFFF',
     },
     backButton: {
-        paddingVertical: 5,
-        paddingHorizontal: 10,
+        width: 32,
+        height: 32,
+        justifyContent: 'center',
     },
     backButtonText: {
-        fontSize: 16,
+        fontSize: 22,
         fontWeight: 'bold',
-        color: '#4B5563',
+        color: '#111',
     },
     headerTitle: {
         fontSize: 18,
         fontWeight: 'bold',
         color: '#111',
     },
+    saveHeaderButton: {
+        width: 60,
+        paddingVertical: 6,
+        alignItems: 'flex-end',
+        justifyContent: 'center',
+    },
+    saveHeaderText: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#111827',
+    },
     previewSection: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
         position: 'relative',
-        backgroundColor: '#EDF2F7',
     },
     avatarWrapper: {
         position: 'relative',
@@ -320,9 +368,7 @@ const styles = StyleSheet.create({
     },
     inventorySection: {
         flex: 1,
-        backgroundColor: '#FFFFFF',
-        borderTopLeftRadius: 30,
-        borderTopRightRadius: 30,
+        backgroundColor: '#ECFCCB',
         shadowColor: '#000',
         shadowOffset: { width: 0, height: -4 },
         shadowOpacity: 0.05,
@@ -332,32 +378,33 @@ const styles = StyleSheet.create({
     tabScroll: {
         flexGrow: 0,
         height: 65,
+        backgroundColor: '#FFFFFF',
         borderBottomWidth: 1,
         borderBottomColor: '#E5E7EB',
     },
     tabContainer: {
         paddingHorizontal: 15,
         paddingTop: 12,
-        paddingBottom: 12,
+        paddingBottom: 0,
         alignItems: 'center',
     },
     tabButton: {
-        paddingVertical: 8,
+        paddingVertical: 14,
         paddingHorizontal: 16,
         marginHorizontal: 4,
-        borderRadius: 20,
-        backgroundColor: '#F3F4F6',
+        borderBottomWidth: 2,
+        borderBottomColor: 'transparent',
     },
     activeTabButton: {
-        backgroundColor: '#374151',
+        borderBottomColor: '#A3E635',
     },
     tabText: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: '#6B7280',
+        fontSize: 15,
+        fontWeight: 'bold',
+        color: '#9CA3AF',
     },
     activeTabText: {
-        color: '#FFFFFF',
+        color: '#111',
     },
     gridWrapper: {
         flex: 1,
@@ -370,35 +417,33 @@ const styles = StyleSheet.create({
     },
     itemCard: {
         width: (width - 60) / 3, // 3열 배치 (여백 고려)
-        height: 120,
-        backgroundColor: '#F9FAFB',
-        borderRadius: 16,
-        padding: 10,
+        aspectRatio: 1670 / 2187,
+        backgroundColor: 'transparent',
         alignItems: 'center',
-        justifyContent: 'center',
+        justifyContent: 'flex-start',
         marginHorizontal: 5,
         marginBottom: 15,
-        borderWidth: 2,
-        borderColor: 'transparent',
+        paddingTop: 15,
+        paddingBottom: 25,
     },
     selectedItemCard: {
-        borderColor: '#A3E635',
-        backgroundColor: '#F7FEE7',
+        // 픽셀 아트 모서리 규격 불일치로 인한 테두리 삭제 (투명도 조절 등 대체재 생략)
     },
     itemImageContainer: {
-        flex: 1,
         width: '100%',
+        flex: 1,
         alignItems: 'center',
         justifyContent: 'center',
-        marginBottom: 8,
+        position: 'relative',
+        marginBottom: 4,
     },
     itemThumbnail: {
-        width: 60,
-        height: 60,
+        width: '80%',
+        height: '80%',
     },
     noneText: {
         fontSize: 24,
-        color: '#9CA3AF',
+        color: '#111827',
         fontWeight: 'bold',
     },
     itemName: {
@@ -415,7 +460,7 @@ const styles = StyleSheet.create({
     genderButton: {
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: '#F3F4F6',
+        backgroundColor: '#FFFFFF',
         width: '40%',
         aspectRatio: 1,
         borderRadius: 24,

@@ -13,8 +13,8 @@ const TABS = {
 
 const STATUS_META = {
     PENDING: { label: '\uC2B9\uC778 \uB300\uAE30', type: 'pending' },
-    APPROVED: { label: '\uC2B9\uC778 \uC644\uB8CC', type: 'default' },
-    IN_PROGRESS: { label: '\uC9C4\uD589 \uC911', type: 'default' },
+    APPROVED: { label: '승인 완료', type: 'approved' },
+    IN_PROGRESS: { label: '진행 중', type: 'approved' },
     SUCCESS: { label: '\uC131\uACF5', type: 'success' },
     FAIL: { label: '\uC2E4\uD328', type: 'fail' },
     REJECTED: { label: '\uBC18\uB824', type: 'fail' },
@@ -117,6 +117,7 @@ const ParentChallengeManageScreen = ({ navigation, route }) => {
                     meta.type === 'pending' && styles.statusBadgePending,
                     meta.type === 'fail' && styles.statusBadgeFail,
                     meta.type === 'success' && styles.statusBadgeSuccess,
+                    meta.type === 'approved' && styles.statusBadgeApproved,
                 ]}
             >
                 <CustomText
@@ -125,6 +126,7 @@ const ParentChallengeManageScreen = ({ navigation, route }) => {
                         meta.type === 'pending' && styles.statusTextPending,
                         meta.type === 'fail' && styles.statusTextFail,
                         meta.type === 'success' && styles.statusTextSuccess,
+                        meta.type === 'approved' && styles.statusTextApproved,
                     ]}
                 >
                     {meta.label}
@@ -345,14 +347,14 @@ const ParentChallengeManageScreen = ({ navigation, route }) => {
 };
 
 const styles = StyleSheet.create({
-    safeArea: { flex: 1, backgroundColor: '#F3F4F6' },
+    safeArea: { flex: 1, backgroundColor: '#F9FAFB' },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
         paddingHorizontal: scale(16),
         paddingVertical: verticalScale(16),
-        backgroundColor: '#F3F4F6',
+        backgroundColor: '#F9FAFB',
     },
     headerTitle: { fontSize: scale(18), fontWeight: 'bold', color: '#111827' },
     container: { flexGrow: 1, paddingHorizontal: scale(16), paddingTop: verticalScale(20), paddingBottom: verticalScale(28) },
@@ -393,6 +395,7 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color: '#4B5563',
         marginBottom: verticalScale(16),
+        marginLeft: scale(4),
     },
 
     card: {
@@ -433,6 +436,8 @@ const styles = StyleSheet.create({
     statusTextSuccess: { color: '#15803D' },
     statusBadgeFail: { backgroundColor: '#FEE2E2' },
     statusTextFail: { color: '#B91C1C' },
+    statusBadgeApproved: { backgroundColor: '#A3E635' },
+    statusTextApproved: { color: '#111827' },
 
     infoSection: { marginTop: verticalScale(2) },
     infoRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: verticalScale(5) },

@@ -1,5 +1,5 @@
 ﻿import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Image } from 'react-native';
+import { View, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Image, ImageBackground, Dimensions } from 'react-native';
 import { scale, verticalScale } from 'react-native-size-matters';
 import CustomText from '../../../components/common/CustomText';
 import api from '../../../api/axios';
@@ -84,8 +84,8 @@ const AvatarDictionaryScreen = ({ navigation }) => {
                 (AVATAR_ITEMS.shoe || []).forEach(i => { if (i.id !== 'none') grouped['신발'].push(createItemObj(i)); });
                 (AVATAR_ITEMS.back || []).forEach(i => { if (i.id !== 'none') grouped['등'].push(createItemObj(i)); });
                 (AVATAR_ITEMS.pet || []).forEach(i => { if (i.id !== 'none') grouped['펫'].push(createItemObj(i)); });
-                (AVATAR_ITEMS.art1 || []).forEach(i => { if (i.id !== 'none') grouped['미술품'].push(createItemObj(i, true)); }); // 강제 해금
-                (AVATAR_ITEMS.art2 || []).forEach(i => { if (i.id !== 'none') grouped['나무'].push(createItemObj(i, true)); }); // 강제 해금
+                (AVATAR_ITEMS.art1 || []).forEach(i => { if (i.id !== 'none') grouped['미술품'].push(createItemObj(i)); });
+                (AVATAR_ITEMS.art2 || []).forEach(i => { if (i.id !== 'none') grouped['나무'].push(createItemObj(i)); });
 
                 setInventoryItems(grouped);
             } catch (e) { console.error('Inventory Fetch Error:', e); }
@@ -126,15 +126,15 @@ const AvatarDictionaryScreen = ({ navigation }) => {
                         const isLocked = item.isLevelLocked;
 
                         return (
-                            <View key={item.id} style={[styles.itemCard, isLocked && styles.lockedCard]}>
+                            <ImageBackground key={item.id} source={require('../../../assets/box.png')} style={[styles.itemCard, isLocked && styles.lockedCard]} resizeMode="stretch">
                                 <View style={styles.imageBox}>
                                     {Array.isArray(item.image) ? (
-                                        <View style={{ width: item.id.includes('akku') ? '100%' : '130%', height: item.id.includes('akku') ? '100%' : '130%', position: 'relative', marginTop: -20 }}>
+                                        <View style={{ width: item.id.includes('akku') ? '80%' : '95%', height: item.id.includes('akku') ? '80%' : '95%', position: 'relative' }}>
                                             {item.image.map((imgSrc, idx) => (
                                                 <Image
                                                     key={idx}
                                                     source={imgSrc}
-                                                    style={[{ width: '100%', height: '100%', position: 'absolute' }, isLocked && styles.lockedImage]}
+                                                    style={[{ width: '100%', height: '100%', position: 'absolute' }, selectedCategory === '펫' && { transform: [{ scale: 1.8 }] }, isLocked && styles.lockedImage]}
                                                     resizeMode="contain"
                                                 />
                                             ))}
@@ -142,7 +142,7 @@ const AvatarDictionaryScreen = ({ navigation }) => {
                                     ) : (
                                         <Image
                                             source={item.image}
-                                            style={[styles.itemImage, item.id.includes('akku') ? { width: '70%', height: '70%', marginTop: -20 } : { marginTop: -20 }, isLocked && styles.lockedImage]}
+                                            style={[styles.itemImage, item.id.includes('akku') ? { width: '80%', height: '80%' } : { width: '95%', height: '95%' }, selectedCategory === '펫' && { transform: [{ scale: 1.8 }] }, isLocked && styles.lockedImage]}
                                             resizeMode="contain"
                                         />
                                     )}
@@ -163,7 +163,7 @@ const AvatarDictionaryScreen = ({ navigation }) => {
                                         <CustomText style={styles.lockedButtonText}>잠김</CustomText>
                                     </View>
                                 )}
-                            </View>
+                            </ImageBackground>
                         );
                     })}
                 </View>
@@ -172,8 +172,10 @@ const AvatarDictionaryScreen = ({ navigation }) => {
     );
 };
 
+const { width } = Dimensions.get('window');
+
 const styles = StyleSheet.create({
-    safeArea: { flex: 1, backgroundColor: '#F3F4F6' },
+    safeArea: { flex: 1, backgroundColor: '#ECFCCB' },
     header: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
         paddingHorizontal: scale(16), paddingVertical: verticalScale(16), backgroundColor: '#FFFFFF'
@@ -181,36 +183,44 @@ const styles = StyleSheet.create({
     backButton: { width: scale(32), height: scale(32), justifyContent: 'center' },
     backButtonText: { fontSize: scale(22), fontWeight: 'bold', color: '#111' },
     headerTitle: { fontSize: scale(18), fontWeight: 'bold', color: '#111' },
-    levelBox: { backgroundColor: '#F3E8FF', paddingHorizontal: scale(12), paddingVertical: verticalScale(6), borderRadius: scale(12) },
-    levelText: { fontSize: scale(14), fontWeight: 'bold', color: '#7E22CE' },
+    levelBox: { backgroundColor: '#ECFCCB', paddingHorizontal: scale(12), paddingVertical: verticalScale(6), borderRadius: scale(12) },
+    levelText: { fontSize: scale(14), fontWeight: 'bold', color: '#4D7C0F' },
 
-    categoryRowWrapper: { backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
-    categoryRow: { flexDirection: 'row', paddingHorizontal: scale(16), paddingVertical: verticalScale(12) },
-    categoryBtn: { paddingHorizontal: scale(16), paddingVertical: verticalScale(8), marginRight: scale(8), borderRadius: scale(20), backgroundColor: '#F9FAFB' },
-    categoryBtnActive: { backgroundColor: '#A3E635' },
-    categoryText: { fontSize: scale(14), fontWeight: 'bold', color: '#6B7280' },
+    categoryRowWrapper: { backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#E5E7EB' },
+    categoryRow: { flexDirection: 'row', paddingHorizontal: scale(16) },
+    categoryBtn: { paddingHorizontal: scale(16), paddingVertical: verticalScale(14), marginRight: scale(8), borderBottomWidth: 2, borderBottomColor: 'transparent' },
+    categoryBtnActive: { borderBottomColor: '#A3E635' },
+    categoryText: { fontSize: scale(15), fontWeight: 'bold', color: '#9CA3AF' },
     categoryTextActive: { color: '#111' },
 
     gridContainer: { paddingHorizontal: scale(16), paddingTop: verticalScale(16), paddingBottom: verticalScale(40) },
     grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
     itemCard: {
-        width: '48%', backgroundColor: '#FFFFFF', borderRadius: scale(16), padding: scale(12), marginBottom: verticalScale(16),
-        shadowColor: '#000', shadowOffset: { width: 0, height: verticalScale(2) }, shadowOpacity: 0.05, shadowRadius: scale(4), elevation: 2
+        width: (width - scale(32)) * 0.48,
+        aspectRatio: 1670 / 2187,
+        backgroundColor: 'transparent',
+        paddingLeft: scale(12),
+        paddingRight: scale(12),
+        paddingTop: scale(20),
+        paddingBottom: scale(20),
+        marginBottom: verticalScale(16),
+        alignItems: 'center',
+        justifyContent: 'flex-start',
     },
-    lockedCard: { backgroundColor: '#F9FAFB', elevation: 0 },
-    imageBox: { height: scale(100), backgroundColor: '#F9FAFB', borderRadius: scale(12), justifyContent: 'center', alignItems: 'center', marginBottom: verticalScale(8), position: 'relative' },
+    lockedCard: { opacity: 0.6 },
+    imageBox: { width: '100%', flex: 1, backgroundColor: 'transparent', justifyContent: 'center', alignItems: 'center', position: 'relative' },
     itemImage: { width: '80%', height: '80%' },
     lockedImage: { opacity: 0.3 },
     lockOverlay: { position: 'absolute', justifyContent: 'center', alignItems: 'center' },
     lockIcon: { fontSize: scale(24) },
     itemName: { fontSize: scale(14), fontWeight: 'bold', color: '#111', marginBottom: verticalScale(8), textAlign: 'center' },
     lockedText: { color: '#9CA3AF' },
-    statusButton: { paddingVertical: verticalScale(8), borderRadius: scale(8), alignItems: 'center' },
-    ownedButton: { backgroundColor: '#F3F4F6' },
+    statusButton: { paddingVertical: verticalScale(4), alignItems: 'center' },
+    ownedButton: { backgroundColor: 'transparent' },
     ownedButtonText: { fontSize: scale(14), fontWeight: 'bold', color: '#4B5563' },
-    gachaButton: { backgroundColor: '#FEF3C7' },
+    gachaButton: { backgroundColor: 'transparent' },
     gachaButtonText: { fontSize: scale(14), fontWeight: 'bold', color: '#D97706' },
-    lockedButton: { backgroundColor: '#F3F4F6' },
+    lockedButton: { backgroundColor: 'transparent' },
     lockedButtonText: { fontSize: scale(14), fontWeight: 'bold', color: '#9CA3AF' }
 });
 

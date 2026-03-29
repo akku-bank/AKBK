@@ -209,7 +209,7 @@ const TransactionCalendarScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
-        backgroundColor: '#F3F4F6',
+        backgroundColor: '#ECFCCB',
     },
     header: {
         flexDirection: 'row',
@@ -217,7 +217,7 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         paddingHorizontal: scale(16),
         paddingVertical: verticalScale(16),
-        backgroundColor: '#F3F4F6',
+        backgroundColor: '#FFFFFF',
     },
     backButton: {
         width: scale(32),
@@ -238,12 +238,15 @@ const styles = StyleSheet.create({
         flexGrow: 1,
         paddingHorizontal: scale(16),
         paddingBottom: verticalScale(40),
+        paddingTop: verticalScale(16),
     },
     calendarCard: {
         backgroundColor: '#FFFFFF',
         borderRadius: scale(20),
         paddingHorizontal: scale(16),
-        paddingVertical: verticalScale(20),
+        paddingTop: verticalScale(20),
+        paddingBottom: verticalScale(8),
+        marginTop: verticalScale(8),
         marginBottom: verticalScale(20),
         shadowColor: '#000',
         shadowOffset: { width: 0, height: verticalScale(2) },
@@ -356,13 +359,13 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingVertical: verticalScale(14),
         borderBottomWidth: 1,
-        borderBottomColor: '#F3F4F6',
+        borderBottomColor: '#F9FAFB',
     },
     transactionIconBox: {
         width: scale(40),
         height: scale(40),
         borderRadius: scale(20),
-        backgroundColor: '#F3F4F6',
+        backgroundColor: '#F9FAFB',
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: scale(12),

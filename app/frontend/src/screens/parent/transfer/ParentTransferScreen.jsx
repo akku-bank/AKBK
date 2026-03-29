@@ -158,11 +158,11 @@ const styles = StyleSheet.create({
     currencyText: { fontSize: scale(24), fontWeight: 'bold', color: '#111', marginLeft: scale(8) },
 
     quickAmountRow: { flexDirection: 'row', gap: scale(8) },
-    quickAmountBtn: { backgroundColor: '#F3F4F6', paddingHorizontal: scale(16), paddingVertical: verticalScale(10), borderRadius: scale(20) },
+    quickAmountBtn: { backgroundColor: '#F9FAFB', paddingHorizontal: scale(16), paddingVertical: verticalScale(10), borderRadius: scale(20) },
     quickAmountText: { fontSize: scale(14), fontWeight: 'bold', color: '#4B5563' },
 
     pinInput: {
-        backgroundColor: '#F3F4F6', borderRadius: scale(12), paddingHorizontal: scale(16), paddingVertical: verticalScale(14),
+        backgroundColor: '#F9FAFB', borderRadius: scale(12), paddingHorizontal: scale(16), paddingVertical: verticalScale(14),
         fontSize: scale(18), color: '#111', marginTop: verticalScale(12), marginBottom: verticalScale(32), fontWeight: 'bold', letterSpacing: 8
     },
 

@@ -151,7 +151,7 @@ const FamilyQrGeneratorScreen = ({ navigation }) => {
                         />
 
                         <View style={styles.modalBtnRow}>
-                            <TouchableOpacity style={[styles.modalBtn, { backgroundColor: '#F3F4F6' }]} onPress={() => setModalVisible(false)}>
+                            <TouchableOpacity style={[styles.modalBtn, { backgroundColor: '#F9FAFB' }]} onPress={() => setModalVisible(false)}>
                                 <CustomText style={{ color: '#4B5563', fontWeight: 'bold' }}>취소</CustomText>
                             </TouchableOpacity>
                             <TouchableOpacity style={[styles.modalBtn, { backgroundColor: '#3B82F6' }]} onPress={handleAddMember}>
@@ -185,7 +185,7 @@ const styles = StyleSheet.create({
     qrLoadingText: { fontSize: scale(14), color: '#6B7280', textAlign: 'center', lineHeight: 20 },
     timerText: { fontSize: scale(16), fontWeight: 'bold', color: '#EF4444' },
 
-    refreshBtn: { marginTop: verticalScale(32), padding: scale(12), borderRadius: scale(12), backgroundColor: '#F3F4F6' },
+    refreshBtn: { marginTop: verticalScale(32), padding: scale(12), borderRadius: scale(12), backgroundColor: '#F9FAFB' },
     refreshBtnText: { fontSize: scale(14), fontWeight: 'bold', color: '#4B5563' },
 
     modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },

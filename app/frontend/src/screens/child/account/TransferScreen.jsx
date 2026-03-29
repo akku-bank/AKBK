@@ -230,6 +230,11 @@ const TransferScreen = ({ navigation }) => {
                             </View>
                         </View>
                     )}
+
+                    {/* 하단 버튼을 ScrollView 안으로 이동 */}
+                    <TouchableOpacity style={[styles.nextButton, { marginTop: 20 }]} onPress={handleNextStep}>
+                        <CustomText style={styles.nextButtonText}>다음</CustomText>
+                    </TouchableOpacity>
                 </ScrollView>
             )}
 
@@ -244,15 +249,6 @@ const TransferScreen = ({ navigation }) => {
                         </View>
                     </View>
                     {renderKeypad()}
-                </View>
-            )}
-
-            {/* 하단 버튼 */}
-            {step !== 'PIN' && (
-                <View style={styles.footer}>
-                    <TouchableOpacity style={styles.nextButton} onPress={handleNextStep}>
-                        <CustomText style={styles.nextButtonText}>다음</CustomText>
-                    </TouchableOpacity>
                 </View>
             )}
 
@@ -317,13 +313,13 @@ const TransferScreen = ({ navigation }) => {
 
 const styles = StyleSheet.create({
     safeArea: { flex: 1, backgroundColor: '#FFFFFF' },
-    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, height: 60 },
+    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, height: 60, backgroundColor: '#FFFFFF' },
     backButton: { width: 40, height: 40, justifyContent: 'center' },
     backButtonText: { fontSize: 24, color: '#111' },
     headerTitle: { fontSize: 18, fontWeight: 'bold' },
 
-    container: { flexGrow: 1, paddingHorizontal: 24, paddingTop: 20 },
-    stepContent: { flex: 1 },
+    container: { flexGrow: 1, backgroundColor: '#ECFCCB', paddingHorizontal: 24, paddingTop: 20, paddingBottom: 40 },
+    stepContent: { backgroundColor: '#FFFFFF', borderRadius: 24, padding: 24, marginBottom: 0 },
     stepTitle: { fontSize: 26, fontWeight: '900', color: '#111', lineHeight: 34, marginBottom: 30 },
 
     // Step 1
@@ -335,7 +331,7 @@ const styles = StyleSheet.create({
     nameInput: { backgroundColor: '#F9FAFB', padding: 16, borderRadius: 16, fontSize: 16, color: '#111', borderWidth: 1, borderColor: '#E5E7EB' },
 
     // Step 2
-    recipientBadge: { backgroundColor: '#F3F4F6', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, fontSize: 13, color: '#6B7280', alignSelf: 'flex-start', marginBottom: 12 },
+    recipientBadge: { backgroundColor: '#F9FAFB', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, fontSize: 13, color: '#6B7280', alignSelf: 'flex-start', marginBottom: 12 },
     amountContainer: { flexDirection: 'row', alignItems: 'center', borderBottomWidth: 3, borderBottomColor: '#A3E635', paddingBottom: 10, marginBottom: 20 },
     amountInput: { flex: 1, fontSize: 40, fontWeight: '900', color: '#111' },
     currencyText: { fontSize: 24, fontWeight: 'bold', color: '#111' },
@@ -344,7 +340,7 @@ const styles = StyleSheet.create({
     balanceValue: { fontSize: 14, fontWeight: 'bold', color: '#6B7280' },
 
     // PIN Step
-    pinStep: { flex: 1, justifyContent: 'space-between', paddingBottom: 40 },
+    pinStep: { flex: 1, backgroundColor: '#FFFFFF', justifyContent: 'space-between', paddingBottom: 40 },
     pinHeader: { alignItems: 'center', marginTop: 80 },
     pinTitle: { fontSize: 20, fontWeight: 'bold', color: '#111', marginBottom: 30 },
     pinDots: { flexDirection: 'row', gap: 15 },
@@ -354,14 +350,14 @@ const styles = StyleSheet.create({
     key: { width: '33.33%', height: 80, justifyContent: 'center', alignItems: 'center' },
     keyText: { fontSize: 28, fontWeight: '600', color: '#111' },
 
-    footer: { padding: 20, paddingBottom: Platform.OS === 'ios' ? 40 : 20 },
+    footer: { padding: 20 },
     nextButton: { backgroundColor: '#A3E635', height: 60, borderRadius: 20, justifyContent: 'center', alignItems: 'center', elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8 },
     nextButtonText: { fontSize: 18, fontWeight: 'bold', color: '#FFFFFF' },
 
     // Modals
     modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
     bankModal: { backgroundColor: '#FFFFFF', borderTopLeftRadius: 32, borderTopRightRadius: 32, paddingBottom: 40, height: height * 0.6 },
-    modalHeader: { flexDirection: 'row', justifyContent: 'space-between', padding: 24, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
+    modalHeader: { flexDirection: 'row', justifyContent: 'space-between', padding: 24, borderBottomWidth: 1, borderBottomColor: '#F9FAFB' },
     modalTitle: { fontSize: 18, fontWeight: 'bold' },
     modalClose: { fontSize: 20, color: '#9CA3AF' },
     bankGrid: { flexDirection: 'row', flexWrap: 'wrap', padding: 12 },
@@ -374,7 +370,7 @@ const styles = StyleSheet.create({
     confirmText: { fontSize: 22, color: '#4B5563', textAlign: 'center', lineHeight: 32, marginBottom: 32 },
     confirmButtons: { flexDirection: 'row', gap: 12 },
     confirmBtn: { flex: 1, height: 56, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
-    cancelBtn: { backgroundColor: '#F3F4F6' },
+    cancelBtn: { backgroundColor: '#F9FAFB' },
     cancelBtnText: { color: '#6B7280', fontSize: 16, fontWeight: 'bold' },
     okBtn: { backgroundColor: '#111' },
     okBtnText: { color: '#FFFFFF', fontSize: 16, fontWeight: 'bold' }

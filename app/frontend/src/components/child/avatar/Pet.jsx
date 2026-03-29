@@ -1,9 +1,9 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Animated, StyleSheet } from 'react-native';
+import { View, Animated, StyleSheet, TouchableOpacity } from 'react-native';
 import { scale } from 'react-native-size-matters';
 import { AVATAR_ASSETS } from './AvatarAssets';
 
-const Pet = ({ petType = 'shiba', size = 100 }) => {
+const Pet = ({ petType = 'shiba', size = 100, hasNotification = false, onNotificationPress = null }) => {
     // 0: (가만히)
     // 1: (머리, 몸통 1px 아래로)
     // 2: (머리만 1px 더 아래로)
@@ -45,6 +45,14 @@ const Pet = ({ petType = 'shiba', size = 100 }) => {
     const assets = AVATAR_ASSETS.pet[petType];
     if (!assets) return null;
 
+    // 펫 종류별 알림 아이콘 하드코딩 위치
+    const notificationOffsets = {
+        shiba: { top: '31%', left: '39%' }, // 시바견
+        cat: { top: '31%', left: '38%' },   // 고양이
+        akku: { top: '26%', left: '42%' },  // 아꾸
+    };
+    const currentOffset = notificationOffsets[petType] || notificationOffsets.shiba;
+
     return (
         <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'flex-end' }}>
             {/* 1. 다리 (바닥에 고정, 아꾸는 다리가 없음) */}
@@ -74,6 +82,18 @@ const Pet = ({ petType = 'shiba', size = 100 }) => {
                         source={assets.base}
                         style={{ width: '100%', height: '100%', resizeMode: 'contain' }}
                     />
+                    {/* 알림 아이콘: 머리(base)와 같은 애니메이션 컨테이너 안에 있어서 완벽하게 똑같이 흔들림 */}
+                    {hasNotification && (
+                        <TouchableOpacity
+                            style={[styles.notificationBubble, currentOffset]}
+                            onPress={onNotificationPress}
+                        >
+                            <Animated.Image
+                                source={require('../../../assets/alert.png')}
+                                style={{ width: scale(45), height: scale(45), resizeMode: 'contain' }}
+                            />
+                        </TouchableOpacity>
+                    )}
                 </Animated.View>
             )}
         </View>
@@ -84,6 +104,10 @@ const styles = StyleSheet.create({
     absoluteImage: {
         position: 'absolute',
         bottom: 0,
+    },
+    notificationBubble: {
+        position: 'absolute',
+        zIndex: 100,
     }
 });
 

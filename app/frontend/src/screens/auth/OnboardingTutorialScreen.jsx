@@ -150,7 +150,7 @@ const styles = StyleSheet.create({
     },
     container: {
         flex: 1,
-        paddingTop: Platform.OS === 'ios' ? RFValue(10) : RFValue(20),
+        paddingTop: Platform.OS === 'ios' ? 0 : 0,
         paddingBottom: Platform.OS === 'web' ? RFValue(120) : (Platform.OS === 'ios' ? RFValue(60) : RFValue(30)),
     },
     headerRow: {
@@ -159,6 +159,7 @@ const styles = StyleSheet.create({
         justifyContent: 'flex-end',
         alignItems: 'center',
         paddingHorizontal: RFValue(24),
+        marginTop: RFValue(0),
     },
     skipButton: {
         paddingVertical: RFValue(8),
@@ -228,8 +229,7 @@ const styles = StyleSheet.create({
         borderRadius: RFValue(4),
     },
     activeDot: {
-        backgroundColor: '#111',
-        width: RFValue(20),
+        backgroundColor: '#A3E635',
     },
     inactiveDot: {
         backgroundColor: '#E5E7EB',

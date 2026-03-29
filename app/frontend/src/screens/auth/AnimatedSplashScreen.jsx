@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, StyleSheet, Image, Dimensions } from 'react-native';
+import { View, StyleSheet, Image, Dimensions, TouchableOpacity } from 'react-native';
 
 const { width } = Dimensions.get('window');
 
@@ -7,20 +7,24 @@ const AnimatedSplashScreen = ({ navigation }) => {
     useEffect(() => {
         // 하얀 화면에 로고만 딱 2초 띄워두고 다음으로 넘어갑니다.
         const timer = setTimeout(() => {
-            navigation.replace('OnboardingTutorial');
+            console.log('Splash timer triggered: Navigating to OnboardingTutorial');
+            navigation.navigate('OnboardingTutorial');
         }, 3000);
 
         return () => clearTimeout(timer);
-    }, [navigation]);
+    }, []); // navigation 의존성 제거 (무한 리렌더링 방지)
 
     return (
-        <View style={styles.container}>
+        <TouchableOpacity style={styles.container} activeOpacity={1} onPress={() => {
+            console.log('Splash screen pressed: Navigating to OnboardingTutorial');
+            navigation.navigate('OnboardingTutorial');
+        }}>
             <Image
-                source={require('../../assets/croco/logo.png')}
+                source={require('../../assets/intro.png')}
                 style={styles.logo}
-                resizeMode="contain"
+                resizeMode="cover"
             />
-        </View>
+        </TouchableOpacity>
     );
 };
 
@@ -32,8 +36,8 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     logo: {
-        width: width * 0.45, // 화면 45% 크기로 대폭 축소
-        height: width * 0.45,
+        width: '100%',
+        height: '100%',
     }
 });
 

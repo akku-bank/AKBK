@@ -1,8 +1,9 @@
-import React, { useCallback, useRef, useState } from 'react';
+﻿import React, { useCallback, useRef, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
     Animated,
+    Image,
     KeyboardAvoidingView,
     Platform,
     SafeAreaView,
@@ -136,6 +137,25 @@ const SafeBoxScreen = ({ navigation }) => {
         activeCharity && remainJelling >= activeCharity.targetAmount
     );
 
+    // ⚡️ force metro cache refresh
+    let hubImage;
+    if (remainJelling <= 100) {
+        hubImage = require('../../../assets/hub/hub1.png');
+    } else if (remainJelling < 500) {
+        hubImage = require('../../../assets/hub/hub2.png');
+    } else {
+        hubImage = require('../../../assets/hub/hub3.png');
+    }
+
+    const formatDescription = (text) => {
+        if (!text) return '';
+        const words = text.split(' ');
+        if (words.length > 4) {
+            return words.slice(0, 4).join(' ') + '\n' + words.slice(4).join(' ');
+        }
+        return text;
+    };
+
     return (
         <SafeAreaView style={styles.safeArea}>
             <View style={styles.header}>
@@ -148,17 +168,25 @@ const SafeBoxScreen = ({ navigation }) => {
             >
                 <ScrollView contentContainerStyle={styles.container}>
                     <View style={styles.balanceHeader}>
-                        <CustomText style={styles.balanceLabel}>내 젤링 주머니</CustomText>
-                        <CustomText style={styles.balanceValue}>
-                            {remainJelling.toLocaleString()} 💎
-                        </CustomText>
+                        <View style={{ flexDirection: 'row', alignItems: 'baseline', marginBottom: RFValue(-5) }}>
+                            <CustomText style={styles.balanceValue}>
+                                {remainJelling.toLocaleString()}
+                            </CustomText>
+                            <CustomText style={{ fontSize: RFValue(18), fontWeight: 'bold', color: '#9CA3AF', marginLeft: RFValue(6) }}>
+                                젤링
+                            </CustomText>
+                        </View>
+                        <Image
+                            source={hubImage}
+                            style={{ width: '100%', height: RFValue(200), transform: [{ scale: 1.8 }], marginTop: RFValue(0) }}
+                            resizeMode="contain"
+                        />
                     </View>
 
                     {!activeCharity ? (
                         <View style={styles.charitySelectionBox}>
-                            <CustomText style={styles.sectionTitle}>어디에 기부해 볼까요?</CustomText>
-                            <CustomText style={styles.selectionDescription}>
-                                원하는 기부처를 먼저 선택해주세요.
+                            <CustomText style={[styles.sectionTitle, { textAlign: 'center' }]}>원하는 기부처를 선택해보세요!</CustomText>
+                            <CustomText style={[styles.selectionDescription, { textAlign: 'center' }]}>
                             </CustomText>
 
                             {charities.map((charity) => (
@@ -167,15 +195,12 @@ const SafeBoxScreen = ({ navigation }) => {
                                     style={styles.charityItemCard}
                                     onPress={() => handleSelectCharity(charity)}
                                 >
-                                    <CustomText style={styles.targetEmoji}>
-                                        {CHARITY_EMOJI_MAP[charity.name] || '🎁'}
-                                    </CustomText>
                                     <View style={styles.targetInfo}>
                                         <CustomText style={styles.targetTitle}>
                                             {charity.name}
                                         </CustomText>
                                         <CustomText style={styles.targetDesc}>
-                                            {charity.description}
+                                            {formatDescription(charity.description)}
                                         </CustomText>
                                     </View>
                                 </TouchableOpacity>
@@ -183,50 +208,42 @@ const SafeBoxScreen = ({ navigation }) => {
                         </View>
                     ) : (
                         <View style={styles.donationTargetBox}>
-                            <CustomText style={styles.sectionTitle}>현재 기부 목표</CustomText>
+                            <CustomText style={[styles.sectionTitle, { textAlign: 'center' }]}>현재 기부 목표</CustomText>
 
-                            <View style={styles.activeTargetCard}>
-                                <CustomText style={styles.targetEmoji}>
-                                    {CHARITY_EMOJI_MAP[activeCharity.name] || '🎁'}
-                                </CustomText>
-                                <View style={styles.targetInfo}>
-                                    <CustomText style={styles.targetTitle}>
+                            <View style={[styles.activeTargetCard, { flexDirection: 'column', marginBottom: RFValue(10), paddingBottom: RFValue(10) }]}>
+                                <View style={[styles.targetInfo, { flex: 0, width: '100%', marginBottom: RFValue(0) }]}>
+                                    <CustomText style={[styles.targetTitle, { textAlign: 'center' }]}>
                                         {activeCharity.name}
                                     </CustomText>
-                                    <CustomText style={styles.targetDesc}>
-                                        {CHARITY_DESCRIPTION_MAP[activeCharity.name] ||
-                                            '기부를 진행해보세요.'}
+                                    <CustomText style={[styles.targetDesc, { textAlign: 'center' }]}>
+                                        {formatDescription(CHARITY_DESCRIPTION_MAP[activeCharity.name] || activeCharity.description || '기부를 진행해보세요!')}
                                     </CustomText>
                                 </View>
-                            </View>
 
-                            <View style={styles.gaugeContainer}>
-                                <View style={styles.gaugeTexts}>
-                                    <CustomText style={styles.gaugeCurrentText}>
-                                        {remainJelling} 💎
-                                    </CustomText>
-                                    <CustomText style={styles.gaugeGoalText}>
-                                        / {activeCharity.targetAmount} 💎
-                                    </CustomText>
-                                </View>
-                                <View style={styles.progressBarBg}>
-                                    <Animated.View
-                                        style={[
-                                            styles.progressBarFill,
-                                            {
-                                                width: progressAnim.interpolate({
-                                                    inputRange: [0, 1],
-                                                    outputRange: ['0%', '100%'],
-                                                }),
-                                            },
-                                        ]}
-                                    />
+                                <View style={[styles.gaugeContainer, { alignItems: 'center', width: '100%', marginTop: 0, marginBottom: 0 }]}>
+                                    <View style={{ width: RFValue(200), height: RFValue(40), justifyContent: 'center' }}>
+                                        <Image source={require('../../../assets/gauge.png')} style={{ position: 'absolute', width: '100%', height: '100%' }} resizeMode="contain" />
+                                        <View style={{
+                                            position: 'absolute',
+                                            left: '6%',
+                                            top: '37%',
+                                            height: '25%',
+                                            width: `${Math.min((remainJelling / activeCharity.targetAmount) * 100, 100)}%`,
+                                            maxWidth: '90%',
+                                            backgroundColor: '#7DF39D',
+                                            zIndex: 1
+                                        }} />
+                                        <CustomText style={{ position: 'absolute', width: '100%', textAlign: 'center', fontSize: RFValue(14), fontWeight: '900', color: '#111', zIndex: 2 }}>
+                                            {remainJelling} / {activeCharity.targetAmount}
+                                        </CustomText>
+                                    </View>
                                 </View>
                             </View>
 
                             <TouchableOpacity
                                 style={[
                                     styles.gachaButton,
+                                    { backgroundColor: '#A3E635' },
                                     !canClaimReward && styles.gachaButtonDisabled,
                                 ]}
                                 onPress={canClaimReward ? handleReward : undefined}
@@ -239,7 +256,7 @@ const SafeBoxScreen = ({ navigation }) => {
                                         !canClaimReward && styles.gachaButtonTextDisabled,
                                     ]}
                                 >
-                                    보상 획득하기 🎁
+                                    가챠!
                                 </CustomText>
                             </TouchableOpacity>
                         </View>
@@ -251,18 +268,19 @@ const SafeBoxScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-    safeArea: { flex: 1, backgroundColor: '#F3F4F6' },
+    safeArea: { flex: 1, backgroundColor: '#ECFCCB' },
     flex: { flex: 1 },
     loaderContainer: { justifyContent: 'center', alignItems: 'center' },
     header: { padding: RFValue(16), backgroundColor: '#FFF', alignItems: 'center' },
     headerTitle: { fontSize: RFValue(18), fontWeight: 'bold', color: '#111' },
-    container: { padding: RFValue(20) },
+    container: { padding: RFValue(14) },
     balanceHeader: {
-        backgroundColor: '#FFF',
+        backgroundColor: 'transparent',
         borderRadius: RFValue(16),
-        padding: RFValue(24),
+        padding: RFValue(16),
         alignItems: 'center',
-        marginBottom: RFValue(20),
+        paddingBottom: 0,
+        marginBottom: RFValue(12),
     },
     balanceLabel: {
         fontSize: RFValue(14),
@@ -272,7 +290,7 @@ const styles = StyleSheet.create({
     balanceValue: {
         fontSize: RFValue(28),
         fontWeight: 'bold',
-        color: '#D97706',
+        color: '#111111',
     },
     charitySelectionBox: {
         backgroundColor: '#FFF',
@@ -292,20 +310,19 @@ const styles = StyleSheet.create({
     },
     charityItemCard: {
         backgroundColor: '#F9FAFB',
-        borderWidth: 1,
-        borderColor: '#E5E7EB',
         padding: RFValue(16),
         borderRadius: RFValue(12),
         marginBottom: RFValue(12),
-        flexDirection: 'row',
+        flexDirection: 'column',
         alignItems: 'center',
-        justifyContent: 'space-between',
+        justifyContent: 'center',
     },
     donationTargetBox: {
         backgroundColor: '#FFF',
         borderRadius: RFValue(20),
-        padding: RFValue(20),
-        marginBottom: RFValue(20),
+        padding: RFValue(16),
+        marginTop: RFValue(20),
+        marginBottom: RFValue(12),
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.05,
@@ -316,23 +333,24 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: '#F9FAFB',
-        padding: RFValue(16),
+        padding: RFValue(12),
         borderRadius: RFValue(16),
-        marginBottom: RFValue(24),
+        marginBottom: RFValue(12),
     },
     targetEmoji: { fontSize: RFValue(36), marginRight: RFValue(16) },
-    targetInfo: { flex: 1, paddingRight: RFValue(8) },
+    targetInfo: { width: '100%', alignItems: 'center' },
     targetTitle: {
         fontSize: RFValue(15),
         fontWeight: 'bold',
         color: '#111',
-        marginBottom: RFValue(5),
+        marginBottom: RFValue(12),
+        textAlign: 'center',
     },
     targetDesc: {
         fontSize: RFValue(10.4),
         color: '#6B7280',
-        lineHeight: RFValue(12.5),
-        paddingRight: RFValue(6),
+        lineHeight: RFValue(16),
+        textAlign: 'center',
     },
     gaugeContainer: { marginBottom: RFValue(24) },
     gaugeTexts: {
@@ -364,7 +382,7 @@ const styles = StyleSheet.create({
     },
     gachaButton: {
         backgroundColor: '#F59E0B',
-        paddingVertical: RFValue(14),
+        paddingVertical: RFValue(12),
         borderRadius: RFValue(12),
         alignItems: 'center',
     },
