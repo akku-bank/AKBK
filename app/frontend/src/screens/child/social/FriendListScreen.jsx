@@ -14,6 +14,8 @@ import {
 import { scale, verticalScale } from 'react-native-size-matters';
 import CustomText from '../../../components/common/CustomText';
 import api from '../../../api/axios';
+import ChildCustomModal from '../../../components/common/ChildCustomModal';
+import { useChildAlert } from '../../../contexts/ChildAlertContext';
 
 const FriendListScreen = ({ navigation, route }) => {
     const [isCreatingInvite, setIsCreatingInvite] = useState(false);
@@ -25,6 +27,7 @@ const FriendListScreen = ({ navigation, route }) => {
     const [inviteCodeInput, setInviteCodeInput] = useState('');
     const [isLookingUpInvite, setIsLookingUpInvite] = useState(false);
     const [inviteLookupResult, setInviteLookupResult] = useState(null);
+    const { showAlert } = useChildAlert();
 
     const fetchFriends = async () => {
         try {
@@ -34,7 +37,7 @@ const FriendListScreen = ({ navigation, route }) => {
             setFriends(nextFriends);
         } catch (e) {
             console.error('Friends Fetch Error', e);
-            Alert.alert('오류', e.response?.data?.message || '친구 목록을 불러오지 못했습니다.');
+            showAlert({ title: '오류', message: e.response?.data?.message || '친구 목록을 불러오지 못했습니다.' });
         } finally {
             setIsLoadingFriends(false);
         }
@@ -51,7 +54,7 @@ const FriendListScreen = ({ navigation, route }) => {
             } else if (route.params.inviteStatus === 'already_exists') {
                 navigation.navigate('FriendAlready');
             } else {
-                Alert.alert('오류', '유효하지 않은 초대 링크입니다.');
+                showAlert({ title: '오류', message: '유효하지 않은 초대 링크입니다.' });
             }
         }
     }, [route?.params?.inviteStatus, navigation]);
@@ -65,14 +68,14 @@ const FriendListScreen = ({ navigation, route }) => {
             const nextInviteCode = res?.data?.data?.inviteCode;
 
             if (!nextInviteCode) {
-                Alert.alert('오류', '초대 코드가 반환되지 않았습니다.');
+                showAlert({ title: '오류', message: '초대 코드가 반환되지 않았습니다.' });
                 return;
             }
 
             setInviteCode(nextInviteCode);
         } catch (e) {
             console.error('Create Invite Code Error', e);
-            Alert.alert('오류', e.response?.data?.message || '초대 링크 생성에 실패했습니다.');
+            showAlert({ title: '오류', message: e.response?.data?.message || '초대 링크 생성에 실패했습니다.' });
         } finally {
             setIsCreatingInvite(false);
         }
@@ -93,7 +96,7 @@ const FriendListScreen = ({ navigation, route }) => {
     const handleLookupInviteCode = async () => {
         const trimmedCode = inviteCodeInput.trim();
         if (!trimmedCode) {
-            Alert.alert('안내', '초대 코드를 입력해주세요.');
+            showAlert({ title: '안내', message: '초대 코드를 입력해주세요.' });
             return;
         }
 
@@ -111,7 +114,7 @@ const FriendListScreen = ({ navigation, route }) => {
             setInviteLookupResult(data);
         } catch (e) {
             console.error('Invite Lookup Error', e);
-            Alert.alert('오류', e.response?.data?.message || '초대 코드 조회에 실패했습니다.');
+            showAlert({ title: '오류', message: e.response?.data?.message || '초대 코드 조회에 실패했습니다.' });
         } finally {
             setIsLookingUpInvite(false);
         }
@@ -120,7 +123,7 @@ const FriendListScreen = ({ navigation, route }) => {
     const handleFriendAddAttempt = async () => {
         const trimmedCode = inviteCodeInput.trim();
         if (!trimmedCode) {
-            Alert.alert('안내', '초대 코드를 먼저 입력해 주세요.');
+            showAlert({ title: '안내', message: '초대 코드를 먼저 입력해 주세요.' });
             return;
         }
 
@@ -128,10 +131,10 @@ const FriendListScreen = ({ navigation, route }) => {
             await api.post(`/social/friends/invites/${encodeURIComponent(trimmedCode)}/accept`);
             closeInviteModal();
             fetchFriends();
-            Alert.alert('완료', '친구가 추가되었습니다.');
+            showAlert({ title: '완료', message: '친구가 추가되었습니다.' });
         } catch (e) {
             console.error('Accept Friend Invite Error', e);
-            Alert.alert('오류', e.response?.data?.message || '친구 추가에 실패했습니다.');
+            showAlert({ title: '오류', message: e.response?.data?.message || '친구 추가에 실패했습니다.' });
         }
     };
 
@@ -212,64 +215,55 @@ const FriendListScreen = ({ navigation, route }) => {
                 )}
             </ScrollView>
 
-            <Modal
-                visible={isInviteModalVisible}
-                transparent
-                animationType="fade"
-                onRequestClose={closeInviteModal}
-            >
-                <View style={styles.modalBackdrop}>
-                    <View style={styles.modalCard}>
-                        <CustomText style={styles.modalTitle}>초대 코드 입력</CustomText>
-                        <CustomText style={styles.modalSubtitle}>
-                            친구에게 받은 코드를 입력해 추가해보세요!
-                        </CustomText>
+            <ChildCustomModal visible={isInviteModalVisible} onClose={closeInviteModal}>
+                <CustomText style={styles.modalTitle}>초대 코드 입력</CustomText>
+                <CustomText style={styles.modalSubtitle}>
+                    친구에게 받은 코드를 입력해 추가해보세요!
+                </CustomText>
 
-                        <TextInput
-                            value={inviteCodeInput}
-                            onChangeText={setInviteCodeInput}
-                            placeholder="초대 코드를 입력하세요"
-                            style={styles.input}
-                            autoCapitalize="none"
-                            autoCorrect={false}
-                        />
+                <TextInput
+                    value={inviteCodeInput}
+                    onChangeText={setInviteCodeInput}
+                    placeholder="초대 코드를 입력하세요"
+                    style={styles.input}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                />
 
-                        <TouchableOpacity
-                            style={[styles.lookupButton, isLookingUpInvite && styles.lookupButtonDisabled]}
-                            onPress={handleLookupInviteCode}
-                            disabled={isLookingUpInvite}
-                        >
-                            <CustomText style={styles.lookupButtonText}>
-                                {isLookingUpInvite ? '조회 중...' : '초대 코드 조회'}
+                <TouchableOpacity
+                    style={[styles.lookupButton, { borderRadius: scale(999) }, isLookingUpInvite && styles.lookupButtonDisabled]}
+                    onPress={handleLookupInviteCode}
+                    disabled={isLookingUpInvite}
+                >
+                    <CustomText style={styles.lookupButtonText}>
+                        {isLookingUpInvite ? '조회 중...' : '초대 코드 조회'}
+                    </CustomText>
+                </TouchableOpacity>
+
+                {inviteLookupResult ? (
+                    inviteLookupResult.isValid ? (
+                        <View style={styles.lookupCard}>
+                            <CustomText style={styles.lookupLabel}>초대한 친구</CustomText>
+                            <CustomText style={styles.lookupName}>
+                                {inviteLookupResult.inviterName}
                             </CustomText>
-                        </TouchableOpacity>
+                            <TouchableOpacity style={[styles.confirmButton, { borderRadius: scale(999) }]} onPress={handleFriendAddAttempt}>
+                                <CustomText style={styles.confirmButtonText}>친구 추가</CustomText>
+                            </TouchableOpacity>
+                        </View>
+                    ) : (
+                        <View style={styles.lookupCardInvalid}>
+                            <CustomText style={styles.lookupInvalidText}>
+                                유효하지 않은 초대 코드입니다.
+                            </CustomText>
+                        </View>
+                    )
+                ) : null}
 
-                        {inviteLookupResult ? (
-                            inviteLookupResult.isValid ? (
-                                <View style={styles.lookupCard}>
-                                    <CustomText style={styles.lookupLabel}>초대한 친구</CustomText>
-                                    <CustomText style={styles.lookupName}>
-                                        {inviteLookupResult.inviterName}
-                                    </CustomText>
-                                    <TouchableOpacity style={styles.confirmButton} onPress={handleFriendAddAttempt}>
-                                        <CustomText style={styles.confirmButtonText}>친구 추가</CustomText>
-                                    </TouchableOpacity>
-                                </View>
-                            ) : (
-                                <View style={styles.lookupCardInvalid}>
-                                    <CustomText style={styles.lookupInvalidText}>
-                                        유효하지 않은 초대 코드입니다.
-                                    </CustomText>
-                                </View>
-                            )
-                        ) : null}
-
-                        <TouchableOpacity style={styles.closeButton} onPress={closeInviteModal}>
-                            <CustomText style={styles.closeButtonText}>닫기</CustomText>
-                        </TouchableOpacity>
-                    </View>
-                </View>
-            </Modal>
+                <TouchableOpacity style={{ marginTop: verticalScale(14), width: '100%', alignItems: 'center' }} onPress={closeInviteModal}>
+                    <CustomText style={{ fontSize: scale(15), fontWeight: 'bold', color: '#6B7280' }}>닫기</CustomText>
+                </TouchableOpacity>
+            </ChildCustomModal>
         </SafeAreaView>
     );
 };
@@ -463,6 +457,7 @@ const styles = StyleSheet.create({
         marginBottom: verticalScale(16)
     },
     input: {
+        width: '100%',
         borderWidth: 1,
         borderColor: '#D1D5DB',
         borderRadius: scale(14),
@@ -477,7 +472,13 @@ const styles = StyleSheet.create({
         backgroundColor: '#A3E635',
         borderRadius: scale(14),
         paddingVertical: verticalScale(12),
-        alignItems: 'center'
+        alignItems: 'center',
+        width: '100%',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 2,
     },
     lookupButtonDisabled: {
         opacity: 0.6
@@ -516,7 +517,13 @@ const styles = StyleSheet.create({
         backgroundColor: '#A3E635',
         borderRadius: scale(12),
         paddingVertical: verticalScale(11),
-        alignItems: 'center'
+        alignItems: 'center',
+        width: '100%',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 2,
     },
     confirmButtonText: {
         fontSize: scale(14),

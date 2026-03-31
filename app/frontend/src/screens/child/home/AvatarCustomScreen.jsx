@@ -1,4 +1,4 @@
-﻿import React, { useContext, useState, useRef } from 'react';
+import React, { useContext, useState, useRef } from 'react';
 import { View, StyleSheet, TouchableOpacity, ScrollView, Image, Dimensions, Alert, ImageBackground } from 'react-native';
 import { AvatarContext } from '../../../components/child/avatar/AvatarContext';
 import { AVATAR_ITEMS, AVATAR_ASSETS } from '../../../components/child/avatar/AvatarAssets';
@@ -7,6 +7,7 @@ import Pet from '../../../components/child/avatar/Pet';
 import { scale, verticalScale } from 'react-native-size-matters';
 import CustomText from '../../../components/common/CustomText';
 import api from '../../../api/axios';
+import { useChildAlert } from '../../../contexts/ChildAlertContext';
 
 const CATEGORIES = [
     { id: 'gender', label: '성별' },
@@ -30,6 +31,7 @@ const AvatarCustomScreen = ({ navigation }) => {
     const [selectedCategory, setSelectedCategory] = useState('hair');
     const [ownedItemIds, setOwnedItemIds] = useState({});
     const [frontendToUuidMap, setFrontendToUuidMap] = useState({});
+    const { showAlert } = useChildAlert();
     const [userLevel, setUserLevel] = useState(1);
     const initialEquipState = React.useRef(null);
 
@@ -207,10 +209,10 @@ const AvatarCustomScreen = ({ navigation }) => {
 
                         await api.patch('/avatars/me/equipment', { equippedItemIds: equippedUUIDs });
                         initialEquipState.current = { ...equipState }; // 저장이 성공하면 기준점을 현재 상태로 업데이트!
-                        Alert.alert('저장 완료', '저장되었습니다!');
+                        showAlert({ title: '저장 완료', message: '저장되었습니다!' });
                     } catch (e) {
                         console.error('Avatar Save Error', e);
-                        Alert.alert('저장 실패', '저장 중 오류가 발생했습니다.');
+                        showAlert({ title: '저장 실패', message: '저장 중 오류가 발생했습니다.' });
                     }
                 }}>
                     <CustomText style={styles.saveHeaderText}>저장</CustomText>

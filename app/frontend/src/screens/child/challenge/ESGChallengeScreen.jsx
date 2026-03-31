@@ -3,6 +3,7 @@ import { View, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, Alert, Ac
 import { scale, verticalScale } from 'react-native-size-matters';
 import CustomText from '../../../components/common/CustomText';
 import api from '../../../api/axios';
+import { useChildAlert } from '../../../contexts/ChildAlertContext';
 
 const DUMMY_MISSIONS = [
     { id: 'dummy-1', title: '대중교통 이용하기', description: '자동 분석된 미션입니다.', reward: 50, status: '진행 중' },
@@ -12,6 +13,7 @@ const DUMMY_MISSIONS = [
 const ESGChallengeScreen = ({ navigation }) => {
     const [esgChallenge, setEsgChallenge] = useState(null);
     const [loading, setLoading] = useState(true);
+    const { showAlert } = useChildAlert();
 
     useEffect(() => {
         fetchEsgChallenge();
@@ -41,11 +43,11 @@ const ESGChallengeScreen = ({ navigation }) => {
     const handleClaimReward = async () => {
         try {
             await api.post(`/challenges/esg/${esgChallenge.challengeId}/rewards`);
-            Alert.alert('보상 수령 완료', '젤링을 성공적으로 받았습니다! 🎉');
+            showAlert({ title: '보상 수령 완료', message: '젤링을 성공적으로 받았습니다! 🎉' });
             setEsgChallenge(prev => ({ ...prev, isCompleted: true, isRewarded: true }));
         } catch (err) {
             console.error('Reward Claim Error', err);
-            Alert.alert('오류', '보상 수령에 실패했습니다.');
+            showAlert({ title: '오류', message: '보상 수령에 실패했습니다.' });
         }
     };
 

@@ -25,6 +25,7 @@ import MissionApprovalScreen from './src/screens/parent/mission/MissionApprovalS
 import ParentChallengeManageScreen from './src/screens/parent/mission/ParentChallengeManageScreen';
 import FamilyManagementScreen from './src/screens/parent/home/FamilyManagementScreen';
 import { AvatarProvider } from './src/components/child/avatar/AvatarContext';
+import { ChildAlertProvider } from './src/contexts/ChildAlertContext';
 
 import AnimatedSplashScreen from './src/screens/auth/AnimatedSplashScreen';
 import OnboardingTutorialScreen from './src/screens/auth/OnboardingTutorialScreen';
@@ -114,9 +115,10 @@ export default function App() {
       <StatusBar translucent={false} backgroundColor="#FFFFFF" barStyle="dark-content" />
       <SafeAreaProvider style={{ flex: 1 }}>
         <AvatarProvider>
-          <NavigationContainer>
-            <Stack.Navigator screenOptions={{ headerShown: false, freezeOnBlur: false, animationEnabled: false }} detachInactiveScreens={false} initialRouteName="AnimatedSplash">
-              <Stack.Screen name="AnimatedSplash" component={AnimatedSplashScreen} />
+          <ChildAlertProvider>
+            <NavigationContainer>
+              <Stack.Navigator screenOptions={{ headerShown: false, freezeOnBlur: false, animationEnabled: false }} detachInactiveScreens={false} initialRouteName="AnimatedSplash">
+                <Stack.Screen name="AnimatedSplash" component={AnimatedSplashScreen} />
               <Stack.Screen name="OnboardingTutorial" component={OnboardingTutorialScreen} />
               <Stack.Screen name="FamilyInvitation" component={FamilyInvitationScreen} />
               <Stack.Screen name="SocialLogin" component={SocialLoginScreen} />
@@ -166,8 +168,9 @@ export default function App() {
               <Stack.Screen name="ChildChangePassword" component={ChildChangePasswordScreen} />
               <Stack.Screen name="ParentChildEdit" component={ParentChildEditScreen} />
               <Stack.Screen name="ParentChangePassword" component={ParentChangePasswordScreen} />
-            </Stack.Navigator>
-          </NavigationContainer>
+              </Stack.Navigator>
+            </NavigationContainer>
+          </ChildAlertProvider>
         </AvatarProvider>
       </SafeAreaProvider>
     </View>

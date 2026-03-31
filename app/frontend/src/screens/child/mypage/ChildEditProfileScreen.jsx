@@ -1,15 +1,17 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, SafeAreaView, TouchableOpacity, Alert, ScrollView, Image } from 'react-native';
 import { scale, verticalScale } from 'react-native-size-matters';
 import CustomText from '../../../components/common/CustomText';
 import CustomTextInput from '../../../components/common/CustomTextInput';
 import api from '../../../api/axios';
 import useAuthStore from '../../../store/useAuthStore';
+import { useChildAlert } from '../../../contexts/ChildAlertContext';
 
 const ChildEditProfileScreen = ({ navigation }) => {
     const { user, setUser } = useAuthStore();
     const [nickname, setNickname] = useState(user?.name || '');
     const [statusMessage, setStatusMessage] = useState('돈을 아끼자!');
+    const { showAlert } = useChildAlert();
 
     useEffect(() => {
         if (user?.name) {
@@ -23,7 +25,7 @@ const ChildEditProfileScreen = ({ navigation }) => {
 
     const handleSave = async () => {
         if (!nickname.trim()) {
-            Alert.alert('알림', '닉네임을 입력해주세요.');
+            showAlert({ title: '알림', message: '닉네임을 입력해주세요.' });
             return;
         }
 
@@ -32,9 +34,13 @@ const ChildEditProfileScreen = ({ navigation }) => {
             if (user) {
                 setUser({ ...user, name: nickname });
             }
-            Alert.alert('저장 완료', '프로필이 수정되었습니다.', [{ text: '확인', onPress: () => navigation.goBack() }]);
+            showAlert({ 
+                title: '저장 완료', 
+                message: '프로필이 수정되었습니다.', 
+                onConfirm: () => navigation.goBack() 
+            });
         } catch (error) {
-            Alert.alert('오류', '프로필 수정에 실패했습니다.');
+            showAlert({ title: '오류', message: '프로필 수정에 실패했습니다.' });
         }
     };
 

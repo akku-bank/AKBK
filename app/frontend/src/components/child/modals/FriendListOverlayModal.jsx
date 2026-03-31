@@ -1,20 +1,17 @@
 import React from 'react';
-import { View, Text, StyleSheet, Modal, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import ChildCustomModal from './ChildCustomModal';
 
 const FriendListOverlayModal = ({ visible, onClose }) => {
     return (
-        <Modal visible={visible} transparent={true} animationType="fade" onRequestClose={onClose}>
-            <View style={styles.overlay}>
-                <View style={styles.modalContainer}>
-                    <Text style={styles.title}>친구 목록</Text>
-                    <Text style={styles.emptyText}>아직 친구가 없어욤</Text>
+        <ChildCustomModal visible={visible} onClose={onClose} dismissable={true}>
+            <Text style={styles.title}>친구 목록</Text>
+            <Text style={styles.emptyText}>아직 친구가 없어욤</Text>
 
-                    <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-                        <Text style={styles.closeButtonText}>닫기</Text>
-                    </TouchableOpacity>
-                </View>
-            </View>
-        </Modal>
+            <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+                <Text style={styles.closeButtonText}>닫기</Text>
+            </TouchableOpacity>
+        </ChildCustomModal>
     );
 };
 

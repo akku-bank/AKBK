@@ -1,4 +1,4 @@
-﻿import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { View, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Alert, KeyboardAvoidingView, Platform, Image, Modal } from 'react-native';
 import { scale, verticalScale } from 'react-native-size-matters';
 import CustomText from '../../../components/common/CustomText';
@@ -6,6 +6,7 @@ import CustomTextInput from '../../../components/common/CustomTextInput';
 import api from '../../../api/axios';
 import useAuthStore from '../../../store/useAuthStore';
 import EventSource from 'react-native-sse';
+import { useChildAlert } from '../../../contexts/ChildAlertContext';
 
 const parseProblemJson = (problemJson) => {
     if (!problemJson) return null;
@@ -118,6 +119,7 @@ const QuizScreen = ({ navigation, route }) => {
     const [isAiTyping, setIsAiTyping] = useState(false);
 
     const scrollViewRef = useRef(null);
+    const { showAlert } = useChildAlert();
 
     const q = quiz;
     const difficultyLabel = difficultyLabelMap[difficulty] || difficulty;
@@ -205,7 +207,7 @@ const QuizScreen = ({ navigation, route }) => {
         if (isAiTyping) return;
 
         if (aiCredits <= 0) {
-            Alert.alert('알림', '더 이상 힌트를 사용할 수 없어요.');
+            showAlert({ title: '알림', message: '더 이상 힌트를 사용할 수 없어요.' });
             return;
         }
 
@@ -292,20 +294,20 @@ const QuizScreen = ({ navigation, route }) => {
 
     const handleSubmit = () => {
         if (selectedOption === null) {
-            Alert.alert('알림', '정답을 선택해주세요!');
+            showAlert({ title: '알림', message: '정답을 선택해주세요!' });
             return;
         }
 
         const submitTask = async () => {
             try {
                 if (!quiz.id) {
-                    Alert.alert('안내', '퀴즈 정보가 없어 정답을 제출할 수 없습니다.');
+                    showAlert({ title: '안내', message: '퀴즈 정보가 없어 정답을 제출할 수 없습니다.' });
                     return;
                 }
                 const res = await api.post('/challenges/quizzes/answer', { quizId: quiz.id, selectedAnswer: selectedOption });
                 const ansData = res.data?.data;
                 if (!ansData) {
-                    Alert.alert('안내', '정답 확인 중 데이터가 반환되지 않았습니다.');
+                    showAlert({ title: '안내', message: '정답 확인 중 데이터가 반환되지 않았습니다.' });
                     return;
                 }
                 const { isCorrect: isServerCorrect, jellingReward, correctChoiceNo } = ansData;
@@ -329,7 +331,7 @@ const QuizScreen = ({ navigation, route }) => {
                 }
             } catch (e) {
                 console.error('Quiz Submit Error', e.response?.data || e.message);
-                Alert.alert('오류', '정답 제출에 실패했습니다.');
+                showAlert({ title: '오류', message: '정답 제출에 실패했습니다.' });
             }
         };
         submitTask();
