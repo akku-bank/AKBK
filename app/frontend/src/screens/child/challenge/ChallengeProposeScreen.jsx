@@ -5,7 +5,7 @@ import CustomText from '../../../components/common/CustomText';
 import CustomTextInput from '../../../components/common/CustomTextInput';
 import api from '../../../api/axios';
 
-const CATEGORIES = ['간식', '쇼핑', '게임', '기타'];
+const CATEGORIES = ['간식', '쇼핑', '오락', '기타'];
 
 const ChallengeProposeScreen = ({ navigation, route }) => {
     const editingChallenge = route?.params?.challenge || null;

@@ -18,7 +18,7 @@ const PaymentScreen = ({ navigation }) => {
         useCallback(() => {
             const fetchData = async () => {
                 try {
-                    const [cardRes, accRes, hubRes, jellingRes] = await Promise.all([
+                    const [cardRes, accRes, hubRes] = await Promise.all([
                         api.get('/bank/cards/my'),
                         api.get('/bank/accounts/me'),
                         api.get('/jelling-hub')
@@ -37,10 +37,6 @@ const PaymentScreen = ({ navigation }) => {
                         setBankBalance(primary.balance);
                     }
 
-                    const jellingData = jellingRes.data?.data;
-                    if (jellingData) {
-                        setCurrentJellings(jellingData.remainJelling || 0);
-                    }
                 } catch (error) {
                     console.error('Payment Screen Fetch Error:', error);
                 }
@@ -57,17 +53,17 @@ const PaymentScreen = ({ navigation }) => {
 
         try {
             setIsPaying(true);
-            // 가상 결제 데모 (가게ID 16350번, 금액 1500원)
+            // 가상 결제 데모 (가게ID 17104번, 금액 3000원)
             await api.post('/bank/cards/payment', {
                 cardId: myCardId,
-                merchantId: 16350,
-                paymentBalance: 1500
+                merchantId: 17104,
+                paymentBalance: 3000
             });
 
             // 결제 성공 후 즉시 내역 갱신 이벤트 발행
             DeviceEventEmitter.emit('refresh_transactions');
 
-            Alert.alert('결제 성공', '1,500원 결제가 완료되었습니다!', [
+            Alert.alert('결제 성공', '3,000원 결제가 완료되었습니다!', [
                 { text: '확인', onPress: () => navigation.goBack() }
             ]);
         } catch (error) {
