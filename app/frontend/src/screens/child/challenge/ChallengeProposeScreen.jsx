@@ -1,9 +1,10 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { scale, verticalScale } from 'react-native-size-matters';
 import CustomText from '../../../components/common/CustomText';
 import CustomTextInput from '../../../components/common/CustomTextInput';
 import api from '../../../api/axios';
+import { useChildAlert } from '../../../contexts/ChildAlertContext';
 
 const CATEGORIES = ['간식', '쇼핑', '오락', '기타'];
 
@@ -14,6 +15,7 @@ const ChallengeProposeScreen = ({ navigation, route }) => {
     const [selectedCategory, setSelectedCategory] = useState(editingChallenge?.category || CATEGORIES[0]);
     const [goalAmount, setGoalAmount] = useState('');
     const [rewardAmount, setRewardAmount] = useState('');
+    const { showAlert } = useChildAlert();
 
     useEffect(() => {
         if (isEditMode) {
@@ -33,12 +35,12 @@ const ChallengeProposeScreen = ({ navigation, route }) => {
 
     const handleSubmit = async () => { // Added async here
         if (!goalAmount || isNaN(goalAmount)) {
-            Alert.alert('알림', '목표 금액을 정확히 입력해주세요.');
+            showAlert({ title: '알림', message: '목표 금액을 정확히 입력해주세요.' });
             return;
         }
 
         if (!rewardAmount || isNaN(rewardAmount)) {
-            Alert.alert('알림', '보상 금액을 정확히 입력해주세요.');
+            showAlert({ title: '알림', message: '보상 금액을 정확히 입력해주세요.' });
             return;
         }
 
@@ -51,19 +53,19 @@ const ChallengeProposeScreen = ({ navigation, route }) => {
 
             if (isEditMode) {
                 await api.patch(`/challenges/spending/${editingChallenge.challengeId}`, payload);
-                Alert.alert('수정 완료', `"${selectedCategory}" 챌린지를 수정했어요!`, [{ text: '확인', onPress: () => navigation.goBack() }]);
+                showAlert({ title: '수정 완료', message: `"${selectedCategory}" 챌린지를 수정했어요!`, onConfirm: () => navigation.goBack() });
             } else {
                 await api.post('/challenges/spending', payload);
-                Alert.alert('제안 완료', `부모님께 "${selectedCategory}" 소비 목표 챌린지를 제안했어요!`, [{ text: '확인', onPress: () => navigation.goBack() }]);
+                showAlert({ title: '제안 완료', message: `부모님께 "${selectedCategory}" 소비 목표 챌린지를 제안했어요!`, onConfirm: () => navigation.goBack() });
             }
         } catch (e) {
             console.error('Challenge Propose Error', e);
             if (e.response?.status === 409) {
-                Alert.alert('안내', '이미 같은 카테고리의 챌린지를 요청했어요.');
+                showAlert({ title: '안내', message: '이미 같은 카테고리의 챌린지를 요청했어요.' });
                 return;
             }
 
-            Alert.alert('오류', isEditMode ? '챌린지 수정 중 문제가 발생했습니다.' : '챌린지 생성 중 문제가 발생했습니다.');
+            showAlert({ title: '오류', message: isEditMode ? '챌린지 수정 중 문제가 발생했습니다.' : '챌린지 생성 중 문제가 발생했습니다.' });
         }
     };
 

@@ -4,6 +4,7 @@ import { scale, verticalScale } from 'react-native-size-matters';
 import CustomText from '../../../components/common/CustomText';
 import CustomTextInput from '../../../components/common/CustomTextInput';
 import api from '../../../api/axios';
+import { useChildAlert } from '../../../contexts/ChildAlertContext';
 
 const ChildChangePasswordScreen = ({ navigation }) => {
     const [currentPin, setCurrentPin] = useState('');
@@ -13,14 +14,15 @@ const ChildChangePasswordScreen = ({ navigation }) => {
     const currentPinRef = useRef(null);
     const newPinRef = useRef(null);
     const confirmPinRef = useRef(null);
+    const { showAlert } = useChildAlert();
 
     const handleSubmit = async () => {
         if (currentPin.length !== 6 || newPin.length !== 6 || confirmPin.length !== 6) {
-            Alert.alert('알림', 'PIN 번호는 모두 6자리로 입력해주세요.');
+            showAlert({ title: '알림', message: 'PIN 번호는 모두 6자리로 입력해주세요.' });
             return;
         }
         if (newPin !== confirmPin) {
-            Alert.alert('알림', '새 PIN 번호가 서로 일치하지 않습니다.');
+            showAlert({ title: '알림', message: '새 PIN 번호가 서로 일치하지 않습니다.' });
             return;
         }
 
@@ -29,13 +31,15 @@ const ChildChangePasswordScreen = ({ navigation }) => {
                 oldPin: currentPin,
                 newPin
             });
-            Alert.alert('변경 완료', '비밀번호가 성공적으로 변경되었습니다!', [
-                { text: '확인', onPress: () => navigation.goBack() }
-            ]);
+            showAlert({ 
+                title: '변경 완료', 
+                message: '비밀번호가 성공적으로 변경되었습니다!', 
+                onConfirm: () => navigation.goBack() 
+            });
         } catch (error) {
             console.error('Change PIN Error:', error);
             // 만약 서버에서 기존 비밀번호 틀림 에러를 주면 여기서 처리
-            Alert.alert('오류', '비밀번호 변경에 실패했습니다. 기존 비밀번호를 확인해주세요.');
+            showAlert({ title: '오류', message: '비밀번호 변경에 실패했습니다. 기존 비밀번호를 확인해주세요.' });
         }
     };
 

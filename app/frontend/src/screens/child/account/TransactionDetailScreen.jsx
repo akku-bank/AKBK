@@ -1,8 +1,10 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { View, StyleSheet, TouchableOpacity, SafeAreaView, Switch, Alert, Modal, TextInput } from 'react-native';
 import { scale, verticalScale } from 'react-native-size-matters';
 import CustomText from '../../../components/common/CustomText';
 import api from '../../../api/axios';
+import ChildCustomModal from '../../../components/common/ChildCustomModal';
+import { useChildAlert } from '../../../contexts/ChildAlertContext';
 
 const FALLBACK_DETAIL = {
     id: '1',
@@ -23,6 +25,7 @@ const TransactionDetailScreen = ({ route, navigation }) => {
     const [isMemoModalVisible, setMemoModalVisible] = useState(false);
     const [memo, setMemo] = useState(detailData.memo || '');
     const [tempMemo, setTempMemo] = useState('');
+    const { showAlert } = useChildAlert();
 
     const isOver14 = true;
     const isDeposit = detailData.amount > 0;
@@ -39,7 +42,7 @@ const TransactionDetailScreen = ({ route, navigation }) => {
             setIsPrivate(value);
         } catch (e) {
             console.error('Privacy Toggle Error:', e);
-            Alert.alert('오류', '프라이버시 설정을 변경하지 못했습니다.');
+            showAlert({ title: '오류', message: '프라이버시 설정을 변경하지 못했습니다.' });
         }
     };
 
@@ -48,10 +51,10 @@ const TransactionDetailScreen = ({ route, navigation }) => {
             await api.patch(`/bank/transactions/${detailData.id}/memo`, { memo: tempMemo });
             setMemo(tempMemo);
             setMemoModalVisible(false);
-            Alert.alert('알림', '메모가 저장되었습니다.');
+            showAlert({ title: '알림', message: '메모가 저장되었습니다.' });
         } catch (e) {
             console.error('Memo Save Error:', e);
-            Alert.alert('오류', '메모를 저장하지 못했습니다.');
+            showAlert({ title: '오류', message: '메모를 저장하지 못했습니다.' });
         }
     };
 
@@ -119,36 +122,27 @@ const TransactionDetailScreen = ({ route, navigation }) => {
                 </TouchableOpacity>
             </View>
 
-            <Modal
-                visible={isMemoModalVisible}
-                transparent={true}
-                animationType="fade"
-                onRequestClose={() => setMemoModalVisible(false)}
-            >
-                <View style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
-                        <CustomText style={styles.modalTitle}>메모 남기기</CustomText>
-                        <TextInput
-                            style={styles.memoInput}
-                            placeholder="이 거래에 대한 메모를 남겨주세요."
-                            placeholderTextColor="#9CA3AF"
-                            multiline
-                            maxLength={255}
-                            value={tempMemo}
-                            onChangeText={setTempMemo}
-                            autoFocus
-                        />
-                        <View style={styles.modalButtonRow}>
-                            <TouchableOpacity style={[styles.modalButton, styles.cancelButton]} onPress={() => setMemoModalVisible(false)}>
-                                <CustomText style={styles.cancelButtonText}>취소</CustomText>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={[styles.modalButton, styles.saveButton]} onPress={handleSaveMemo}>
-                                <CustomText style={styles.saveButtonText}>저장</CustomText>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
+            <ChildCustomModal visible={isMemoModalVisible} onClose={() => setMemoModalVisible(false)}>
+                <CustomText style={styles.modalTitle}>메모 남기기</CustomText>
+                <TextInput
+                    style={styles.memoInput}
+                    placeholder="이 거래에 대한 메모를 남겨주세요."
+                    placeholderTextColor="#9CA3AF"
+                    multiline
+                    maxLength={255}
+                    value={tempMemo}
+                    onChangeText={setTempMemo}
+                    autoFocus
+                />
+                <View style={styles.modalButtonRow}>
+                    <TouchableOpacity style={[styles.modalButton, styles.cancelButton, { borderRadius: scale(999), flex: 0.8 }]} onPress={() => setMemoModalVisible(false)}>
+                        <CustomText style={[styles.cancelButtonText, { fontSize: scale(15) }]}>취소</CustomText>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={[styles.modalButton, styles.saveButton, { borderRadius: scale(999), flex: 1 }]} onPress={handleSaveMemo}>
+                        <CustomText style={[styles.saveButtonText, { fontSize: scale(16) }]}>저장</CustomText>
+                    </TouchableOpacity>
                 </View>
-            </Modal>
+            </ChildCustomModal>
         </SafeAreaView>
     );
 };

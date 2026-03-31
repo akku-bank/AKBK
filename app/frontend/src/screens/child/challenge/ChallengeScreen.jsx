@@ -1,9 +1,10 @@
-﻿import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { View, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Alert, Image, Modal } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { scale, verticalScale } from 'react-native-size-matters';
 import CustomText from '../../../components/common/CustomText';
 import api from '../../../api/axios';
+import { useChildAlert } from '../../../contexts/ChildAlertContext';
 
 const CROCO_PARENTS_IMAGE = require('../../../assets/croco/croco_parents.png');
 const AKKU_WELCOME_IMAGE = require('../../../assets/croco/akku-welcome.png');
@@ -49,6 +50,7 @@ const ChallengeScreen = ({ navigation }) => {
     const [pastChallenges, setPastChallenges] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isRewardSuccessVisible, setIsRewardSuccessVisible] = useState(false);
+    const { showAlert } = useChildAlert();
 
     const fetchChallenges = useCallback(async (silent = false) => {
         if (!silent) setIsLoading(true);
@@ -69,7 +71,7 @@ const ChallengeScreen = ({ navigation }) => {
                 setThisWeekChallenges([]);
                 setNextWeekChallenges([]);
                 setPastChallenges([]);
-                Alert.alert('오류', '챌린지 목록을 불러오지 못했습니다.');
+                showAlert({ title: '오류', message: '챌린지 목록을 불러오지 못했습니다.' });
             }
         } finally {
             if (!silent) setIsLoading(false);
@@ -87,11 +89,11 @@ const ChallengeScreen = ({ navigation }) => {
     const handleRewardRequest = async (challengeId) => {
         try {
             await api.post(`/challenges/spending/${challengeId}/reward`);
-            Alert.alert('요청 완료', '부모님께 보상 송금 요청을 보냈습니다.');
+            showAlert({ title: '요청 완료', message: '부모님께 보상 송금 요청을 보냈습니다.' });
             fetchChallenges();
         } catch (error) {
             console.error('Reward request error', error);
-            Alert.alert('오류', '보상 요청에 실패했습니다.');
+            showAlert({ title: '오류', message: '보상 요청에 실패했습니다.' });
         }
     };
 
@@ -102,32 +104,27 @@ const ChallengeScreen = ({ navigation }) => {
             fetchChallenges();
         } catch (error) {
             console.error('Reward request error', error);
-            Alert.alert('?ㅻ쪟', '蹂댁긽 ?붿껌???ㅽ뙣?덉뒿?덈떎.');
+            showAlert({ title: '오류', message: '보상 요청에 실패했습니다.' });
         }
     };
 
     const handleDelete = (challengeId) => {
-        Alert.alert(
-            '챌린지 삭제',
-            '정말로 이 챌린지를 삭제하시겠습니까?',
-            [
-                { text: '취소', style: 'cancel' },
-                {
-                    text: '삭제',
-                    style: 'destructive',
-                    onPress: async () => {
-                        try {
-                            await api.delete(`/challenges/spending/${challengeId}`);
-                            Alert.alert('삭제 완료', '챌린지가 삭제되었습니다.');
-                            fetchChallenges();
-                        } catch (error) {
-                            console.error('Challenge delete error', error);
-                            Alert.alert('오류', '챌린지 삭제에 실패했습니다.');
-                        }
-                    }
+        showAlert({
+            title: '챌린지 삭제',
+            message: '정말로 이 챌린지를 삭제하시겠습니까?',
+            showCancel: true,
+            confirmText: '삭제',
+            onConfirm: async () => {
+                try {
+                    await api.delete(`/challenges/spending/${challengeId}`);
+                    showAlert({ title: '삭제 완료', message: '챌린지가 삭제되었습니다.' });
+                    fetchChallenges();
+                } catch (error) {
+                    console.error('Challenge delete error', error);
+                    showAlert({ title: '오류', message: '챌린지 삭제에 실패했습니다.' });
                 }
-            ]
-        );
+            }
+        });
     };
 
     const handleEdit = (challenge) => {
@@ -174,7 +171,7 @@ const ChallengeScreen = ({ navigation }) => {
             navigation.navigate('QuizDifficultySelect');
         } catch (error) {
             console.error('Quiz difficulty precheck error', error);
-            Alert.alert('오류', '퀴즈 정보를 확인하지 못했습니다.');
+            showAlert({ title: '오류', message: '퀴즈 정보를 확인하지 못했습니다.' });
         }
     };
 
@@ -471,8 +468,8 @@ const styles = StyleSheet.create({
         lineHeight: scale(18),
     },
 
-    rewardBtn: { backgroundColor: '#3B82F6', paddingVertical: verticalScale(12), borderRadius: scale(12), alignItems: 'center', marginTop: verticalScale(16), shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 1, },
-    rewardBtnText: { color: '#FFF', fontSize: scale(14), fontWeight: 'bold' },
+    rewardBtn: { backgroundColor: '#A3E635', paddingVertical: verticalScale(12), borderRadius: scale(12), alignItems: 'center', marginTop: verticalScale(16), shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 1 },
+    rewardBtnText: { color: '#111', fontSize: scale(14), fontWeight: 'bold' },
 
     actionRow: { flexDirection: 'row', justifyContent: 'flex-end', marginTop: verticalScale(12) },
     actionBtn: { paddingHorizontal: scale(12), paddingVertical: verticalScale(6), borderRadius: scale(8), marginLeft: scale(8), shadowColor: '#000', shadowOffset: { width: 0, height: verticalScale(2) }, shadowOpacity: 0.08, shadowRadius: scale(4), elevation: 2 },
