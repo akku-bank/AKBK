@@ -223,7 +223,7 @@ const styles = StyleSheet.create({
     closeBtn: { alignSelf: 'flex-end', padding: scale(8) },
     closeBtnText: { fontSize: scale(20), color: '#9CA3AF' },
     modalTitle: { fontSize: scale(20), fontWeight: '900', color: '#111', marginBottom: verticalScale(24), textAlign: 'center' },
-    modalScroll: { flex: 1, marginBottom: verticalScale(16) },
+    modalScroll: { width: '100%', flexShrink: 1, marginBottom: verticalScale(16) },
 
     cardPreview: { alignItems: 'center', marginBottom: verticalScale(24) },
     cardGraphic: { width: scale(180), height: scale(110), borderRadius: scale(12), padding: scale(16), justifyContent: 'flex-end', elevation: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8 },
