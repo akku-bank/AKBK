@@ -56,33 +56,69 @@ const ChallengeScreen = ({ navigation }) => {
         if (!silent) setIsLoading(true);
 
         try {
-            const [weeklyRes, nextWeekRes, pastRes] = await Promise.all([
-                api.get('/challenges'),
-                api.get('/challenges/spending'),
-                api.get('/challenges/spending/unclaimed'),
+            // 캐시 강제 무효화를 위한 타임스탬프 파라미터 삽입
+            const t = new Date().getTime();
+
+            // 하나라도 404가 뜨더라도 나머지는 업데이트 되도록 Promise.allSettled 사용
+            const results = await Promise.allSettled([
+                api.get(`/challenges?t=${t}`),
+                api.get(`/challenges/spending?t=${t}`),
+                api.get(`/challenges/spending/unclaimed?t=${t}`),
             ]);
 
-            setThisWeekChallenges(weeklyRes.data?.data?.spending || []);
-            setNextWeekChallenges(nextWeekRes.data?.data?.challenges || []);
-            setPastChallenges(pastRes.data?.data?.challenges || []);
+            const weeklyRes = results[0].status === 'fulfilled' ? results[0].value : null;
+            const nextWeekRes = results[1].status === 'fulfilled' ? results[1].value : null;
+            const pastRes = results[2].status === 'fulfilled' ? results[2].value : null;
+
+            if (weeklyRes) {
+                const arr = weeklyRes.data?.data?.spending || [];
+                setThisWeekChallenges([...arr].reverse());
+            }
+            if (nextWeekRes) {
+                const arr = nextWeekRes.data?.data?.challenges || [];
+                setNextWeekChallenges([...arr].reverse());
+            }
+            if (pastRes) {
+                const arr = pastRes.data?.data?.challenges || [];
+                setPastChallenges([...arr].reverse());
+            }
+
         } catch (error) {
             console.error('Challenge Fetch Error', error);
             if (!silent) {
-                setThisWeekChallenges([]);
-                setNextWeekChallenges([]);
-                setPastChallenges([]);
-                showAlert({ title: '오류', message: '챌린지 목록을 불러오지 못했습니다.' });
+                showAlert({ title: '오류', message: '챌린지 목록 일부를 불러오지 못했습니다.' });
             }
         } finally {
             if (!silent) setIsLoading(false);
         }
-    }, []);
+    }, [showAlert]);
 
     useFocusEffect(
         useCallback(() => {
-            fetchChallenges();
-            const interval = setInterval(() => fetchChallenges(true), 5000);
-            return () => clearInterval(interval);
+            let isActive = true;
+            let timeoutId;
+
+            const poll = async () => {
+                if (!isActive) return;
+                await fetchChallenges(true);
+                if (isActive) {
+                    timeoutId = setTimeout(poll, 5000); // 이전 요청이 완료된 후 5초 뒤 다시 켬 (Stacking 방지)
+                }
+            };
+
+            const startFocus = async () => {
+                await fetchChallenges();
+                if (isActive) {
+                    timeoutId = setTimeout(poll, 5000);
+                }
+            };
+
+            startFocus();
+
+            return () => {
+                isActive = false;
+                if (timeoutId) clearTimeout(timeoutId);
+            };
         }, [fetchChallenges])
     );
 
