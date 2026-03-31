@@ -9,6 +9,8 @@ const ChildAccountScreen = ({ navigation }) => {
     const [balance, setBalance] = useState(0);
     const [transactions, setTransactions] = useState([]);
 
+    const SYSTEM_CUTOFF_DATE = '20260331071057'; // 테스트용 - 추후 제거 예정
+
     useFocusEffect(
         useCallback(() => {
             const fetchAccountData = async () => {
@@ -23,7 +25,11 @@ const ChildAccountScreen = ({ navigation }) => {
 
                     // 거래내역 조회
                     const txRes = await api.get('/bank/transactions');
-                    const txList = txRes.data?.data?.transactions || [];
+                    const rawTxList = txRes.data?.data?.transactions || [];
+
+                    // 시스템 컷오프 이전 내역 필터링 (테스트용 - 추후 제거 예정)
+                    const txList = rawTxList.filter(tx => tx.date && tx.date >= SYSTEM_CUTOFF_DATE);
+
                     setTransactions(txList);
                 } catch (e) { console.error('Account Fetch Error', e); }
             };
