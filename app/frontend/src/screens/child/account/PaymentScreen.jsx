@@ -4,8 +4,10 @@ import { useFocusEffect } from '@react-navigation/native';
 import { scale, verticalScale } from 'react-native-size-matters';
 import CustomText from '../../../components/common/CustomText';
 import api from '../../../api/axios';
+import { useChildAlert } from '../../../contexts/ChildAlertContext';
 
 const PaymentScreen = ({ navigation }) => {
+    const { showAlert } = useChildAlert();
     // 혜택 시뮬레이션: 보유 젤링 및 결제 시 예상 적립 젤링
     const [currentJellings, setCurrentJellings] = useState(0);
     const expectedCashback = 50;
@@ -47,7 +49,7 @@ const PaymentScreen = ({ navigation }) => {
 
     const handleMockPayment = async () => {
         if (!myCardId) {
-            Alert.alert('알림', '결제할 수 있는 카드가 존재하지 않습니다. 먼저 카드를 발급받아 주세요!');
+            showAlert({ title: '알림', message: '결제할 수 있는 카드가 존재하지 않습니다. 먼저 카드를 발급받아 주세요!' });
             return;
         }
 
@@ -63,12 +65,10 @@ const PaymentScreen = ({ navigation }) => {
             // 결제 성공 후 즉시 내역 갱신 이벤트 발행
             DeviceEventEmitter.emit('refresh_transactions');
 
-            Alert.alert('결제 성공', '3,000원 결제가 완료되었습니다!', [
-                { text: '확인', onPress: () => navigation.goBack() }
-            ]);
+            showAlert({ title: '결제 성공', message: '3,000원 결제가 완료되었습니다!', onConfirm: () => navigation.goBack() });
         } catch (error) {
             console.error('Payment Error:', error.response?.data || error.message);
-            Alert.alert('결제 실패', error.response?.data?.message || '잔액이 부족하거나 결제 서버 오류입니다.');
+            showAlert({ title: '결제 실패', message: error.response?.data?.message || '잔액이 부족하거나 결제 서버 오류입니다.' });
         } finally {
             setIsPaying(false);
         }

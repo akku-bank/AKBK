@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.batch.core.job.Job;
 import org.springframework.batch.core.step.Step;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
+import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
@@ -16,12 +17,6 @@ import org.springframework.batch.infrastructure.item.database.builder.JpaPagingI
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.PlatformTransactionManager;
-
-import java.time.Clock;
-import java.time.DayOfWeek;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.Map;
 
 /**
  * 자녀 소비 레벨 및 점수를 업데이트하는 Spring Batch 설정
@@ -35,7 +30,6 @@ public class WeeklyLevelBatchConfig {
     private final PlatformTransactionManager transactionManager;
     private final EntityManagerFactory entityManagerFactory;
     private final WeeklyLevelProcessor weeklyLevelProcessor;
-    private final Clock clock;
 
     @Bean
     public Job weeklyLevelUpdateJob() {
@@ -55,13 +49,12 @@ public class WeeklyLevelBatchConfig {
     }
 
     @Bean
+    @StepScope
     public JpaPagingItemReader<User> userReader() {
-        LocalDateTime lastMonday = LocalDate.now(clock).minusWeeks(1).with(DayOfWeek.MONDAY).atStartOfDay();
         return new JpaPagingItemReaderBuilder<User>()
                 .name("userReader")
                 .entityManagerFactory(entityManagerFactory)
-                .queryString("SELECT u FROM User u WHERE u.role = 'CHILD' AND u.isActive = true AND u.createdAt < :lastMonday")
-                .parameterValues(Map.of("lastMonday", lastMonday))
+                .queryString("SELECT u FROM User u WHERE u.role = 'CHILD' AND u.isActive = true")
                 .pageSize(100)
                 .build();
     }

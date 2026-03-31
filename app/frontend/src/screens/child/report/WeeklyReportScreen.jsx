@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Platform, ActivityIndicator } from 'react-native';
 import Svg, { Circle, G, Path, Text as SvgText } from 'react-native-svg';
 import { scale, verticalScale } from 'react-native-size-matters';
 import CustomText from '../../../components/common/CustomText';
+import { useFocusEffect } from '@react-navigation/native';
 import { getMyWeeklyReport } from '../../../api/reportApi';
 
 const CATEGORY_COLORS = ['#FF8A65', '#64B5F6', '#81C784', '#FFD54F', '#CE93D8', '#80DEEA', '#FFCC80', '#EF9A9A'];
@@ -84,6 +85,17 @@ const WeeklyReportScreen = ({ navigation }) => {
             .catch(() => setReportData(null))
             .finally(() => setLoading(false));
     }, [dateParam]);
+
+    useFocusEffect(
+        useCallback(() => {
+            const interval = setInterval(() => {
+                getMyWeeklyReport(dateParam)
+                    .then(res => setReportData(res.data?.data || null))
+                    .catch(() => {});
+            }, 5000);
+            return () => clearInterval(interval);
+        }, [dateParam])
+    );
 
     const dailyFlowData = DAY_KEYS.map((key, i) => ({
         day: DAY_LABELS[i],

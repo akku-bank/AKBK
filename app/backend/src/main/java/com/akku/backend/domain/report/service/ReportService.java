@@ -83,6 +83,7 @@ public class ReportService {
                 .totalSpending(spendReport != null ? spendReport.getTotalAmount() : 0L)
                 .totalIncome(incomeReport != null ? incomeReport.getTotalAmount() : 0L)
                 .dailySpending(mapToDailySpending(spendReport))
+                .dailyIncome(mapToDailySpending(incomeReport))
                 .categoryRatios(categoryRatios.stream()
                         .map(ratio -> WeeklyReportResponse.CategoryRatioData.builder()
                                 .subCategoryId(ratio.getId().getSubCategoryId())

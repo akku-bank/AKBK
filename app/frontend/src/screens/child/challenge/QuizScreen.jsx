@@ -1,4 +1,4 @@
-﻿import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { View, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Alert, KeyboardAvoidingView, Platform, Image, Modal } from 'react-native';
 import { scale, verticalScale } from 'react-native-size-matters';
 import CustomText from '../../../components/common/CustomText';
@@ -6,6 +6,7 @@ import CustomTextInput from '../../../components/common/CustomTextInput';
 import api from '../../../api/axios';
 import useAuthStore from '../../../store/useAuthStore';
 import EventSource from 'react-native-sse';
+import { useChildAlert } from '../../../contexts/ChildAlertContext';
 
 const parseProblemJson = (problemJson) => {
     if (!problemJson) return null;
@@ -14,8 +15,8 @@ const parseProblemJson = (problemJson) => {
         const parsed = JSON.parse(problemJson);
         return {
             question: parsed.question || '문제를 불러오지 못했습니다.',
-            options: Array.isArray(parsed.options) ? parsed.options : ['...', '...', '...', '...'],
-            answerIndex: Number.isInteger(parsed.answer_index) ? parsed.answer_index : 0,
+            options: Array.isArray(parsed.options) ? parsed.options : (Array.isArray(parsed.choices) ? parsed.choices : ['...', '...', '...', '...']),
+            answerIndex: Number.isInteger(parsed.answer_index) ? parsed.answer_index : (Number.isInteger(parsed.answerIndex) ? parsed.answerIndex : 0),
             hint: parsed.hint || '힌트를 생성해드릴게요.',
         };
     } catch (error) {
@@ -28,7 +29,9 @@ const normalizeQuizData = (qData) => {
     const parsedProblem = parseProblemJson(qData?.problemJson);
     const isSubmitted = Boolean(qData?.isSubmitted);
     const isCorrect = qData?.isCorrect;
-    const answerIndex = parsedProblem?.answerIndex ?? 0;
+    const answerIndex = qData?.correctChoiceNo != null
+        ? qData.correctChoiceNo - 1
+        : parsedProblem?.answerIndex ?? 0;
 
     return {
         id: qData?.quizId ?? null,
@@ -116,6 +119,7 @@ const QuizScreen = ({ navigation, route }) => {
     const [isAiTyping, setIsAiTyping] = useState(false);
 
     const scrollViewRef = useRef(null);
+    const { showAlert } = useChildAlert();
 
     const q = quiz;
     const difficultyLabel = difficultyLabelMap[difficulty] || difficulty;
@@ -203,7 +207,7 @@ const QuizScreen = ({ navigation, route }) => {
         if (isAiTyping) return;
 
         if (aiCredits <= 0) {
-            Alert.alert('알림', '더 이상 힌트를 사용할 수 없어요.');
+            showAlert({ title: '알림', message: '더 이상 힌트를 사용할 수 없어요.' });
             return;
         }
 
@@ -290,24 +294,25 @@ const QuizScreen = ({ navigation, route }) => {
 
     const handleSubmit = () => {
         if (selectedOption === null) {
-            Alert.alert('알림', '정답을 선택해주세요!');
+            showAlert({ title: '알림', message: '정답을 선택해주세요!' });
             return;
         }
 
-        setIsAnswerRevealed(true);
         const submitTask = async () => {
             try {
                 if (!quiz.id) {
-                    Alert.alert('안내', '퀴즈 정보가 없어 정답을 제출할 수 없습니다.');
+                    showAlert({ title: '안내', message: '퀴즈 정보가 없어 정답을 제출할 수 없습니다.' });
                     return;
                 }
                 const res = await api.post('/challenges/quizzes/answer', { quizId: quiz.id, selectedAnswer: selectedOption });
                 const ansData = res.data?.data;
                 if (!ansData) {
-                    Alert.alert('안내', '정답 확인 중 데이터가 반환되지 않았습니다.');
+                    showAlert({ title: '안내', message: '정답 확인 중 데이터가 반환되지 않았습니다.' });
                     return;
                 }
-                const { isCorrect: isServerCorrect, jellingReward } = ansData;
+                const { isCorrect: isServerCorrect, jellingReward, correctChoiceNo } = ansData;
+                setQuiz(prev => ({ ...prev, answerIndex: correctChoiceNo - 1 }));
+                setIsAnswerRevealed(true);
                 setIsQuizSubmitted(true);
                 setSubmittedResult(isServerCorrect);
 
@@ -326,15 +331,13 @@ const QuizScreen = ({ navigation, route }) => {
                 }
             } catch (e) {
                 console.error('Quiz Submit Error', e.response?.data || e.message);
-                Alert.alert('오류', '정답 제출에 실패했습니다.');
+                showAlert({ title: '오류', message: '정답 제출에 실패했습니다.' });
             }
         };
         submitTask();
     };
 
-    const visibleOptions = isAnswerRevealed
-        ? q.options.filter((_, index) => index === q.answerIndex)
-        : q.options;
+    const visibleOptions = q.options;
 
     return (
         <SafeAreaView style={styles.safeArea}>
@@ -368,10 +371,9 @@ const QuizScreen = ({ navigation, route }) => {
 
                     {/* 옵션 컨테이너가 채팅창 위로 올라간다 */}
                     <View style={styles.optionsContainer}>
-                        {visibleOptions.map((option, visibleIndex) => {
-                            const index = isAnswerRevealed
-                                ? q.answerIndex
-                                : visibleIndex;
+                        {visibleOptions.map((option, index) => {
+                            if (isAnswerRevealed && index !== q.answerIndex && index !== selectedOption) return null;
+
                             let btnStyle = styles.optionBtn;
                             let textStyle = styles.optionText;
 
@@ -541,12 +543,12 @@ const styles = StyleSheet.create({
     creditText: { fontSize: scale(12), fontWeight: 'bold', color: '#4D7C0F' },
 
     chatBubble: { backgroundColor: '#FFFFFF', padding: scale(16), borderRadius: scale(20), marginBottom: verticalScale(10), shadowColor: '#000', shadowOffset: { width: 0, height: verticalScale(2) }, shadowOpacity: 0.05, shadowRadius: scale(4), elevation: 2 },
-    questionText: { fontSize: scale(18), fontWeight: '900', color: '#111', lineHeight: 28 },
+    questionText: { fontSize: scale(18), fontWeight: '900', color: '#111', lineHeight: scale(32) },
 
     optionsContainer: { gap: verticalScale(8), marginBottom: verticalScale(14) },
 
     optionBtn: { backgroundColor: '#FFFFFF', padding: scale(14), borderRadius: scale(12), borderWidth: 2, borderColor: '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 1, },
-    optionText: { fontSize: scale(16), fontWeight: '600', color: '#4B5563' },
+    optionText: { fontSize: scale(16), fontWeight: '600', color: '#4B5563', lineHeight: scale(24) },
 
     selectedBtn: { borderColor: '#A3E635', backgroundColor: '#F7FEE7' },
     selectedText: { color: '#4D7C0F' },
@@ -576,26 +578,30 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'flex-end',
         minHeight: verticalScale(120),
+        marginBottom: verticalScale(24),
     },
     chatSection: { marginTop: verticalScale(8), marginBottom: verticalScale(10) },
     chatRow: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: verticalScale(8) },
     chatRowUser: { justifyContent: 'flex-end', marginLeft: scale(32) },
     chatRowAi: { justifyContent: 'flex-start', marginRight: scale(32) },
     aiAvatar: { width: scale(32), height: scale(32), marginRight: scale(8), marginTop: verticalScale(1), resizeMode: 'contain' },
-    chatMsgBubble: { paddingHorizontal: scale(14), paddingVertical: verticalScale(10), borderRadius: scale(16) },
-    userMsgBubble: { backgroundColor: '#FFFFFF', borderBottomRightRadius: 0, borderWidth: 1, borderColor: '#E5E7EB' },
-    aiMsgBubble: { backgroundColor: '#F7FEE7', borderTopLeftRadius: 0, borderWidth: 1, borderColor: '#A3E635' },
+    chatMsgBubble: { paddingHorizontal: scale(14), paddingVertical: verticalScale(10), borderRadius: scale(16), shadowColor: '#000', shadowOffset: { width: 0, height: verticalScale(2) }, shadowOpacity: 0.08, shadowRadius: scale(4), elevation: 2 },
+    userMsgBubble: { backgroundColor: '#FFFFFF', borderBottomRightRadius: 0 },
+    aiMsgBubble: { backgroundColor: '#F7FEE7', borderTopLeftRadius: 0 },
     explanationMsgBubble: {
         backgroundColor: '#FFFFFF',
         borderTopLeftRadius: 0,
-        borderWidth: 2,
-        borderColor: '#A3E635',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: verticalScale(2) },
+        shadowOpacity: 0.08,
+        shadowRadius: scale(4),
+        elevation: 2,
     },
-    chatMsgText: { fontSize: scale(14), fontWeight: '600', lineHeight: 20 },
+    chatMsgText: { fontSize: scale(14), fontWeight: '600', lineHeight: scale(24) },
     userMsgText: { color: '#111827' },
     aiMsgText: { color: '#4D7C0F' },
 
-    chatInputWrapper: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: scale(16), padding: scale(4), borderWidth: 2, borderColor: '#A3E635' },
+    chatInputWrapper: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: scale(16), paddingLeft: scale(4), paddingVertical: scale(4), paddingRight: scale(4), shadowColor: '#000', shadowOffset: { width: 0, height: verticalScale(2) }, shadowOpacity: 0.08, shadowRadius: scale(8), elevation: 3 },
     chatInput: { flex: 1, paddingHorizontal: scale(12), paddingVertical: verticalScale(12), fontSize: scale(14), color: '#111' },
     sendBtn: { backgroundColor: '#A3E635', paddingHorizontal: scale(16), paddingVertical: verticalScale(10), borderRadius: scale(12), justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 1, },
     sendBtnDisabled: { backgroundColor: '#E5E7EB' },
@@ -654,6 +660,11 @@ const styles = StyleSheet.create({
         paddingVertical: verticalScale(12),
         paddingHorizontal: scale(24),
         alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: verticalScale(2) },
+        shadowOpacity: 0.1,
+        shadowRadius: scale(4),
+        elevation: 3,
     },
     resultButtonText: {
         fontSize: scale(15),

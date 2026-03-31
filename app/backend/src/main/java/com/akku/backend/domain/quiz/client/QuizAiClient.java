@@ -46,7 +46,7 @@ public class QuizAiClient {
             payload.put("quiz_id", request.quizId().toString());
             payload.put("message", request.message());
             payload.put("remaining_credits", request.remainingCredits());
-            payload.put("difficulty", request.difficulty());
+            payload.put("difficulty", request.difficulty().toLowerCase());
             payload.put("birth_date", request.birthDate().toString());
             if (chatJson == null) {
                 payload.putNull("chat_json");

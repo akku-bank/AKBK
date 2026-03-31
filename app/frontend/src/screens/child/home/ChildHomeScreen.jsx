@@ -9,6 +9,8 @@ import CustomText from '../../../components/common/CustomText';
 import Pet from '../../../components/child/avatar/Pet';
 import api from '../../../api/axios';
 import useAuthStore from '../../../store/useAuthStore';
+import ChildCustomModal from '../../../components/common/ChildCustomModal';
+import { useChildAlert } from '../../../contexts/ChildAlertContext';
 
 const { width, height } = Dimensions.get('window');
 
@@ -17,6 +19,7 @@ const ChildHomeScreen = ({ navigation }) => {
     const [isLevelUpModalVisible, setLevelUpModalVisible] = useState(false);
     const { equipState, setEquipState } = useContext(AvatarContext);
     const { user, cachedLevel, setCachedLevel } = useAuthStore();
+    const { showAlert } = useChildAlert();
     const [homeData, setHomeData] = useState(null);
     const [realBalance, setRealBalance] = useState(null);
 
@@ -123,7 +126,7 @@ const ChildHomeScreen = ({ navigation }) => {
                 >
                     {/* 좌측 알림 버튼 / 우측 플로팅 버튼 스택(내 도감, 꾸미기, 친구) */}
                     <View style={[styles.actionRow, { alignItems: 'flex-start' }]}>
-                        <TouchableOpacity style={styles.squareIconButton} onPress={() => Alert.alert('알림', '아직 알림 기록이 없습니다.')}>
+                        <TouchableOpacity style={styles.squareIconButton} onPress={() => showAlert({ title: '알림', message: '아직 알림 기록이 없습니다.' })}>
                             <Image source={require('../../../assets/icon/alert2.png')} style={{ width: scale(28), height: scale(28) }} resizeMode="contain" />
                             <CustomText style={styles.squareIconText}>알림</CustomText>
                             {homeData?.hasUnreadNotification && <View style={styles.redDot} />}
@@ -148,7 +151,7 @@ const ChildHomeScreen = ({ navigation }) => {
                     </View>
 
                     {/* ART_1 (벽그림 갤러리) - 구 기부처 카드 자리 */}
-                    <View style={{ paddingHorizontal: scale(20), marginBottom: verticalScale(14), height: verticalScale(90), width: '100%', alignItems: 'flex-start', justifyContent: 'center' }}>
+                    <View style={{ paddingHorizontal: scale(10), marginBottom: verticalScale(14), height: verticalScale(90), width: '100%', alignItems: 'flex-start', justifyContent: 'center' }}>
                         {equipState.art1 && equipState.art1 !== 'none' && (() => {
                             const artItem = AVATAR_ITEMS.art1.find(a => a.id === equipState.art1);
                             if (!artItem || !artItem.img) return null;
@@ -210,28 +213,31 @@ const ChildHomeScreen = ({ navigation }) => {
             </View>
 
             {/* QR 결제 모달 */}
-            <Modal visible={isQrModalVisible} transparent={true} animationType="fade">
-                <View style={styles.qrModalBackground}>
-                    <TouchableOpacity style={styles.qrModalCloseBtn} onPress={() => setQrModalVisible(false)}>
-                        <CustomText style={styles.qrModalCloseText}>✕</CustomText>
-                    </TouchableOpacity>
-                    <Image source={require('../../../assets/qr-white.png')} style={styles.qrModalImage} />
+            <ChildCustomModal visible={isQrModalVisible} onClose={() => setQrModalVisible(false)}>
+                <CustomText style={{ fontSize: scale(20), fontWeight: '900', color: '#111', marginBottom: verticalScale(16) }}>내 QR스캔</CustomText>
+                <View style={{ width: scale(200), height: scale(200), backgroundColor: '#111', borderRadius: scale(16), justifyContent: 'center', alignItems: 'center' }}>
+                    <Image source={require('../../../assets/qr-white.png')} style={{ width: '80%', height: '80%', resizeMode: 'contain' }} />
                 </View>
-            </Modal>
+                <TouchableOpacity 
+                    style={{ marginTop: verticalScale(24), backgroundColor: '#A3E635', paddingVertical: verticalScale(14), width: '100%', borderRadius: scale(999), alignItems: 'center' }} 
+                    onPress={() => setQrModalVisible(false)}
+                >
+                    <CustomText style={{ fontSize: scale(16), fontWeight: 'bold', color: '#111' }}>닫기</CustomText>
+                </TouchableOpacity>
+            </ChildCustomModal>
 
             {/* 레벨업 축하 모달 */}
-            <Modal visible={isLevelUpModalVisible} transparent={true} animationType="fade">
-                <View style={styles.levelUpModalBackground}>
-                    <View style={styles.levelUpModalCard}>
-                        <CustomText style={styles.levelUpEmoji}>🎉</CustomText>
-                        <CustomText style={styles.levelUpTitle}>축하해요!</CustomText>
-                        <CustomText style={styles.levelUpDesc}>레벨이 올랐어요.{'\n'}새로운 아이템이 해금되었습니다!</CustomText>
-                        <TouchableOpacity style={styles.levelUpCloseBtn} onPress={() => setLevelUpModalVisible(false)}>
-                            <CustomText style={styles.levelUpCloseText}>확인</CustomText>
-                        </TouchableOpacity>
-                    </View>
-                </View>
-            </Modal>
+            <ChildCustomModal visible={isLevelUpModalVisible} onClose={() => setLevelUpModalVisible(false)}>
+                <CustomText style={styles.levelUpEmoji}>🎉</CustomText>
+                <CustomText style={styles.levelUpTitle}>축하해요!</CustomText>
+                <CustomText style={styles.levelUpDesc}>레벨이 올랐어요.{'\n'}새로운 아이템이 해금되었습니다!</CustomText>
+                <TouchableOpacity 
+                    style={{ marginTop: verticalScale(8), backgroundColor: '#A3E635', paddingVertical: verticalScale(14), width: '100%', borderRadius: scale(999), alignItems: 'center' }} 
+                    onPress={() => setLevelUpModalVisible(false)}
+                >
+                    <CustomText style={styles.levelUpCloseText}>확인</CustomText>
+                </TouchableOpacity>
+            </ChildCustomModal>
         </SafeAreaView>
     );
 };

@@ -1,9 +1,10 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, Alert, ActivityIndicator, ImageBackground } from 'react-native';
 import { scale, verticalScale } from 'react-native-size-matters';
 import ChildAvatar from '../../../components/child/avatar/ChildAvatar';
 import CustomText from '../../../components/common/CustomText';
 import api from '../../../api/axios';
+import { useChildAlert } from '../../../contexts/ChildAlertContext';
 
 const customBackground = require('../../../assets/background.png');
 
@@ -51,6 +52,7 @@ const FriendTownScreen = ({ route, navigation }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [friendTownInfo, setFriendTownInfo] = useState(null);
     const [equipState, setEquipState] = useState(DEFAULT_EQUIP_STATE);
+    const { showAlert } = useChildAlert();
 
     useEffect(() => {
         const fetchFriendTown = async () => {
@@ -79,7 +81,7 @@ const FriendTownScreen = ({ route, navigation }) => {
                 }
             } catch (e) {
                 console.error('Friend Town Fetch Error', e);
-                Alert.alert('오류', e.response?.data?.message || '친구 타운 정보를 불러오지 못했습니다.');
+                showAlert({ title: '오류', message: e.response?.data?.message || '친구 타운 정보를 불러오지 못했습니다.' });
             } finally {
                 setIsLoading(false);
             }
@@ -92,31 +94,25 @@ const FriendTownScreen = ({ route, navigation }) => {
     const recentCharity = friendTownInfo?.recentCharity;
 
     const handleDeleteFriend = () => {
-        Alert.alert(
-            '안내',
-            `${friendName}을(를) 삭제할까요?`,
-            [
-                { text: '취소', style: 'cancel' },
-                {
-                    text: '삭제하기',
-                    style: 'destructive',
-                    onPress: async () => {
-                        try {
-                            await api.delete(`/social/friends/${friendId}`);
-                            Alert.alert('완료', '친구가 삭제되었습니다.', [
-                                {
-                                    text: '확인',
-                                    onPress: () => navigation.goBack(),
-                                },
-                            ]);
-                        } catch (e) {
-                            console.error('Friend Delete Error', e);
-                            Alert.alert('오류', e.response?.data?.message || '친구 삭제에 실패했습니다.');
-                        }
-                    },
-                },
-            ]
-        );
+        showAlert({
+            title: '삭제 안내',
+            message: `${friendName}을(를) 삭제할까요?`,
+            showCancel: true,
+            confirmText: '삭제하기',
+            onConfirm: async () => {
+                try {
+                    await api.delete(`/social/friends/${friendId}`);
+                    showAlert({ 
+                        title: '완료', 
+                        message: '친구가 삭제되었습니다.', 
+                        onConfirm: () => navigation.goBack() 
+                    });
+                } catch (e) {
+                    console.error('Friend Delete Error', e);
+                    showAlert({ title: '오류', message: e.response?.data?.message || '친구 삭제에 실패했습니다.' });
+                }
+            }
+        });
     };
 
     return (

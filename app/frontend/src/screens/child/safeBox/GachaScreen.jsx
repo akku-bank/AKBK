@@ -64,13 +64,13 @@ const GachaScreen = ({ navigation, route }) => {
             Animated.parallel([
                 Animated.timing(translateX, {
                     toValue: 0,
-                    duration: 1500,
+                    duration: 800,
                     easing: Easing.out(Easing.cubic),
                     useNativeDriver: Platform.OS !== 'web',
                 }),
                 Animated.timing(rotate, {
                     toValue: 2, // 2 full rotations
-                    duration: 1500,
+                    duration: 800,
                     easing: Easing.out(Easing.cubic),
                     useNativeDriver: Platform.OS !== 'web',
                 }),
@@ -78,17 +78,17 @@ const GachaScreen = ({ navigation, route }) => {
             // Wiggle sequence
             Animated.sequence([
                 // First Wiggle
-                Animated.timing(rotate, { toValue: 2.1, duration: 200, useNativeDriver: Platform.OS !== 'web' }),
-                Animated.timing(rotate, { toValue: 1.9, duration: 200, useNativeDriver: Platform.OS !== 'web' }),
-                Animated.timing(rotate, { toValue: 2.0, duration: 200, useNativeDriver: Platform.OS !== 'web' }),
+                Animated.timing(rotate, { toValue: 2.1, duration: 100, useNativeDriver: Platform.OS !== 'web' }),
+                Animated.timing(rotate, { toValue: 1.9, duration: 100, useNativeDriver: Platform.OS !== 'web' }),
+                Animated.timing(rotate, { toValue: 2.0, duration: 100, useNativeDriver: Platform.OS !== 'web' }),
 
                 // Stop and wait in center
-                Animated.delay(400),
+                Animated.delay(150),
 
                 // Second Wiggle
-                Animated.timing(rotate, { toValue: 2.1, duration: 200, useNativeDriver: Platform.OS !== 'web' }),
-                Animated.timing(rotate, { toValue: 1.9, duration: 200, useNativeDriver: Platform.OS !== 'web' }),
-                Animated.timing(rotate, { toValue: 2.0, duration: 200, useNativeDriver: Platform.OS !== 'web' }),
+                Animated.timing(rotate, { toValue: 2.1, duration: 100, useNativeDriver: Platform.OS !== 'web' }),
+                Animated.timing(rotate, { toValue: 1.9, duration: 100, useNativeDriver: Platform.OS !== 'web' }),
+                Animated.timing(rotate, { toValue: 2.0, duration: 100, useNativeDriver: Platform.OS !== 'web' }),
             ]),
         ]).start(() => {
             setStep('EGG2');
@@ -96,8 +96,8 @@ const GachaScreen = ({ navigation, route }) => {
                 setStep('EGG3');
                 setTimeout(() => {
                     setStep('REVEAL');
-                }, 1500);
-            }, 1500);
+                }, 400);
+            }, 300);
         });
     }, [rotate, translateX, step]);
 
@@ -199,7 +199,7 @@ const GachaScreen = ({ navigation, route }) => {
                         ) : null}
 
                         {!isFallback && <CustomText style={styles.rewardCategory}>{rewardCategoryLabel}</CustomText>}
-                        <CustomText style={[styles.rewardName, isFallback && { color: '#111', marginTop: verticalScale(20) }]}>{rewardNameStr}</CustomText>
+                        <CustomText numberOfLines={2} adjustsFontSizeToFit={true} style={[styles.rewardName, isFallback && { color: '#111', marginTop: verticalScale(20) }]}>{rewardNameStr}</CustomText>
                     </View>
 
                     <TouchableOpacity style={[styles.confirmButton, { backgroundColor: '#A3E635' }]} onPress={handleConfirm}>
@@ -291,10 +291,15 @@ const styles = StyleSheet.create({
     },
     confirmButton: {
         width: '100%',
-        backgroundColor: '#3B82F6',
+        backgroundColor: '#A3E635',
         paddingVertical: verticalScale(16),
         borderRadius: scale(16),
         alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: verticalScale(2) },
+        shadowOpacity: 0.1,
+        shadowRadius: scale(4),
+        elevation: 3,
     },
     confirmButtonText: {
         fontSize: scale(18),

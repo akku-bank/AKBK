@@ -3,6 +3,8 @@ import { View, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, Alert, Ac
 import { scale, verticalScale } from 'react-native-size-matters';
 import CustomText from '../../../components/common/CustomText';
 import api from '../../../api/axios';
+import ChildCustomModal from '../../../components/common/ChildCustomModal';
+import { useChildAlert } from '../../../contexts/ChildAlertContext';
 
 const CardProductScreen = ({ navigation }) => {
     const [products, setProducts] = useState([]);
@@ -13,6 +15,7 @@ const CardProductScreen = ({ navigation }) => {
     const [selectedAccountNo, setSelectedAccountNo] = useState('');
     const [selectedDate, setSelectedDate] = useState('7'); // 기본 일요일(7)
     const [issuing, setIssuing] = useState(false);
+    const { showAlert } = useChildAlert();
 
     useEffect(() => {
         fetchProducts();
@@ -45,7 +48,7 @@ const CardProductScreen = ({ navigation }) => {
             }
         } catch (err) {
             console.error('Fetch Accounts Error', err);
-            Alert.alert('오류', '계좌 정보를 불러오지 못했습니다.');
+            showAlert({ title: '오류', message: '계좌 정보를 불러오지 못했습니다.' });
         }
     };
 
@@ -57,7 +60,7 @@ const CardProductScreen = ({ navigation }) => {
 
     const handleIssueCard = async () => {
         if (!selectedAccountNo) {
-            Alert.alert('알림', '출금 계좌를 선택해 주세요.');
+            showAlert({ title: '알림', message: '출금 계좌를 선택해 주세요.' });
             return;
         }
 
@@ -69,13 +72,15 @@ const CardProductScreen = ({ navigation }) => {
                 withdrawalDate: selectedDate
             });
             setIsModalVisible(false);
-            Alert.alert('발급 완료', '카드 발급이 완료되었습니다!', [
-                { text: '확인', onPress: () => navigation.goBack() }
-            ]);
+            showAlert({ 
+                title: '발급 완료', 
+                message: '카드 발급이 완료되었습니다!', 
+                onConfirm: () => navigation.goBack() 
+            });
         } catch (err) {
             console.error('Card Issue Error', err);
             const errorMsg = err.response?.data?.message || '카드 발급 중 문제가 발생했습니다.';
-            Alert.alert('발급 실패', errorMsg);
+            showAlert({ title: '발급 실패', message: errorMsg });
         } finally {
             setIssuing(false);
         }
@@ -118,94 +123,78 @@ const CardProductScreen = ({ navigation }) => {
                 )}
             </ScrollView>
 
-            <Modal
-                transparent={true}
-                visible={isModalVisible}
-                animationType="slide"
-                onRequestClose={() => setIsModalVisible(false)}
-            >
-                <View style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
-                        <TouchableOpacity
-                            style={styles.closeBtn}
-                            onPress={() => setIsModalVisible(false)}
-                        >
-                            <CustomText style={styles.closeBtnText}>✕</CustomText>
-                        </TouchableOpacity>
+            <ChildCustomModal visible={isModalVisible} onClose={() => setIsModalVisible(false)} dismissable={true}>
+                <CustomText style={styles.modalTitle}>카드 발급 설정</CustomText>
 
-                        <CustomText style={styles.modalTitle}>카드 발급 설정</CustomText>
+                <ScrollView showsVerticalScrollIndicator={false} style={styles.modalScroll}>
+                    {selectedProduct && (
+                        <View style={styles.cardPreview}>
+                            <View style={[styles.cardGraphic, { backgroundColor: '#A3E635' }]}>
+                                <CustomText style={styles.cardGraphicText}>{selectedProduct.cardName}</CustomText>
+                                <View style={styles.cardChip} />
+                            </View>
+                            <CustomText style={styles.selectedProductName}>{selectedProduct.cardName}</CustomText>
+                            <CustomText style={styles.selectedProductDesc}>{selectedProduct.cardDescription}</CustomText>
 
-                        <ScrollView showsVerticalScrollIndicator={false} style={styles.modalScroll}>
-                            {selectedProduct && (
-                                <View style={styles.cardPreview}>
-                                    <View style={[styles.cardGraphic, { backgroundColor: '#A3E635' }]}>
-                                        <CustomText style={styles.cardGraphicText}>{selectedProduct.cardName}</CustomText>
-                                        <View style={styles.cardChip} />
-                                    </View>
-                                    <CustomText style={styles.selectedProductName}>{selectedProduct.cardName}</CustomText>
-                                    <CustomText style={styles.selectedProductDesc}>{selectedProduct.cardDescription}</CustomText>
-
-                                    {/* 카드 혜택 상세 표시 */}
-                                    {selectedProduct.cardBenefitInfo && (
-                                        <View style={styles.benefitsBox}>
-                                            {(() => {
-                                                try {
-                                                    const benefits = JSON.parse(selectedProduct.cardBenefitInfo);
-                                                    if (Array.isArray(benefits)) {
-                                                        return benefits.map((b, i) => (
-                                                            <View key={i} style={styles.benefitRow}>
-                                                                <CustomText style={styles.benefitName}>
-                                                                    {b.categoryName || b.benefitName || Object.values(b)[0]}
-                                                                </CustomText>
-                                                                <CustomText style={styles.benefitDetail}>
-                                                                    {b.discountRate ? `${b.discountRate}% 할인` : (b.benefitType || '')}
-                                                                </CustomText>
-                                                            </View>
-                                                        ));
-                                                    }
-                                                } catch (e) {
-                                                    return <CustomText style={styles.benefitDetail}>{selectedProduct.cardBenefitInfo}</CustomText>;
-                                                }
-                                                return null;
-                                            })()}
-                                        </View>
-                                    )}
+                            {/* 카드 혜택 상세 표시 */}
+                            {selectedProduct.cardBenefitInfo && (
+                                <View style={styles.benefitsBox}>
+                                    {(() => {
+                                        try {
+                                            const benefits = JSON.parse(selectedProduct.cardBenefitInfo);
+                                            if (Array.isArray(benefits)) {
+                                                return benefits.map((b, i) => (
+                                                    <View key={i} style={styles.benefitRow}>
+                                                        <CustomText style={styles.benefitName}>
+                                                            {b.categoryName || b.benefitName || Object.values(b)[0]}
+                                                        </CustomText>
+                                                        <CustomText style={styles.benefitDetail}>
+                                                            {b.discountRate ? `${b.discountRate}% 할인` : (b.benefitType || '')}
+                                                        </CustomText>
+                                                    </View>
+                                                ));
+                                            }
+                                        } catch (e) {
+                                            return <CustomText style={styles.benefitDetail}>{selectedProduct.cardBenefitInfo}</CustomText>;
+                                        }
+                                        return null;
+                                    })()}
                                 </View>
                             )}
+                        </View>
+                    )}
 
 
-                            <View style={styles.configSection}>
-                                <CustomText style={styles.sectionLabel}>출금 계좌 선택</CustomText>
-                                {accounts.map((item) => (
-                                    <TouchableOpacity
-                                        key={item.accountNumber}
-                                        style={[styles.accountItem, selectedAccountNo === item.accountNumber && styles.accountItemActive]}
-                                        onPress={() => setSelectedAccountNo(item.accountNumber)}
-                                    >
-                                        <View>
-                                            <CustomText style={styles.accountName}>{item.accountName}</CustomText>
-                                            <CustomText style={styles.accountNo}>{item.accountNumber}</CustomText>
-                                        </View>
-                                        <CustomText style={styles.accountBalance}>{item.balance?.toLocaleString()}원</CustomText>
-                                    </TouchableOpacity>
-                                ))}
-                            </View>
-                        </ScrollView>
-
-                        <TouchableOpacity
-                            style={[styles.submitBtn, issuing && { opacity: 0.7 }]}
-                            onPress={handleIssueCard}
-                            disabled={issuing}
-                        >
-                            {issuing ? (
-                                <ActivityIndicator color="#FFF" />
-                            ) : (
-                                <CustomText style={styles.submitBtnText}>카드 발급하기</CustomText>
-                            )}
-                        </TouchableOpacity>
+                    <View style={styles.configSection}>
+                        <CustomText style={styles.sectionLabel}>출금 계좌 선택</CustomText>
+                        {accounts.map((item) => (
+                            <TouchableOpacity
+                                key={item.accountNumber}
+                                style={[styles.accountItem, selectedAccountNo === item.accountNumber && styles.accountItemActive]}
+                                onPress={() => setSelectedAccountNo(item.accountNumber)}
+                            >
+                                <View>
+                                    <CustomText style={styles.accountName}>{item.accountName}</CustomText>
+                                    <CustomText style={styles.accountNo}>{item.accountNumber}</CustomText>
+                                </View>
+                                <CustomText style={styles.accountBalance}>{item.balance?.toLocaleString()}원</CustomText>
+                            </TouchableOpacity>
+                        ))}
                     </View>
-                </View>
-            </Modal>
+                </ScrollView>
+
+                <TouchableOpacity
+                    style={[styles.submitBtn, { width: '100%', borderRadius: scale(999) }, issuing && { opacity: 0.7 }]}
+                    onPress={handleIssueCard}
+                    disabled={issuing}
+                >
+                    {issuing ? (
+                        <ActivityIndicator color="#111" />
+                    ) : (
+                        <CustomText style={[styles.submitBtnText, { color: '#111' }]}>카드 발급하기</CustomText>
+                    )}
+                </TouchableOpacity>
+            </ChildCustomModal>
         </SafeAreaView>
     );
 };
@@ -234,7 +223,7 @@ const styles = StyleSheet.create({
     closeBtn: { alignSelf: 'flex-end', padding: scale(8) },
     closeBtnText: { fontSize: scale(20), color: '#9CA3AF' },
     modalTitle: { fontSize: scale(20), fontWeight: '900', color: '#111', marginBottom: verticalScale(24), textAlign: 'center' },
-    modalScroll: { flex: 1, marginBottom: verticalScale(16) },
+    modalScroll: { width: '100%', flexShrink: 1, marginBottom: verticalScale(16) },
 
     cardPreview: { alignItems: 'center', marginBottom: verticalScale(24) },
     cardGraphic: { width: scale(180), height: scale(110), borderRadius: scale(12), padding: scale(16), justifyContent: 'flex-end', elevation: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8 },

@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
@@ -16,6 +16,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { RFValue } from 'react-native-responsive-fontsize';
 import CustomText from '../../../components/common/CustomText';
 import api from '../../../api/axios';
+import { useChildAlert } from '../../../contexts/ChildAlertContext';
 
 const CHARITY_EMOJI_MAP = {
     '문화 예술': '🎨',
@@ -28,6 +29,7 @@ const SafeBoxScreen = ({ navigation }) => {
     const [hubInfo, setHubInfo] = useState(null);
     const [charities, setCharities] = useState([]);
     const progressAnim = useRef(new Animated.Value(0)).current;
+    const { showAlert } = useChildAlert();
 
     const animateProgress = (current, goal) => {
         const value = Math.min(current / (goal || 1), 1);
@@ -63,7 +65,7 @@ const SafeBoxScreen = ({ navigation }) => {
             }
         } catch (error) {
             console.error('Fetch Hub Error:', error);
-            Alert.alert('오류', '젤링 허브 정보를 불러오지 못했습니다.');
+            showAlert({ title: '오류', message: '젤링 허브 정보를 불러오지 못했습니다.' });
         } finally {
             setIsLoading(false);
         }
@@ -72,33 +74,31 @@ const SafeBoxScreen = ({ navigation }) => {
     useFocusEffect(
         useCallback(() => {
             fetchHubInfo();
+            const interval = setInterval(() => fetchHubInfo(), 5000);
+            return () => clearInterval(interval);
         }, [])
     );
 
     const handleSelectCharity = async (charity) => {
-        Alert.alert(
-            '기부처를 선택할까요?',
-            `${charity.name}을 현재 기부 목표로 설정할까요?`,
-            [
-                { text: '취소', style: 'cancel' },
-                {
-                    text: '확인',
-                    onPress: async () => {
-                        try {
-                            setIsLoading(true);
-                            await api.post('/jelling-hub/active-charity', {
-                                charityId: charity.charityId,
-                            });
-                            await fetchHubInfo();
-                        } catch (error) {
-                            console.error('Set Active Charity Error:', error);
-                            Alert.alert('오류', '기부 목표 설정에 실패했습니다.');
-                            setIsLoading(false);
-                        }
-                    },
-                },
-            ]
-        );
+        showAlert({
+            title: '기부처를 선택할까요?',
+            message: `${charity.name}을 현재 기부 목표로 설정할까요?`,
+            showCancel: true,
+            confirmText: '확인',
+            onConfirm: async () => {
+                try {
+                    setIsLoading(true);
+                    await api.post('/jelling-hub/active-charity', {
+                        charityId: charity.charityId,
+                    });
+                    await fetchHubInfo();
+                } catch (error) {
+                    console.error('Set Active Charity Error:', error);
+                    showAlert({ title: '오류', message: '기부 목표 설정에 실패했습니다.' });
+                    setIsLoading(false);
+                }
+            }
+        });
     };
 
     const handleReward = async () => {
@@ -110,7 +110,7 @@ const SafeBoxScreen = ({ navigation }) => {
             });
         } catch (error) {
             console.error('Reward Claim Error:', error);
-            Alert.alert('오류', '보상 수령에 실패했습니다.');
+            showAlert({ title: '오류', message: '보상 수령에 실패했습니다.' });
             setIsLoading(false);
         }
     };
@@ -389,10 +389,15 @@ const styles = StyleSheet.create({
         borderRadius: RFValue(10),
     },
     gachaButton: {
-        backgroundColor: '#F59E0B',
+        backgroundColor: '#A3E635',
         paddingVertical: RFValue(12),
         borderRadius: RFValue(12),
         alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+        elevation: 3,
     },
     gachaButtonText: {
         color: '#FFF',

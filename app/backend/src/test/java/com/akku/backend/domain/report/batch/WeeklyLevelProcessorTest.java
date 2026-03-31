@@ -23,6 +23,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -117,7 +118,7 @@ class WeeklyLevelProcessorTest {
         // 소비 점수 30 + 잔액 점수 17 + 퀴즈 0 = 약 47
         assertThat(result).isNotNull();
         assertThat(result.getScore()).isGreaterThanOrEqualTo(40);
-        verify(weeklyReportRepository).save(any());
+        verify(weeklyReportRepository, times(2)).save(any());
     }
 
     @Test

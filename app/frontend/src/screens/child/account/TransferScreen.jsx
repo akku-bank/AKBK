@@ -1,10 +1,12 @@
-﻿import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, Alert, Modal, Image, Dimensions, Animated, Platform, DeviceEventEmitter } from 'react-native';
 import { scale, verticalScale } from 'react-native-size-matters';
 import CustomText from '../../../components/common/CustomText';
 import CustomTextInput from '../../../components/common/CustomTextInput';
 import api from '../../../api/axios';
 import { useFocusEffect } from '@react-navigation/native';
+import ChildCustomModal from '../../../components/common/ChildCustomModal';
+import { useChildAlert } from '../../../contexts/ChildAlertContext';
 
 const { width, height } = Dimensions.get('window');
 
@@ -31,6 +33,7 @@ const TransferScreen = ({ navigation }) => {
 
     const [myAccount, setMyAccount] = useState(null);
     const [isBankModalVisible, setIsBankModalVisible] = useState(false);
+    const { showAlert } = useChildAlert();
 
     // 내 계좌 정보 로드
     const fetchMyAccount = useCallback(() => {
@@ -57,7 +60,7 @@ const TransferScreen = ({ navigation }) => {
     const handleNextStep = async () => {
         if (step === 'RECIPIENT') {
             if (!targetAccountNumber.trim()) {
-                Alert.alert('알림', '계좌번호를 입력해주세요.');
+                showAlert({ title: '알림', message: '계좌번호를 입력해주세요.' });
                 return;
             }
 
@@ -74,19 +77,19 @@ const TransferScreen = ({ navigation }) => {
                     setTargetName(res.data.data.userName);
                     setStep('AMOUNT');
                 } else {
-                    Alert.alert('조회 실패', '입력하신 계좌 정보를 찾을 수 없습니다.');
+                    showAlert({ title: '조회 실패', message: '입력하신 계좌 정보를 찾을 수 없습니다.' });
                 }
             } catch (e) {
                 console.error('Account Verify Error', e);
-                Alert.alert('조회 실패', '계좌 정보를 확인할 수 없습니다. 다시 시도해주세요.');
+                showAlert({ title: '조회 실패', message: '계좌 정보를 확인할 수 없습니다. 다시 시도해주세요.' });
             }
         } else if (step === 'AMOUNT') {
             if (!amount || parseInt(amount) <= 0) {
-                Alert.alert('알림', '송금할 금액을 입력해주세요.');
+                showAlert({ title: '알림', message: '송금할 금액을 입력해주세요.' });
                 return;
             }
             if (myAccount && parseInt(amount) > myAccount.balance) {
-                Alert.alert('잔액 부족', '내 지갑의 잔액이 부족합니다.');
+                showAlert({ title: '잔액 부족', message: '내 지갑의 잔액이 부족합니다.' });
                 return;
             }
             setIsConfirmVisible(true);
@@ -124,12 +127,14 @@ const TransferScreen = ({ navigation }) => {
             // 송금 성공 후 즉시 내역 갱신 이벤트 발행
             DeviceEventEmitter.emit('refresh_transactions');
 
-            Alert.alert('송금 완료', `${targetName}님께 ${parseInt(amount).toLocaleString()}원을 보냈어요!`, [
-                { text: '확인', onPress: () => navigation.goBack() }
-            ]);
+            showAlert({ 
+                title: '송금 완료', 
+                message: `${targetName}님께 ${parseInt(amount).toLocaleString()}원을 보냈어요!`,
+                onConfirm: () => navigation.goBack() 
+            });
         } catch (e) {
             console.error('Transfer Error', e.response?.data || e.message);
-            Alert.alert('송금 실패', e.response?.data?.message || '비밀번호가 틀렸거나 오류가 발생했습니다.');
+            showAlert({ title: '송금 실패', message: e.response?.data?.message || '비밀번호가 틀렸거나 오류가 발생했습니다.' });
             setPin('');
         }
     };
@@ -253,60 +258,55 @@ const TransferScreen = ({ navigation }) => {
             )}
 
             {/* 은행 선택 모달 */}
-            <Modal visible={isBankModalVisible} transparent animationType="slide">
-                <View style={styles.modalOverlay}>
-                    <View style={styles.bankModal}>
-                        <View style={styles.modalHeader}>
-                            <CustomText style={styles.modalTitle}>은행 선택</CustomText>
-                            <TouchableOpacity onPress={() => setIsBankModalVisible(false)}>
-                                <CustomText style={styles.modalClose}>✕</CustomText>
-                            </TouchableOpacity>
-                        </View>
-                        <ScrollView contentContainerStyle={styles.bankGrid}>
-                            {BANKS.map((b) => (
-                                <TouchableOpacity
-                                    key={b.code}
-                                    style={styles.bankItem}
-                                    onPress={() => {
-                                        setTargetBank(b);
-                                        setIsBankModalVisible(false);
-                                    }}
-                                >
-                                    <View style={[styles.bankItemIcon, { backgroundColor: b.color }]} />
-                                    <CustomText style={styles.bankItemName}>{b.name}</CustomText>
-                                </TouchableOpacity>
-                            ))}
-                        </ScrollView>
-                    </View>
+            <ChildCustomModal visible={isBankModalVisible} onClose={() => setIsBankModalVisible(false)} dismissable={true}>
+                <View style={[styles.modalHeader, { padding: 0, borderBottomWidth: 0, marginBottom: verticalScale(16), width: '100%' }]}>
+                    <CustomText style={[styles.modalTitle, { fontSize: scale(20), fontWeight: '900', color: '#111' }]}>은행 선택</CustomText>
                 </View>
-            </Modal>
+                <ScrollView contentContainerStyle={styles.bankGrid}>
+                    {BANKS.map((b) => (
+                        <TouchableOpacity
+                            key={b.code}
+                            style={styles.bankItem}
+                            onPress={() => {
+                                setTargetBank(b);
+                                setIsBankModalVisible(false);
+                            }}
+                        >
+                            <View style={[styles.bankItemIcon, { backgroundColor: b.color }]} />
+                            <CustomText style={styles.bankItemName}>{b.name}</CustomText>
+                        </TouchableOpacity>
+                    ))}
+                </ScrollView>
+                <TouchableOpacity 
+                    style={{ marginTop: verticalScale(16), backgroundColor: '#A3E635', paddingVertical: verticalScale(14), width: '100%', borderRadius: scale(999), alignItems: 'center' }} 
+                    onPress={() => setIsBankModalVisible(false)}
+                >
+                    <CustomText style={{ fontSize: scale(16), fontWeight: 'bold', color: '#111' }}>닫기</CustomText>
+                </TouchableOpacity>
+            </ChildCustomModal>
 
             {/* 확인 모달 */}
-            <Modal visible={isConfirmVisible} transparent animationType="fade">
-                <View style={styles.modalOverlay}>
-                    <View style={styles.confirmModal}>
-                        <CustomText style={styles.confirmTitle}>송금 확인</CustomText>
-                        <CustomText style={styles.confirmText}>
-                            <CustomText style={{ fontWeight: 'bold', color: '#111' }}>{targetName}</CustomText>님에게{'\n'}
-                            <CustomText style={{ fontWeight: 'bold', color: '#A3E635' }}>{parseInt(amount).toLocaleString()}원</CustomText>을 보낼까요?
-                        </CustomText>
-                        <View style={styles.confirmButtons}>
-                            <TouchableOpacity
-                                style={[styles.confirmBtn, styles.cancelBtn]}
-                                onPress={() => setIsConfirmVisible(false)}
-                            >
-                                <CustomText style={styles.cancelBtnText}>취소</CustomText>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                style={[styles.confirmBtn, styles.okBtn]}
-                                onPress={handleConfirmTransfer}
-                            >
-                                <CustomText style={styles.okBtnText}>보내기</CustomText>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
+            <ChildCustomModal visible={isConfirmVisible} onClose={() => setIsConfirmVisible(false)}>
+                <CustomText style={[styles.confirmTitle, { color: '#111', fontSize: scale(20), fontWeight: '900', marginBottom: verticalScale(16) }]}>송금 확인</CustomText>
+                <CustomText style={[styles.confirmText, { fontSize: scale(15), color: '#4B5563', lineHeight: scale(22) }]}>
+                    <CustomText style={{ fontWeight: 'bold', color: '#111' }}>{targetName}</CustomText>님에게{'\n'}
+                    <CustomText style={{ fontWeight: 'bold', color: '#A3E635' }}>{parseInt(amount).toLocaleString()}원</CustomText>을 보낼까요?
+                </CustomText>
+                <View style={[styles.confirmButtons, { marginTop: verticalScale(28), width: '100%' }]}>
+                    <TouchableOpacity
+                        style={[styles.confirmBtn, styles.cancelBtn, { borderRadius: scale(999), flex: 0.8 }]}
+                        onPress={() => setIsConfirmVisible(false)}
+                    >
+                        <CustomText style={[styles.cancelBtnText, { fontSize: scale(15) }]}>취소</CustomText>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={[styles.confirmBtn, styles.okBtn, { borderRadius: scale(999), flex: 1, backgroundColor: '#A3E635' }]}
+                        onPress={handleConfirmTransfer}
+                    >
+                        <CustomText style={[styles.okBtnText, { fontSize: scale(16), color: '#111' }]}>보내기</CustomText>
+                    </TouchableOpacity>
                 </View>
-            </Modal>
+            </ChildCustomModal>
         </SafeAreaView>
     );
 };
@@ -319,7 +319,7 @@ const styles = StyleSheet.create({
     headerTitle: { fontSize: 18, fontWeight: 'bold' },
 
     container: { flexGrow: 1, backgroundColor: '#ECFCCB', paddingHorizontal: 24, paddingTop: 20, paddingBottom: 40 },
-    stepContent: { backgroundColor: '#FFFFFF', borderRadius: 24, padding: 24, marginBottom: 0 },
+    stepContent: { backgroundColor: '#FFFFFF', borderRadius: 24, padding: 24, marginBottom: 0, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.08, shadowRadius: 12, elevation: 4 },
     stepTitle: { fontSize: 26, fontWeight: '900', color: '#111', lineHeight: 34, marginBottom: 30 },
 
     // Step 1
