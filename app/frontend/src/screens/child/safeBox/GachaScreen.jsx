@@ -64,13 +64,13 @@ const GachaScreen = ({ navigation, route }) => {
             Animated.parallel([
                 Animated.timing(translateX, {
                     toValue: 0,
-                    duration: 1500,
+                    duration: 800,
                     easing: Easing.out(Easing.cubic),
                     useNativeDriver: Platform.OS !== 'web',
                 }),
                 Animated.timing(rotate, {
                     toValue: 2, // 2 full rotations
-                    duration: 1500,
+                    duration: 800,
                     easing: Easing.out(Easing.cubic),
                     useNativeDriver: Platform.OS !== 'web',
                 }),
@@ -78,17 +78,17 @@ const GachaScreen = ({ navigation, route }) => {
             // Wiggle sequence
             Animated.sequence([
                 // First Wiggle
-                Animated.timing(rotate, { toValue: 2.1, duration: 200, useNativeDriver: Platform.OS !== 'web' }),
-                Animated.timing(rotate, { toValue: 1.9, duration: 200, useNativeDriver: Platform.OS !== 'web' }),
-                Animated.timing(rotate, { toValue: 2.0, duration: 200, useNativeDriver: Platform.OS !== 'web' }),
+                Animated.timing(rotate, { toValue: 2.1, duration: 100, useNativeDriver: Platform.OS !== 'web' }),
+                Animated.timing(rotate, { toValue: 1.9, duration: 100, useNativeDriver: Platform.OS !== 'web' }),
+                Animated.timing(rotate, { toValue: 2.0, duration: 100, useNativeDriver: Platform.OS !== 'web' }),
 
                 // Stop and wait in center
-                Animated.delay(400),
+                Animated.delay(150),
 
                 // Second Wiggle
-                Animated.timing(rotate, { toValue: 2.1, duration: 200, useNativeDriver: Platform.OS !== 'web' }),
-                Animated.timing(rotate, { toValue: 1.9, duration: 200, useNativeDriver: Platform.OS !== 'web' }),
-                Animated.timing(rotate, { toValue: 2.0, duration: 200, useNativeDriver: Platform.OS !== 'web' }),
+                Animated.timing(rotate, { toValue: 2.1, duration: 100, useNativeDriver: Platform.OS !== 'web' }),
+                Animated.timing(rotate, { toValue: 1.9, duration: 100, useNativeDriver: Platform.OS !== 'web' }),
+                Animated.timing(rotate, { toValue: 2.0, duration: 100, useNativeDriver: Platform.OS !== 'web' }),
             ]),
         ]).start(() => {
             setStep('EGG2');
@@ -96,8 +96,8 @@ const GachaScreen = ({ navigation, route }) => {
                 setStep('EGG3');
                 setTimeout(() => {
                     setStep('REVEAL');
-                }, 1500);
-            }, 1500);
+                }, 400);
+            }, 300);
         });
     }, [rotate, translateX, step]);
 

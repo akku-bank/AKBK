@@ -39,8 +39,8 @@ const ParentChallengeManageScreen = ({ navigation, route }) => {
     const [isLoading, setIsLoading] = useState(true);
     const [transferringId, setTransferringId] = useState(null);
 
-    const fetchChallenges = useCallback(async () => {
-        setIsLoading(true);
+    const fetchChallenges = useCallback(async (silent = false) => {
+        if (!silent) setIsLoading(true);
 
         try {
             const familyRes = await api.get('/families/members');
@@ -48,19 +48,22 @@ const ParentChallengeManageScreen = ({ navigation, route }) => {
             const childMembers = (familyRes.data?.data?.members || []).filter(
                 (member) => member.role === 'CHILD' && member.userId
             );
-            setChildren(childMembers);
+            
+            if (!silent || children.length === 0) setChildren(childMembers);
 
             const resolvedChild =
                 childMembers.find((member) => member.userId === (selectedChildId || routeChildId)) ||
                 childMembers[0];
 
             if (!resolvedChild) {
-                setSelectedChildId(null);
-                setChildName('\uC790\uB140');
-                setChildAccountId(null);
-                setRequestedChallenges([]);
-                setThisWeekChallenges([]);
-                setRewardRequestedChallenges([]);
+                if (!silent) {
+                    setSelectedChildId(null);
+                    setChildName('\uC790\uB140');
+                    setChildAccountId(null);
+                    setRequestedChallenges([]);
+                    setThisWeekChallenges([]);
+                    setRewardRequestedChallenges([]);
+                }
                 return;
             }
 
@@ -75,29 +78,70 @@ const ParentChallengeManageScreen = ({ navigation, route }) => {
             setChildName(resolvedChildName || '\uC790\uB140');
             setChildAccountId(resolvedChildAccountId || null);
 
-            const [requestedRes, thisWeekRes, rewardRes] = await Promise.all([
-                api.get('/challenges/spending', { params: { childId: resolvedChildId } }),
-                api.get('/challenges/spending/this-week', { params: { childId: resolvedChildId } }),
-                api.get('/challenges/spending/reward-requests', { params: { childId: resolvedChildId } }),
+            const t = new Date().getTime(); // 캐시 방지용
+
+            const results = await Promise.allSettled([
+                api.get('/challenges/spending', { params: { childId: resolvedChildId, t } }),
+                api.get('/challenges/spending/this-week', { params: { childId: resolvedChildId, t } }),
+                api.get('/challenges/spending/reward-requests', { params: { childId: resolvedChildId, t } }),
             ]);
 
-            setRequestedChallenges(requestedRes.data?.data?.challenges || []);
-            setThisWeekChallenges(thisWeekRes.data?.data?.challenges || []);
-            setRewardRequestedChallenges(rewardRes.data?.data?.challenges || []);
+            const requestedRes = results[0].status === 'fulfilled' ? results[0].value : null;
+            const thisWeekRes = results[1].status === 'fulfilled' ? results[1].value : null;
+            const rewardRes = results[2].status === 'fulfilled' ? results[2].value : null;
+
+            if (requestedRes) {
+                const arr = requestedRes.data?.data?.challenges || [];
+                setRequestedChallenges([...arr].reverse());
+            }
+            if (thisWeekRes) {
+                const arr = thisWeekRes.data?.data?.challenges || [];
+                setThisWeekChallenges([...arr].reverse());
+            }
+            if (rewardRes) {
+                const arr = rewardRes.data?.data?.challenges || [];
+                setRewardRequestedChallenges([...arr].reverse());
+            }
+
         } catch (error) {
             console.error('Parent challenge fetch error', error);
-            setRequestedChallenges([]);
-            setThisWeekChallenges([]);
-            setRewardRequestedChallenges([]);
-            Alert.alert('\uC624\uB958', '\uBD80\uBAA8 \uCC4C\uB9B0\uC9C0 \uBAA9\uB85D\uC744 \uBD88\uB7EC\uC624\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4.');
+            if (!silent) {
+                setRequestedChallenges([]);
+                setThisWeekChallenges([]);
+                setRewardRequestedChallenges([]);
+                Alert.alert('\uC624\uB958', '\uBD80\uBAA8 \uCC4C\uB9B0\uC9C0 \uBAA9\uB85D\uC744 \uBD88\uB7EC\uC624\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4.');
+            }
         } finally {
-            setIsLoading(false);
+            if (!silent) setIsLoading(false);
         }
     }, [routeChildId, selectedChildId]);
 
     useFocusEffect(
         useCallback(() => {
-            fetchChallenges();
+            let isActive = true;
+            let timeoutId;
+
+            const poll = async () => {
+                if (!isActive) return;
+                await fetchChallenges(true);
+                if (isActive) {
+                    timeoutId = setTimeout(poll, 5000);
+                }
+            };
+
+            const startFocus = async () => {
+                await fetchChallenges();
+                if (isActive) {
+                    timeoutId = setTimeout(poll, 5000);
+                }
+            };
+
+            startFocus();
+
+            return () => {
+                isActive = false;
+                if (timeoutId) clearTimeout(timeoutId);
+            };
         }, [fetchChallenges])
     );
 
@@ -476,7 +520,7 @@ const styles = StyleSheet.create({
         marginTop: verticalScale(12),
     },
     reviewButton: {
-        backgroundColor: '#111827',
+        backgroundColor: '#A3E635',
         borderRadius: scale(12),
         paddingVertical: verticalScale(11),
         alignItems: 'center',
@@ -488,7 +532,7 @@ const styles = StyleSheet.create({
     },
     reviewButtonText: {
         fontSize: scale(13),
-        color: '#FFFFFF',
+        color: '#111827',
         fontWeight: '700',
     },
 

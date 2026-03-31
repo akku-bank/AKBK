@@ -68,7 +68,7 @@ const ChallengeDetailScreen = ({ navigation, route }) => {
         <SafeAreaView style={styles.safeArea}>
             <View style={styles.header}>
                 <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-                    <CustomText style={styles.backButtonText}>{'<'}</CustomText>
+                    <CustomText style={styles.backButtonText}>{'←'}</CustomText>
                 </TouchableOpacity>
                 <CustomText style={styles.headerTitle}>챌린지 상세</CustomText>
                 <View style={styles.headerSpacer} />

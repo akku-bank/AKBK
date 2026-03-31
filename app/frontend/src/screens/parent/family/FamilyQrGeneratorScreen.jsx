@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, SafeAreaView, TouchableOpacity, Modal, TextInput, Alert } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 import { scale, verticalScale } from 'react-native-size-matters';
@@ -123,8 +123,8 @@ const FamilyQrGeneratorScreen = ({ navigation }) => {
                     <CustomText style={styles.refreshBtnText}>🔄 QR 코드 갱신</CustomText>
                 </TouchableOpacity>
 
-                <TouchableOpacity style={[styles.refreshBtn, { backgroundColor: '#3B82F6', marginTop: verticalScale(16), paddingHorizontal: scale(20) }]} onPress={() => setModalVisible(true)}>
-                    <CustomText style={[styles.refreshBtnText, { color: '#FFFFFF' }]}>+ 초대받을 사람(자녀) 사전 추가하기</CustomText>
+                <TouchableOpacity style={[styles.refreshBtn, { backgroundColor: '#A3E635', marginTop: verticalScale(16), paddingHorizontal: scale(20) }]} onPress={() => setModalVisible(true)}>
+                    <CustomText style={[styles.refreshBtnText, { color: '#111' }]}>+ 초대받을 사람(자녀) 사전 추가하기</CustomText>
                 </TouchableOpacity>
             </View>
 
@@ -154,8 +154,8 @@ const FamilyQrGeneratorScreen = ({ navigation }) => {
                             <TouchableOpacity style={[styles.modalBtn, { backgroundColor: '#F9FAFB' }]} onPress={() => setModalVisible(false)}>
                                 <CustomText style={{ color: '#4B5563', fontWeight: 'bold' }}>취소</CustomText>
                             </TouchableOpacity>
-                            <TouchableOpacity style={[styles.modalBtn, { backgroundColor: '#3B82F6' }]} onPress={handleAddMember}>
-                                <CustomText style={{ color: '#FFFFFF', fontWeight: 'bold' }}>명단에 등록하기</CustomText>
+                            <TouchableOpacity style={[styles.modalBtn, { backgroundColor: '#A3E635' }]} onPress={handleAddMember}>
+                                <CustomText style={{ color: '#111', fontWeight: 'bold' }}>명단에 등록하기</CustomText>
                             </TouchableOpacity>
                         </View>
                     </View>
