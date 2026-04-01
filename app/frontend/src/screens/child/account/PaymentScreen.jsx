@@ -38,6 +38,7 @@ const PaymentScreen = ({ navigation }) => {
                         const primary = accounts.find(a => a.isPrimary) || accounts[0];
                         setBankBalance(primary.balance);
                     }
+
                 } catch (error) {
                     console.error('Payment Screen Fetch Error:', error);
                 }
@@ -54,17 +55,17 @@ const PaymentScreen = ({ navigation }) => {
 
         try {
             setIsPaying(true);
-            // 가상 결제 데모 (가게ID 16350번, 금액 1500원)
+            // 가상 결제 데모 (가게ID 17104번, 금액 3000원)
             await api.post('/bank/cards/payment', {
                 cardId: myCardId,
-                merchantId: 16350,
-                paymentBalance: 1500
+                merchantId: 17104,
+                paymentBalance: 3000
             });
 
             // 결제 성공 후 즉시 내역 갱신 이벤트 발행
             DeviceEventEmitter.emit('refresh_transactions');
 
-            showAlert({ title: '결제 성공', message: '1,500원 결제가 완료되었습니다!', onConfirm: () => navigation.goBack() });
+            showAlert({ title: '결제 성공', message: '3,000원 결제가 완료되었습니다!', onConfirm: () => navigation.goBack() });
         } catch (error) {
             console.error('Payment Error:', error.response?.data || error.message);
             showAlert({ title: '결제 실패', message: error.response?.data?.message || '잔액이 부족하거나 결제 서버 오류입니다.' });
