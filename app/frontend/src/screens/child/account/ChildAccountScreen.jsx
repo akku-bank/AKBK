@@ -9,7 +9,7 @@ const ChildAccountScreen = ({ navigation }) => {
     const [balance, setBalance] = useState(0);
     const [transactions, setTransactions] = useState([]);
 
-    const SYSTEM_CUTOFF_DATE = '20260331071057'; // 테스트용 - 추후 제거 예정
+    const SYSTEM_CUTOFF_DATE = '20260402084600'; // 테스트용 - 추후 제거 예정
 
     useFocusEffect(
         useCallback(() => {
