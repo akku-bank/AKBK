@@ -67,7 +67,7 @@ const ChildFamilyJoinScreen = ({ navigation, route }) => {
         <SafeAreaView style={styles.safeArea}>
             <View style={styles.container}>
                 <View style={styles.headerSection}>
-                    <CustomText style={styles.title}>부모님이 등록하신{'\n'}내 정보를 똑같이 입력해주세요!</CustomText>
+                    <CustomText style={styles.title}>부모님이 등록해두신 {'\n'}정보를 입력해주세요!</CustomText>
                 </View>
 
                 <View style={styles.inputSection}>
@@ -97,7 +97,7 @@ const ChildFamilyJoinScreen = ({ navigation, route }) => {
                         {isLoading ? (
                             <ActivityIndicator color="#FFFFFF" />
                         ) : (
-                            <CustomText style={styles.submitButtonText}>완벽하게 연동하기</CustomText>
+                            <CustomText style={styles.submitButtonText}>연동하기</CustomText>
                         )}
                     </TouchableOpacity>
                 </View>
@@ -110,11 +110,11 @@ const styles = StyleSheet.create({
     safeArea: { flex: 1, backgroundColor: '#FFFFFF' },
     container: { flex: 1, justifyContent: 'space-between', paddingHorizontal: RFValue(24), paddingTop: RFValue(50), paddingBottom: Platform.OS === 'ios' ? RFValue(20) : RFValue(16) },
     headerSection: { marginBottom: RFValue(20) },
-    title: { fontSize: RFValue(26), fontWeight: 'bold', color: '#111', marginBottom: RFValue(12) },
+    title: { fontSize: RFValue(26), fontWeight: 'bold', color: '#111', marginBottom: RFValue(12), lineHeight: RFValue(36) },
     subtitle: { fontSize: RFValue(15), color: '#EF4444', lineHeight: RFValue(22), fontWeight: 'bold' },
-    inputSection: { flex: 1, justifyContent: 'center' },
-    textInput: { width: '100%', height: RFValue(56), backgroundColor: '#F9FAFB', borderRadius: RFValue(12), paddingHorizontal: RFValue(16), fontSize: RFValue(16), borderWidth: 1, borderColor: '#D1D5DB', color: '#111' },
-    buttonSection: { paddingTop: RFValue(12) },
+    inputSection: { flex: 1, justifyContent: 'flex-start', marginTop: RFValue(40) },
+    textInput: { width: '100%', height: RFValue(56), backgroundColor: '#F9FAFB', borderRadius: RFValue(12), paddingHorizontal: RFValue(16), fontSize: RFValue(16), borderWidth: 1, borderColor: '#D1D5DB', color: '#111', fontFamily: 'Mulmaru' },
+    buttonSection: { paddingTop: RFValue(12), marginBottom: RFValue(24) },
     submitButton: { width: '100%', backgroundColor: '#A3E635', height: RFValue(54), borderRadius: RFValue(12), justifyContent: 'center', alignItems: 'center' },
     submitButtonDisabled: { backgroundColor: '#E5E7EB' },
     submitButtonText: { color: '#FFFFFF', fontSize: RFValue(16), fontWeight: 'bold' }

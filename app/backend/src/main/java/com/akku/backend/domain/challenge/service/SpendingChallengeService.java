@@ -18,6 +18,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -35,6 +36,7 @@ public class SpendingChallengeService {
     private final UserRepository userRepository;
     private final ApplicationEventPublisher eventPublisher;
     private final AccountService accountService;
+    private final Clock clock;
 
     /*
         1. 소비 챌린지 등록 (자녀)
@@ -49,7 +51,7 @@ public class SpendingChallengeService {
             throw new ApiException(ChallengeErrorCode.ACCESS_DENIED);
         }
 
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(clock);
 
         // 2. 다가오는 다음 주 월요일 및 일요일 날짜 계산
         LocalDate nextMonday = today.with(TemporalAdjusters.next(DayOfWeek.MONDAY));
@@ -117,7 +119,7 @@ public class SpendingChallengeService {
 
         // 4. 기한(Deadline) 검증
         // 오늘 날짜가 챌린지의 시작일(월요일)과 같거나 지났다면, 이미 해당 주간이 시작된 것이므로 수정 불가
-        if (!LocalDate.now().isBefore(challenge.getStartDate())) {
+        if (!LocalDate.now(clock).isBefore(challenge.getStartDate())) {
             throw new ApiException(ChallengeErrorCode.INVALID_STATUS_UPDATE);
         }
 
@@ -241,7 +243,7 @@ public class SpendingChallengeService {
             throw new ApiException(ChallengeErrorCode.ACCESS_DENIED);
         }
 
-        LocalDate thisMonday = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        LocalDate thisMonday = LocalDate.now(clock).with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
 
         return spendingChallengeRepository.findAllByUserAndStartDate(user, thisMonday)
                 .stream()
@@ -294,7 +296,7 @@ public class SpendingChallengeService {
         }
 
         // 3. 차주 월요일 날짜 계산
-        LocalDate nextMonday = LocalDate.now().with(TemporalAdjusters.next(DayOfWeek.MONDAY));
+        LocalDate nextMonday = LocalDate.now(clock).with(TemporalAdjusters.next(DayOfWeek.MONDAY));
 
         // 4. 데이터 조회 (상태 필터링 유무 분기)
         List<SpendingChallenge> challenges;
@@ -557,7 +559,7 @@ public class SpendingChallengeService {
         }
 
         // 4. 이번 주 월요일 날짜 계산
-        LocalDate thisMonday = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        LocalDate thisMonday = LocalDate.now(clock).with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
 
         // 5. 자녀의 이번 주 챌린지 조회 및 DTO 변환
         List<SpendingChallengeDto.ChallengeSummary> summaries =
@@ -632,7 +634,7 @@ public class SpendingChallengeService {
      *   - 지난주 일요일 = 이번 주 월요일 - 1일
      */
     private LocalDate resolveLastSunday() {
-        LocalDate thisMonday = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        LocalDate thisMonday = LocalDate.now(clock).with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
         return thisMonday.minusDays(1);
     }
 }

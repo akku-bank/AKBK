@@ -1,18 +1,29 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { scale, verticalScale } from 'react-native-size-matters';
 import CustomText from '../../../components/common/CustomText';
 import CustomTextInput from '../../../components/common/CustomTextInput';
 import api from '../../../api/axios';
+import { useChildAlert } from '../../../contexts/ChildAlertContext';
 
-const CATEGORIES = ['간식', '쇼핑', '게임', '기타'];
+const CATEGORIES = ['간식', '쇼핑', '오락', '기타'];
 
-const ChallengeProposeScreen = ({ navigation }) => {
-    const [selectedCategory, setSelectedCategory] = useState(CATEGORIES[0]);
+const ChallengeProposeScreen = ({ navigation, route }) => {
+    const editingChallenge = route?.params?.challenge || null;
+    const isEditMode = Boolean(editingChallenge?.challengeId);
+
+    const [selectedCategory, setSelectedCategory] = useState(editingChallenge?.category || CATEGORIES[0]);
     const [goalAmount, setGoalAmount] = useState('');
-    const [memo, setMemo] = useState('');
+    const [rewardAmount, setRewardAmount] = useState('');
+    const { showAlert } = useChildAlert();
 
     useEffect(() => {
+        if (isEditMode) {
+            setSelectedCategory(editingChallenge?.category || CATEGORIES[0]);
+            setGoalAmount(String(editingChallenge?.targetSpending || ''));
+            setRewardAmount(String(editingChallenge?.rewardAmount || ''));
+        }
+
         // [UI 테스트용 임시 주석] 주말(토, 일)에만 제안 가능 로직
         // const today = new Date().getDay();
         // if (today !== 0 && today !== 6) {
@@ -20,23 +31,41 @@ const ChallengeProposeScreen = ({ navigation }) => {
         //         { text: '확인', onPress: () => navigation.goBack() }
         //     ]);
         // }
-    }, [navigation]);
+    }, [editingChallenge, isEditMode, navigation]);
 
     const handleSubmit = async () => { // Added async here
         if (!goalAmount || isNaN(goalAmount)) {
-            Alert.alert('알림', '목표 금액을 정확히 입력해주세요.');
+            showAlert({ title: '알림', message: '목표 금액을 정확히 입력해주세요.' });
+            return;
+        }
+
+        if (!rewardAmount || isNaN(rewardAmount)) {
+            showAlert({ title: '알림', message: '보상 금액을 정확히 입력해주세요.' });
             return;
         }
 
         try {
-            await api.post('/challenges/spending', {
-                subCategoryName: selectedCategory,
-                targetAmount: parseInt(goalAmount),
-            });
-            Alert.alert('제안 완료', `부모님께 "${selectedCategory}" 지출 줄이기 챌린지를 제안했어요!`, [{ text: '확인', onPress: () => navigation.goBack() }]);
+            const payload = {
+                category: selectedCategory,
+                targetSpending: parseInt(goalAmount, 10),
+                rewardAmount: parseInt(rewardAmount, 10),
+            };
+
+            if (isEditMode) {
+                await api.patch(`/challenges/spending/${editingChallenge.challengeId}`, payload);
+                showAlert({ title: '수정 완료', message: `"${selectedCategory}" 챌린지를 수정했어요!`, onConfirm: () => navigation.goBack() });
+            } else {
+                await api.post('/challenges/spending', payload);
+                showAlert({ title: '제안 완료', message: `부모님께 "${selectedCategory}" 소비 목표 챌린지를 제안했어요!`, onConfirm: () => navigation.goBack() });
+            }
         } catch (e) {
             console.error('Challenge Propose Error', e);
-            Alert.alert('오류', '챌린지 생성 중 문제가 발생했습니다.');
+            if (e.response?.status === 409) {
+                showAlert({ title: '안내', message: '이미 같은 카테고리의 챌린지를 요청했어요.' });
+                return;
+            }
+
+            showAlert({ title: '오류', message: isEditMode ? '챌린지 수정 중 문제가 발생했습니다.' : '챌린지 생성 중 문제가 발생했습니다.' });
         }
     };
 
@@ -46,7 +75,7 @@ const ChallengeProposeScreen = ({ navigation }) => {
                 <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
                     <CustomText style={styles.backButtonText}>←</CustomText>
                 </TouchableOpacity>
-                <CustomText style={styles.headerTitle}>용돈 미션 제안하기</CustomText>
+                <CustomText style={styles.headerTitle}>{isEditMode ? '용돈 미션 수정하기' : '용돈 미션 제안하기'}</CustomText>
                 <View style={{ width: scale(32) }} />
             </View>
 
@@ -54,8 +83,12 @@ const ChallengeProposeScreen = ({ navigation }) => {
                 <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
 
                     <View style={styles.instructionCard}>
-                        <CustomText style={styles.instructionTitle}>어떤 소비를 줄여볼까요?</CustomText>
-                        <CustomText style={styles.instructionDesc}>이번 주에 나의 용돈을 아낄 수 있는 카테고리와 목표를 부모님께 약속해보세요.</CustomText>
+                        <CustomText style={styles.instructionTitle}>{isEditMode ? '어떤 내용으로 다시 제안할까요?' : '어떤 소비 목표를 정할까요?'}</CustomText>
+                        <CustomText style={styles.instructionDesc}>
+                            {isEditMode
+                                ? '반려되었거나 승인 대기 중인 챌린지를 수정해서 다시 요청할 수 있어요.'
+                                : '이번 주에 내가 얼마까지 사용할지 카테고리와 \n목표 금액을 정해 부모님께 제안해보세요.'}
+                        </CustomText>
                     </View>
 
                     <CustomText style={styles.sectionLabel}>소비 카테고리</CustomText>
@@ -71,7 +104,7 @@ const ChallengeProposeScreen = ({ navigation }) => {
                         ))}
                     </View>
 
-                    <CustomText style={styles.sectionLabel}>얼마를 덜 쓸까요? (억제 목표 금액)</CustomText>
+                    <CustomText style={styles.sectionLabel}>얼마까지 쓸까요?</CustomText>
                     <View style={styles.inputContainer}>
                         <CustomTextInput
                             style={styles.amountInput}
@@ -84,20 +117,22 @@ const ChallengeProposeScreen = ({ navigation }) => {
                         <CustomText style={styles.currencyText}>원</CustomText>
                     </View>
 
-                    <CustomText style={styles.sectionLabel}>부모님께 한마디 (선택)</CustomText>
-                    <CustomTextInput
-                        style={styles.memoInput}
-                        placeholder="이만큼 아껴서 사고 싶은 게 있어요!"
-                        placeholderTextColor="#9CA3AF"
-                        multiline
-                        value={memo}
-                        onChangeText={setMemo}
-                    />
-
+                    <CustomText style={styles.sectionLabel}>성공하면 얼마를 받을까요?</CustomText>
+                    <View style={styles.inputContainer}>
+                        <CustomTextInput
+                            style={styles.amountInput}
+                            placeholder="예: 1000"
+                            placeholderTextColor="#9CA3AF"
+                            keyboardType="numeric"
+                            value={rewardAmount}
+                            onChangeText={setRewardAmount}
+                        />
+                        <CustomText style={styles.currencyText}>원</CustomText>
+                    </View>
                 </ScrollView>
                 <View style={styles.footer}>
                     <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-                        <CustomText style={styles.submitButtonText}>부모님께 제안하기</CustomText>
+                        <CustomText style={styles.submitButtonText}>{isEditMode ? '챌린지 수정하기' : '부모님께 제안하기'}</CustomText>
                     </TouchableOpacity>
                 </View>
             </KeyboardAvoidingView>
@@ -106,15 +141,15 @@ const ChallengeProposeScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-    safeArea: { flex: 1, backgroundColor: '#F3F4F6' },
+    safeArea: { flex: 1, backgroundColor: '#ECFCCB' },
     header: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-        paddingHorizontal: scale(16), paddingVertical: verticalScale(16), backgroundColor: '#F3F4F6'
+        paddingHorizontal: scale(16), paddingVertical: verticalScale(16), backgroundColor: '#FFFFFF'
     },
     backButton: { width: scale(32), height: scale(32), justifyContent: 'center' },
     backButtonText: { fontSize: scale(22), fontWeight: 'bold', color: '#111' },
     headerTitle: { fontSize: scale(18), fontWeight: 'bold', color: '#111' },
-    container: { flexGrow: 1, paddingHorizontal: scale(16), paddingBottom: verticalScale(40) },
+    container: { flexGrow: 1, paddingHorizontal: scale(16), paddingTop: verticalScale(20), paddingBottom: verticalScale(40) },
 
     instructionCard: {
         backgroundColor: '#FFFFFF', borderRadius: scale(16), padding: scale(20), marginBottom: verticalScale(24),
@@ -128,7 +163,12 @@ const styles = StyleSheet.create({
     categoryRow: { flexDirection: 'row', flexWrap: 'wrap', gap: scale(8), marginBottom: verticalScale(24) },
     categoryBtn: {
         backgroundColor: '#FFFFFF', paddingVertical: verticalScale(10), paddingHorizontal: scale(16),
-        borderRadius: scale(20), borderWidth: 1, borderColor: '#E5E7EB'
+        borderRadius: scale(20), borderWidth: 1, borderColor: '#E5E7EB',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
+        elevation: 2,
     },
     categoryBtnActive: { backgroundColor: '#A3E635', borderColor: '#A3E635' },
     categoryText: { fontSize: scale(14), fontWeight: '600', color: '#6B7280' },
@@ -136,18 +176,17 @@ const styles = StyleSheet.create({
 
     inputContainer: {
         flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF',
-        borderRadius: scale(12), paddingHorizontal: scale(16), marginBottom: verticalScale(24), borderWidth: 1, borderColor: '#E5E7EB'
+        borderRadius: scale(12), paddingHorizontal: scale(16), marginBottom: verticalScale(24), borderWidth: 1, borderColor: '#E5E7EB',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
+        elevation: 2,
     },
     amountInput: { flex: 1, fontSize: scale(18), fontWeight: 'bold', color: '#111', paddingVertical: verticalScale(16) },
     currencyText: { fontSize: scale(16), fontWeight: 'bold', color: '#111' },
-
-    memoInput: {
-        backgroundColor: '#FFFFFF', borderRadius: scale(12), padding: scale(16),
-        fontSize: scale(14), color: '#111', minHeight: verticalScale(100), textAlignVertical: 'top', borderWidth: 1, borderColor: '#E5E7EB'
-    },
-
-    footer: { paddingHorizontal: scale(16), paddingBottom: verticalScale(24), paddingTop: verticalScale(12), backgroundColor: '#F3F4F6' },
-    submitButton: { backgroundColor: '#A3E635', paddingVertical: verticalScale(16), borderRadius: scale(12), alignItems: 'center' },
+    footer: { paddingHorizontal: scale(16), paddingBottom: verticalScale(24), paddingTop: verticalScale(12), backgroundColor: '#ECFCCB' },
+    submitButton: { backgroundColor: '#A3E635', paddingVertical: verticalScale(16), borderRadius: scale(12), alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: verticalScale(2) }, shadowOpacity: 0.1, shadowRadius: scale(4), elevation: 3 },
     submitButtonText: { fontSize: scale(16), fontWeight: 'bold', color: '#111' }
 });
 

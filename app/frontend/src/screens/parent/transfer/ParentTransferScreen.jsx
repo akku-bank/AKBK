@@ -51,9 +51,16 @@ const ParentTransferScreen = ({ navigation, route }) => {
                     text: '보내기',
                     onPress: async () => {
                         try {
+                            console.log('[ParentTransferScreen] Submitting transfer:', {
+                                targetBankCode: child.bankCode,
+                                targetAccountNumber: child.accountNumber,
+                                targetName: child.name
+                            });
                             await api.post('/bank/accounts/transfers', {
                                 withdrawalAccountId: myAccount.accountId,
-                                targetAccountId: child.accountId,
+                                targetBankCode: child.bankCode,
+                                targetAccountNumber: child.accountNumber,
+                                targetName: child.name,
                                 amount: parseInt(amount),
                                 pin: pin
                             });
@@ -151,16 +158,16 @@ const styles = StyleSheet.create({
     currencyText: { fontSize: scale(24), fontWeight: 'bold', color: '#111', marginLeft: scale(8) },
 
     quickAmountRow: { flexDirection: 'row', gap: scale(8) },
-    quickAmountBtn: { backgroundColor: '#F3F4F6', paddingHorizontal: scale(16), paddingVertical: verticalScale(10), borderRadius: scale(20) },
+    quickAmountBtn: { backgroundColor: '#F9FAFB', paddingHorizontal: scale(16), paddingVertical: verticalScale(10), borderRadius: scale(20), shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2, },
     quickAmountText: { fontSize: scale(14), fontWeight: 'bold', color: '#4B5563' },
 
     pinInput: {
-        backgroundColor: '#F3F4F6', borderRadius: scale(12), paddingHorizontal: scale(16), paddingVertical: verticalScale(14),
+        backgroundColor: '#F9FAFB', borderRadius: scale(12), paddingHorizontal: scale(16), paddingVertical: verticalScale(14),
         fontSize: scale(18), color: '#111', marginTop: verticalScale(12), marginBottom: verticalScale(32), fontWeight: 'bold', letterSpacing: 8
     },
 
     footer: { padding: scale(16), backgroundColor: '#FFFFFF' },
-    mainButton: { backgroundColor: '#A3E635', paddingVertical: verticalScale(16), borderRadius: scale(16), alignItems: 'center' },
+    mainButton: { backgroundColor: '#A3E635', paddingVertical: verticalScale(16), borderRadius: scale(16), alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2, },
     disabledButton: { backgroundColor: '#D1D5DB' },
     mainButtonText: { fontSize: scale(16), fontWeight: 'bold', color: '#111' }
 });

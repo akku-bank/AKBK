@@ -6,18 +6,16 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 
+import * as Notifications from 'expo-notifications';
+import { DeviceEventEmitter } from 'react-native';
+
 import ChildBottomTabNavigator from './src/navigation/ChildBottomTabNavigator';
 import AvatarCustomScreen from './src/screens/child/home/AvatarCustomScreen';
 import AvatarDictionaryScreen from './src/screens/child/home/AvatarDictionaryScreen';
-import TransactionCalendarScreen from './src/screens/child/account/TransactionCalendarScreen';
-import TransactionDetailScreen from './src/screens/child/account/TransactionDetailScreen';
-import TransferScreen from './src/screens/child/account/TransferScreen';
-import PaymentScreen from './src/screens/child/account/PaymentScreen';
-import CardListScreen from './src/screens/child/account/CardListScreen';
-import CardProductScreen from './src/screens/child/account/CardProductScreen';
 import QuizScreen from './src/screens/child/challenge/QuizScreen';
 import QuizDifficultySelectScreen from './src/screens/child/challenge/QuizDifficultySelectScreen';
 import ChallengeProposeScreen from './src/screens/child/challenge/ChallengeProposeScreen';
+import ChallengeDetailScreen from './src/screens/child/challenge/ChallengeDetailScreen';
 import WeeklyReportScreen from './src/screens/child/report/WeeklyReportScreen';
 import ChildMyPageScreen from './src/screens/child/mypage/ChildMyPageScreen';
 import ParentHomeScreen from './src/screens/parent/home/ParentHomeScreen';
@@ -27,7 +25,9 @@ import MissionApprovalScreen from './src/screens/parent/mission/MissionApprovalS
 import ParentChallengeManageScreen from './src/screens/parent/mission/ParentChallengeManageScreen';
 import FamilyManagementScreen from './src/screens/parent/home/FamilyManagementScreen';
 import { AvatarProvider } from './src/components/child/avatar/AvatarContext';
+import { ChildAlertProvider } from './src/contexts/ChildAlertContext';
 
+import AnimatedSplashScreen from './src/screens/auth/AnimatedSplashScreen';
 import OnboardingTutorialScreen from './src/screens/auth/OnboardingTutorialScreen';
 import FamilyInvitationScreen from './src/screens/auth/FamilyInvitationScreen';
 import SocialLoginScreen from './src/screens/auth/SocialLoginScreen';
@@ -60,6 +60,15 @@ import ChildChangePasswordScreen from './src/screens/child/mypage/ChildChangePas
 import ParentChildEditScreen from './src/screens/parent/family/ParentChildEditScreen';
 import ParentChangePasswordScreen from './src/screens/parent/mypage/ParentChangePasswordScreen';
 
+// 앱이 포그라운드(실행 중)일 때도 알림 배너가 뜨도록 설정
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+  }),
+});
+
 SplashScreen.preventAutoHideAsync().catch(() => { });
 
 const Stack = createNativeStackNavigator();
@@ -67,9 +76,18 @@ const Stack = createNativeStackNavigator();
 export default function App() {
   const [fontsLoaded] = useFonts({
     'Mulmaru': require('./src/assets/Mulmaru.ttf'),
+    'Pretendard-Regular': require('./src/assets/Pretendard-Regular.ttf'),
+    'Pretendard-Bold': require('./src/assets/Pretendard-Bold.ttf'),
   });
 
   useEffect(() => {
+    // 알림 수신 리스너 등록
+    const subscription = Notifications.addNotificationReceivedListener(notification => {
+      console.log('🔔 알림 수신:', notification.request.content.title);
+      // 알림이 오면 전역적으로 내역 갱신 이벤트 발생
+      DeviceEventEmitter.emit('refresh_transactions');
+    });
+
     if (fontsLoaded) {
       SplashScreen.hideAsync();
 
@@ -86,6 +104,8 @@ export default function App() {
         }
       }
     }
+
+    return () => subscription.remove();
   }, [fontsLoaded]);
 
   if (!fontsLoaded) return null;
@@ -95,8 +115,10 @@ export default function App() {
       <StatusBar translucent={false} backgroundColor="#FFFFFF" barStyle="dark-content" />
       <SafeAreaProvider style={{ flex: 1 }}>
         <AvatarProvider>
-          <NavigationContainer>
-            <Stack.Navigator screenOptions={{ headerShown: false, freezeOnBlur: false, animationEnabled: false }} detachInactiveScreens={false} initialRouteName="OnboardingTutorial">
+          <ChildAlertProvider>
+            <NavigationContainer>
+              <Stack.Navigator screenOptions={{ headerShown: false, freezeOnBlur: false, animationEnabled: false }} detachInactiveScreens={false} initialRouteName="AnimatedSplash">
+                <Stack.Screen name="AnimatedSplash" component={AnimatedSplashScreen} />
               <Stack.Screen name="OnboardingTutorial" component={OnboardingTutorialScreen} />
               <Stack.Screen name="FamilyInvitation" component={FamilyInvitationScreen} />
               <Stack.Screen name="SocialLogin" component={SocialLoginScreen} />
@@ -125,13 +147,6 @@ export default function App() {
               <Stack.Screen name="ESGChallengeScreen" component={ESGChallengeScreen} />
               <Stack.Screen name="BadgeMap" component={BadgeMapScreen} />
 
-              <Stack.Screen name="TransactionCalendar" component={TransactionCalendarScreen} />
-              <Stack.Screen name="TransactionDetail" component={TransactionDetailScreen} />
-              <Stack.Screen name="Transfer" component={TransferScreen} />
-              <Stack.Screen name="Payment" component={PaymentScreen} />
-              <Stack.Screen name="CardListScreen" component={CardListScreen} />
-              <Stack.Screen name="CardProductScreen" component={CardProductScreen} />
-
               <Stack.Screen name="ParentHome" component={ParentHomeScreen} />
               <Stack.Screen name="ParentTransferScreen" component={ParentTransferScreen} />
               <Stack.Screen name="ParentReportScreen" component={ParentReportScreen} />
@@ -143,6 +158,7 @@ export default function App() {
               <Stack.Screen name="QuizScreen" component={QuizScreen} />
               <Stack.Screen name="QuizDifficultySelect" component={QuizDifficultySelectScreen} />
               <Stack.Screen name="ChallengePropose" component={ChallengeProposeScreen} />
+              <Stack.Screen name="ChallengeDetail" component={ChallengeDetailScreen} />
 
               <Stack.Screen name="WeeklyReport" component={WeeklyReportScreen} />
 
@@ -152,8 +168,9 @@ export default function App() {
               <Stack.Screen name="ChildChangePassword" component={ChildChangePasswordScreen} />
               <Stack.Screen name="ParentChildEdit" component={ParentChildEditScreen} />
               <Stack.Screen name="ParentChangePassword" component={ParentChangePasswordScreen} />
-            </Stack.Navigator>
-          </NavigationContainer>
+              </Stack.Navigator>
+            </NavigationContainer>
+          </ChildAlertProvider>
         </AvatarProvider>
       </SafeAreaProvider>
     </View>

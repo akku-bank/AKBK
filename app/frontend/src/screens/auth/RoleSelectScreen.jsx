@@ -91,7 +91,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: RFValue(20),
         borderRadius: RFValue(16),
         borderWidth: 1,
-        borderColor: '#F3F4F6',
+        borderColor: '#F9FAFB',
     },
     cardImageWrapper: {
         width: RFValue(80),

@@ -79,6 +79,8 @@
       # 코드 변경 시 컨테이너 내부의 /app 디렉토리에 자동 반영
       - .:/app # 배포 시 삭제 !!!!!
     restart: always
+    ports:
+      - "8000:8000"
     command: uvicorn ai.main:app --host 0.0.0.0 --port 8000 --reload
     networks:
       - default
@@ -100,23 +102,20 @@
   kafka:
     image: confluentinc/cp-kafka:7.6.0
     container_name: akkubangkku_kafka
-    # ports:
-    #   - "28080:28080"
-    #   - "29092:29092"
+    ports:
+      - "28080:28080"
+      - "29092:29092"
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
 
       # 내부 도커 통신용: akkubangkku_kafka:29092
-      # 로컬 호스트 접속용: localhost:9092
-      # KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092,PLAINTEXT_HOST://0.0.0.0:28080
-      # KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://akkubangkku_kafka:29092,PLAINTEXT_HOST://localhost:28080
-      # KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
-      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
+      # 로컬 호스트 접속용: localhost:28080
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092,PLAINTEXT_HOST://0.0.0.0:28080
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:28080
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
- 
+
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
@@ -216,7 +215,7 @@
       - SPARK_MODE=master
     ports:
       - "18080:8080"
-      - "7077:7077"    # spark 7077은 내부용이면 제거 검토
+      - "7077:7077" # spark 7077은 내부용이면 제거 검토
     volumes:
       - ./data/spark:/opt/spark/work-dir
     command: >
@@ -263,8 +262,8 @@ volumes:
   kafka_data:
   redis_data:
 
-# 외부 네트워크 생성 필수: docker network create akku_proxy_net
-# 서버에서 한 번만 실행하여 akku_proxy_net 네트워크를 만들어야 nginx와 통신 가능
+    # 외부 네트워크 생성 필수: docker network create akku_proxy_net
+    # 서버에서 한 번만 실행하여 akku_proxy_net 네트워크를 만들어야 nginx와 통신 가능
 networks:
   proxy_net:
     external: true

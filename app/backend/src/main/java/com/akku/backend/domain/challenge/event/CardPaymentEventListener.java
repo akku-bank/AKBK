@@ -6,12 +6,11 @@ import com.akku.backend.domain.challenge.entity.SpendingChallenge;
 import com.akku.backend.domain.challenge.repository.SpendingChallengeRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.event.TransactionPhase;
-import org.springframework.transaction.event.TransactionalEventListener;
 
 import java.time.LocalDateTime;
 
@@ -33,7 +32,7 @@ public class CardPaymentEventListener {
     private final SpendingChallengeRepository spendingChallengeRepository;
 
     @Async
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @EventListener
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void onCardPayment(CardPaymentEvent event) {
         log.debug("CardPaymentEvent 수신 — userId: {}, category: {}, amount: {}",

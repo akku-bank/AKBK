@@ -1,6 +1,8 @@
 package com.akku.backend.domain.notification.service;
 
 import com.akku.backend.domain.notification.dto.NotificationRequest;
+import com.google.firebase.messaging.AndroidConfig;
+import com.google.firebase.messaging.AndroidNotification;
 import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.firebase.messaging.FirebaseMessagingException;
 import com.google.firebase.messaging.Message;
@@ -22,6 +24,13 @@ public class FcmService {
                             .setTitle(request.getTitle())
                             .setBody(request.getBody())
                             .setImage(request.getImageUrl())
+                            .build())
+                    .setAndroidConfig(AndroidConfig.builder()
+                            .setPriority(AndroidConfig.Priority.HIGH) // 긴급 메시지로 설정하여 헤드업 노출
+                            .setNotification(AndroidNotification.builder()
+                                    .setChannelId("default") // Expo에서 생성한 채널과 일치
+                                    .setPriority(AndroidNotification.Priority.MAX)
+                                    .build())
                             .build())
                     .build();
 

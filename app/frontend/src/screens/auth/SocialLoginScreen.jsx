@@ -11,63 +11,7 @@ import * as Notifications from 'expo-notifications';
 
 const SocialLoginScreen = ({ navigation }) => {
     const [isLoading, setIsLoading] = useState(false);
-    const [testUserId, setTestUserId] = useState('123e4567-e89b-12d3-a456-426614174000');
     const { setAuthInfo } = useAuthStore();
-
-    const handleTestLogin = async () => {
-        if (!testUserId) {
-            Alert.alert('테스트 에러', 'userId를 입력하세요.');
-            return;
-        }
-        setIsLoading(true);
-        try {
-            const response = await api.post('/auth/test/login', { userId: testUserId.trim() });
-            const payload = response.data?.data || response.data || {};
-            const jwt = payload.token || payload.tempToken || payload.jwt || payload.accessToken;
-
-            let userRole = null;
-            let userName = null;
-            let userId = null;
-            let isAlreadyRegistered = false;
-
-            try {
-                // 저장된 토큰 이용해 ROLE 및 NAME 조회해서 현재 등록된 유저인지 파악
-                const userRes = await api.get('/users/me', {
-                    headers: { Authorization: `Bearer ${jwt}` }
-                });
-                const profile = userRes.data?.data || userRes.data || {};
-                userRole = profile.role || null;
-                userName = profile.name || null;
-                userId = profile.userId || null;
-                if ((userRole === 'PARENT' || userRole === 'CHILD') && userName) {
-                    isAlreadyRegistered = true;
-                }
-            } catch (e) {
-                console.log('신규 테스트 유저이거나 프로필 조회 실패:', e.message);
-            }
-
-            // 전역 상태에 토큰 및 정보 저장 (카카오 로그인과 동일한 흐름)
-            await setAuthInfo(jwt, userRole, userName, userId);
-            await handleFcmRegistration(jwt);
-
-            Alert.alert('테스트 로그인 성공', '임시/정식 토큰 발급 성공!', [
-                {
-                    text: '확인', onPress: () => {
-                        if (isAlreadyRegistered) {
-                            navigation.replace('PinNumberLogin');
-                        } else {
-                            navigation.replace('RoleSelect', { tempToken: jwt });
-                        }
-                    }
-                }
-            ]);
-        } catch (error) {
-            console.error('Test Login Error:', error);
-            Alert.alert('테스트 로그인 실패', 'API 연동에 실패했습니다.');
-        } finally {
-            setIsLoading(false);
-        }
-    };
 
     // FCM 기기 등록 공통 헬퍼 함수
     const handleFcmRegistration = async (jwt) => {
@@ -132,6 +76,7 @@ const SocialLoginScreen = ({ navigation }) => {
             let userRole = null;
             let userName = null;
             let userId = null;
+            let profile = {};
 
             if (isRegistered && jwt) {
                 try {
@@ -139,7 +84,7 @@ const SocialLoginScreen = ({ navigation }) => {
                     const userRes = await api.get('/users/me', {
                         headers: { Authorization: `Bearer ${jwt}` }
                     });
-                    const profile = userRes.data?.data || userRes.data || {};
+                    profile = userRes.data?.data || userRes.data || {};
                     userRole = profile.role || null;
                     userName = profile.name || null;
                     userId = profile.userId || null;
@@ -150,7 +95,10 @@ const SocialLoginScreen = ({ navigation }) => {
             }
 
             // authInfo (zustand) 에 jwt, role, name 함께 업데이트
-            await setAuthInfo(jwt, userRole, userName, userId);
+            await setAuthInfo(jwt, userRole, userName, userId, {
+                familyId: profile.familyId,
+                level: profile.level
+            });
 
             // 로그인 성공 시 백엔드로 FCM 토큰 전송 시도
             await handleFcmRegistration(jwt);
@@ -200,22 +148,6 @@ const SocialLoginScreen = ({ navigation }) => {
                             <CustomText style={[styles.kakaoButtonText, { color: '#000000' }]}>카카오로 시작하기</CustomText>
                         )}
                     </TouchableOpacity>
-
-                    {/* 개발 연동 테스트 전용 섹션 */}
-                    <View style={styles.testLoginBox}>
-                        <CustomText style={styles.testLoginLabel}>[테스트용] 우회 계정 UUID</CustomText>
-                        <View style={styles.testInputRow}>
-                            <TextInput
-                                style={styles.testInput}
-                                placeholder="[자녀용] UUID"
-                                value={testUserId}
-                                onChangeText={setTestUserId}
-                            />
-                            <TouchableOpacity style={styles.testButton} onPress={handleTestLogin}>
-                                <CustomText style={styles.testButtonText}>테스트 접속</CustomText>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
                 </View>
             </View>
         </SafeAreaView>
@@ -245,6 +177,7 @@ const styles = StyleSheet.create({
         width: RFValue(180),
         height: RFValue(180),
         marginBottom: 0,
+        transform: [{ translateY: 70 }],
     },
     subtitle: {
         fontSize: RFValue(15),
@@ -288,7 +221,7 @@ const styles = StyleSheet.create({
         marginTop: RFValue(20),
         width: '100%',
         padding: RFValue(12),
-        backgroundColor: '#F3F4F6',
+        backgroundColor: '#F9FAFB',
         borderRadius: RFValue(8),
         borderWidth: 1,
         borderColor: '#D1D5DB',

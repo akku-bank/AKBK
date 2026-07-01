@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.infrastructure.item.ItemProcessor;
 import org.springframework.stereotype.Component;
 
+import java.time.Clock;
 import java.time.DayOfWeek;
 import java.util.UUID;
 import java.time.LocalDate;
@@ -25,6 +26,7 @@ public class WeeklyLevelProcessor implements ItemProcessor<User, User> {
     private final WeeklyReportRepository weeklyReportRepository;
     private final AccountRepository accountRepository;
     private final UserQuizRepository userQuizRepository;
+    private final Clock clock;
 
     @Override
     public User process(User user) {
@@ -34,7 +36,7 @@ public class WeeklyLevelProcessor implements ItemProcessor<User, User> {
         }
 
         // 정산 기간 (지난주 월요일 ~ 일요일)
-        LocalDate now = LocalDate.now();
+        LocalDate now = LocalDate.now(clock);
         LocalDate lastMonday = now.minusWeeks(1).with(DayOfWeek.MONDAY);
         LocalDate lastSunday = lastMonday.plusDays(6);
 
@@ -88,7 +90,7 @@ public class WeeklyLevelProcessor implements ItemProcessor<User, User> {
      * 지출 비율 0~50%: 30점 / 51~80%: 20점 / 81~100%: 10점 / 100% 초과: 0점
      */
     private int calculateSpendingScore(long spend, long totalFunds) {
-        if (totalFunds <= 0) return 30; // 무지출 상태면 만점
+        if (totalFunds <= 0) return 0; // 가용 자금이 없으면 평가 불가
         double ratio = (double) spend / totalFunds;
         if (ratio <= 0.5) return 30;
         if (ratio <= 0.8) return 20;
@@ -128,21 +130,35 @@ public class WeeklyLevelProcessor implements ItemProcessor<User, User> {
     }
 
     /**
-     * 다음 주 정산을 위해 오늘 시점의 잔액을 기초 잔액(이월금)으로 미리 저장합니다.
+     * 새 주 시작 시 INCOME/SPEND 리포트 레코드를 초기화하고 기초 잔액을 저장합니다.
      */
     private void saveNextWeekStartBalance(User user, LocalDate today, long balance) {
-        com.akku.backend.domain.report.entity.WeeklyReportId id = 
+        // INCOME 레코드: 기초 잔액(이월금) 보관용
+        com.akku.backend.domain.report.entity.WeeklyReportId incomeId =
                 new com.akku.backend.domain.report.entity.WeeklyReportId(user.getId(), today, "INCOME");
-        
-        WeeklyReport report = weeklyReportRepository.findById(id)
+
+        WeeklyReport incomeReport = weeklyReportRepository.findById(incomeId)
                 .orElseGet(() -> WeeklyReport.builder()
-                        .id(id)
+                        .id(incomeId)
                         .user(user)
                         .mon(0L).tue(0L).wed(0L).thu(0L).fri(0L).sat(0L).sun(0L)
                         .totalAmount(0L)
                         .build());
-        
-        report.updateStartBalance(balance);
-        weeklyReportRepository.save(report);
+
+        incomeReport.updateStartBalance(balance);
+        weeklyReportRepository.save(incomeReport);
+
+        // SPEND 레코드: 주 시작 시 빈 레코드 생성 (Spark가 거래 발생 시 upsert)
+        com.akku.backend.domain.report.entity.WeeklyReportId spendId =
+                new com.akku.backend.domain.report.entity.WeeklyReportId(user.getId(), today, "SPEND");
+
+        if (!weeklyReportRepository.existsById(spendId)) {
+            weeklyReportRepository.save(WeeklyReport.builder()
+                    .id(spendId)
+                    .user(user)
+                    .mon(0L).tue(0L).wed(0L).thu(0L).fri(0L).sat(0L).sun(0L)
+                    .totalAmount(0L)
+                    .build());
+        }
     }
 }

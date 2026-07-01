@@ -11,6 +11,11 @@ import com.akku.backend.domain.donation.repository.CharityRepository;
 import com.akku.backend.domain.jelling.entity.Jelling;
 import com.akku.backend.domain.jelling.repository.JellingRepository;
 import com.akku.backend.global.error.ApiException;
+import com.akku.backend.domain.jelling.repository.JellingTransactionRepository;
+import com.akku.backend.domain.avatar.repository.ItemRepository;
+import com.akku.backend.domain.avatar.repository.UserItemRepository;
+import com.akku.backend.domain.avatar.entity.Item;
+import com.akku.backend.domain.avatar.entity.UserItem;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -39,6 +44,12 @@ class DonationServiceTest {
     private UserRepository userRepository;
     @Mock
     private JellingRepository jellingRepository;
+    @Mock
+    private JellingTransactionRepository jellingTransactionRepository;
+    @Mock
+    private ItemRepository itemRepository;
+    @Mock
+    private UserItemRepository userItemRepository;
 
     @InjectMocks
     private DonationService donationService;
@@ -53,7 +64,6 @@ class DonationServiceTest {
         ActiveCharity activeCharity = ActiveCharity.builder()
                 .id(UUID.randomUUID())
                 .charity(charity)
-                .currentAmount(200L)
                 .targetAmount(500)
                 .status("IN_PROGRESS")
                 .build();
@@ -68,7 +78,7 @@ class DonationServiceTest {
         assertThat(response.remainJelling()).isEqualTo(100L);
         assertThat(response.activeCharity()).isNotNull();
         assertThat(response.activeCharity().name()).isEqualTo("Test Charity");
-        assertThat(response.activeCharity().currentAmount()).isEqualTo(200L);
+        assertThat(response.activeCharity().targetAmount()).isEqualTo(500);
     }
 
     @Test
@@ -139,5 +149,90 @@ class DonationServiceTest {
         assertThatThrownBy(() -> donationService.setTargetCharity(userId, charityId))
                 .isInstanceOf(ApiException.class)
                 .hasMessageContaining(DonationErrorCode.CHARITY_NOT_FOUND.getDefaultMessage());
+    }
+
+    @Test
+    @DisplayName("보상을 성공적으로 수령하고 젤링이 차감된다.")
+    void receiveReward_success() {
+        // given
+        UUID userId = UUID.randomUUID();
+        User user = User.builder().id(userId).userKey("test-key").build();
+        Charity charity = Charity.builder().name("Test Charity").build();
+        ActiveCharity activeCharity = ActiveCharity.builder()
+                .id(UUID.randomUUID())
+                .user(user)
+                .charity(charity)
+                .targetAmount(500)
+                .status("IN_PROGRESS")
+                .build();
+        Jelling jelling = Jelling.builder().userId(userId).user(user).balance(600L).build();
+
+        given(activeCharityRepository.findByUserIdAndStatus(userId, "IN_PROGRESS")).willReturn(Optional.of(activeCharity));
+        given(jellingRepository.findByUserIdWithLock(userId)).willReturn(Optional.of(jelling));
+        given(userRepository.findById(userId)).willReturn(Optional.of(user));
+        given(itemRepository.findAll()).willReturn(List.of(Item.builder().id(UUID.randomUUID()).build()));
+        given(userItemRepository.findAllByUserIdWithItem(userId)).willReturn(List.of());
+
+        // when
+        ReceiveRewardResponse response = donationService.receiveReward(userId);
+
+        // then
+        assertThat(jelling.getBalance()).isEqualTo(100L);
+        assertThat(activeCharity.getStatus()).isEqualTo("REWARDED");
+        verify(jellingTransactionRepository).save(any());
+        verify(userItemRepository).save(any());
+    }
+
+    @Test
+    @DisplayName("젤링 잔액이 부족하면 보상 수령에 실패한다.")
+    void receiveReward_insufficientBalance() {
+        // given
+        UUID userId = UUID.randomUUID();
+        ActiveCharity activeCharity = ActiveCharity.builder()
+                .targetAmount(500)
+                .status("IN_PROGRESS")
+                .build();
+        Jelling jelling = Jelling.builder().balance(300L).build();
+
+        given(activeCharityRepository.findByUserIdAndStatus(userId, "IN_PROGRESS")).willReturn(Optional.of(activeCharity));
+        given(jellingRepository.findByUserIdWithLock(userId)).willReturn(Optional.of(jelling));
+
+        // when & then
+        assertThatThrownBy(() -> donationService.receiveReward(userId))
+                .isInstanceOf(ApiException.class)
+                .hasMessageContaining(DonationErrorCode.INSUFFICIENT_JELLING.getDefaultMessage());
+    }
+
+    @Test
+    @DisplayName("기부처 카테고리에 맞는 보상 아이템을 수령한다.")
+    void receiveReward_withCategory_success() {
+        // given
+        UUID userId = UUID.randomUUID();
+        User user = User.builder().id(userId).build();
+        Charity charity = Charity.builder()
+                .name("Environment Charity")
+                .category("ENVIRONMENT")
+                .build();
+        ActiveCharity activeCharity = ActiveCharity.builder()
+                .user(user)
+                .charity(charity)
+                .targetAmount(500)
+                .status("IN_PROGRESS")
+                .build();
+        Jelling jelling = Jelling.builder().userId(userId).user(user).balance(600L).build();
+        Item environmentItem = Item.builder().id(UUID.randomUUID()).category("ENVIRONMENT").build();
+
+        given(activeCharityRepository.findByUserIdAndStatus(userId, "IN_PROGRESS")).willReturn(Optional.of(activeCharity));
+        given(jellingRepository.findByUserIdWithLock(userId)).willReturn(Optional.of(jelling));
+        given(userRepository.findById(userId)).willReturn(Optional.of(user));
+        given(itemRepository.findByCategory("ENVIRONMENT")).willReturn(List.of(environmentItem));
+        given(userItemRepository.findAllByUserIdWithItem(userId)).willReturn(List.of());
+
+        // when
+        ReceiveRewardResponse response = donationService.receiveReward(userId);
+
+        // then
+        assertThat(response.category()).isEqualTo("ENVIRONMENT");
+        verify(itemRepository).findByCategory("ENVIRONMENT");
     }
 }

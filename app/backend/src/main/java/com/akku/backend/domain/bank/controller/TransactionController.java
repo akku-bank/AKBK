@@ -1,6 +1,7 @@
 package com.akku.backend.domain.bank.controller;
 
 import com.akku.backend.domain.bank.dto.TransactionHistoryResponse;
+import com.akku.backend.domain.bank.dto.TransactionMemoRequest;
 import com.akku.backend.domain.bank.dto.TransactionVisibilityRequest;
 import com.akku.backend.domain.bank.dto.TransactionVisibilityResponse;
 import com.akku.backend.domain.bank.service.TransactionService;
@@ -26,8 +27,8 @@ public class TransactionController {
     @GetMapping
     public ApiResponse<TransactionHistoryResponse> getTransactionHistory(
             @AuthenticationPrincipal UUID userId,
-            @RequestParam int year,
-            @RequestParam int month
+            @RequestParam(required = false) Integer year,
+            @RequestParam(required = false) Integer month
     ) {
         TransactionHistoryResponse response = transactionService.getTransactionHistory(userId, year, month);
         return ApiResponse.success("거래 내역 조회 성공", response);
@@ -38,22 +39,32 @@ public class TransactionController {
     public ApiResponse<TransactionHistoryResponse> getChildTransactionHistory(
             @PathVariable UUID childId,
             @AuthenticationPrincipal UUID parentId,
-            @RequestParam int year,
-            @RequestParam int month
+            @RequestParam(required = false) Integer year,
+            @RequestParam(required = false) Integer month
     ) {
         TransactionHistoryResponse response = transactionService.getChildTransactionHistory(parentId, childId, year, month);
         return ApiResponse.success("자녀 거래 내역 조회 성공", response);
     }
 
-    @Operation(summary = "프라이버시 제어 (글로벌)", description = "사용자의 모든 거래 내역에 대해 '부모 노출 여부(isHidden)' 설정을 일괄 업데이트합니다.")
-    @PatchMapping("/visibility")
+    @Operation(summary = "개별 거래 내역 숨김 설정", description = "특정 거래 내역에 대해 '부모 노출 여부(isHidden)' 설정을 업데이트합니다.")
+    @PatchMapping("/{transactionUniqueNo}/visibility")
     public ApiResponse<TransactionVisibilityResponse> updateVisibility(
+            @PathVariable String transactionUniqueNo,
             @AuthenticationPrincipal UUID userId,
             @RequestBody @Valid TransactionVisibilityRequest request
     ) {
-        TransactionVisibilityResponse response = transactionService.updateGlobalVisibility(userId, request);
-        return ApiResponse.success("프라이버시 설정이 변경되었습니다.", response);
+        TransactionVisibilityResponse response = transactionService.updateTransactionVisibility(userId, transactionUniqueNo, request);
+        return ApiResponse.success("해당 내역의 프라이버시 설정이 변경되었습니다.", response);
+    }
+
+    @Operation(summary = "거래 내역 메모 수정", description = "특정 거래 내역에 대해 사용자 메모를 업데이트합니다.")
+    @PatchMapping("/{transactionUniqueNo}/memo")
+    public ApiResponse<Void> updateMemo(
+            @PathVariable String transactionUniqueNo,
+            @AuthenticationPrincipal UUID userId,
+            @RequestBody @Valid TransactionMemoRequest request
+    ) {
+        transactionService.updateTransactionMemo(userId, transactionUniqueNo, request.memo());
+        return ApiResponse.success("메모가 저장되었습니다.");
     }
 }
-
-

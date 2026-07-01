@@ -21,7 +21,8 @@ const TUTORIAL_DATA = [
         id: '3',
         title: '아이를 위한 첫 지갑,\n쉽고 빠른 결제',
         subtitle: '어디서나 아꾸뱅꾸를 통해 결제하고,\n스스로 소비 목표를 세워 실천해요.',
-        image: require('../../assets/qr.png'),
+        image: require('../../assets/croco/akku-cheers.png'),
+        imageStyle: { width: '55%' }, // 이미지 축소용
     },
     {
         id: '4',
@@ -71,7 +72,7 @@ const OnboardingTutorialScreen = ({ navigation }) => {
             <View style={styles.imageSection}>
                 <Image
                     source={item.image}
-                    style={styles.heroImage}
+                    style={[styles.heroImage, item.imageStyle]} // 개별 스타일 덮어쓰기 지원
                     resizeMode="contain"
                 />
             </View>
@@ -149,7 +150,7 @@ const styles = StyleSheet.create({
     },
     container: {
         flex: 1,
-        paddingTop: Platform.OS === 'ios' ? RFValue(10) : RFValue(20),
+        paddingTop: Platform.OS === 'ios' ? 0 : 0,
         paddingBottom: Platform.OS === 'web' ? RFValue(120) : (Platform.OS === 'ios' ? RFValue(60) : RFValue(30)),
     },
     headerRow: {
@@ -158,6 +159,7 @@ const styles = StyleSheet.create({
         justifyContent: 'flex-end',
         alignItems: 'center',
         paddingHorizontal: RFValue(24),
+        marginTop: RFValue(0),
     },
     skipButton: {
         paddingVertical: RFValue(8),
@@ -227,8 +229,7 @@ const styles = StyleSheet.create({
         borderRadius: RFValue(4),
     },
     activeDot: {
-        backgroundColor: '#111',
-        width: RFValue(20),
+        backgroundColor: '#A3E635',
     },
     inactiveDot: {
         backgroundColor: '#E5E7EB',

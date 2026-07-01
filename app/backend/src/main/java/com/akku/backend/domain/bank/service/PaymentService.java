@@ -15,16 +15,14 @@ import com.akku.backend.domain.bank.repository.AccountRepository;
 import com.akku.backend.domain.bank.repository.MerchantRepository;
 import com.akku.backend.domain.bank.repository.OfflinePaymentTokenRepository;
 import com.akku.backend.domain.bank.repository.TransactionRepository;
-import com.akku.backend.domain.jelling.entity.Jelling;
-import com.akku.backend.domain.jelling.entity.JellingTransaction;
-import com.akku.backend.domain.jelling.repository.JellingRepository;
-import com.akku.backend.domain.jelling.repository.JellingTransactionRepository;
 import com.akku.backend.global.error.ApiException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.Random;
@@ -39,8 +37,8 @@ public class PaymentService {
     private final OfflinePaymentTokenRepository offlinePaymentTokenRepository;
     private final MerchantRepository merchantRepository;
     private final TransactionRepository transactionRepository;
-    private final JellingRepository jellingRepository;
-    private final JellingTransactionRepository jellingTransactionRepository;
+    private final Clock clock;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Value("${ssafy.api.system-key}")
     private String systemApiKey;
@@ -73,7 +71,7 @@ public class PaymentService {
         OfflinePaymentToken token = OfflinePaymentToken.builder()
                 .userId(userId)
                 .token(tokenString)
-                .expiredAt(LocalDateTime.now().plusSeconds(expiresInSeconds))
+                .expiredAt(LocalDateTime.now(clock).plusSeconds(expiresInSeconds))
                 .build();
 
         offlinePaymentTokenRepository.save(token);
@@ -129,34 +127,40 @@ public class PaymentService {
         account.deductBalance(request.getAmount());
         accountRepository.save(account);
 
+        LocalDateTime now = LocalDateTime.now(clock);
+        String dateStr = now.format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd"));
+        String timeStr = now.format(java.time.format.DateTimeFormatter.ofPattern("HHmmss"));
+
+        // 가상 유니크 번호 생성 (오프라인 결제용 임시 ID)
+        String virtualUniqueNo = String.valueOf(System.currentTimeMillis());
+
         Transaction transaction = transactionRepository.save(Transaction.builder()
                 .accountId(account.getId())
-                .merchantId(merchant.getMerchantId())
+                .transactionUniqueNo(virtualUniqueNo)
                 .amount(request.getAmount())
-                .transactionType("OFFLINE_PAYMENT")
+                .transactionType("2") // 2: 출금 (표준화)
+                .merchantId(merchant.getMerchantId())
                 .merchantName(merchant.getMerchantName())
                 .subCategoryName(merchant.getSubCategoryName())
+                .date(dateStr + timeStr)
                 .build());
 
-        // 5% 젤링 캐시백 정책 적용
-        long cashbackAmount = (long) (request.getAmount() * 0.05);
-        if (cashbackAmount > 0) {
-            Jelling jelling = jellingRepository.findById(child.getId())
-                    .orElseGet(() -> jellingRepository.save(Jelling.builder()
-                            .user(child)
-                            .balance(0L)
-                            .build()));
-            
-            jelling.addBalance(cashbackAmount);
-            jellingRepository.save(jelling);
-
-            jellingTransactionRepository.save(JellingTransaction.builder()
-                    .user(child)
-                    .amount(cashbackAmount)
-                    .type("REWARD")
-                    .description("오프라인 결제 캐시백 (5%)")
-                    .build());
-        }
+        // 결제 완료 이벤트 발행
+        // @TransactionalEventListener가 이벤트를 가로채서 챌린지 및 젤링 캐시백을 통합 처리함
+        eventPublisher.publishEvent(new com.akku.backend.domain.bank.event.CardPaymentEvent(
+                child.getId(),
+                account.getAccountNumber(),
+                virtualUniqueNo,
+                null, // 오프라인 결제는 별도 이체 시뮬레이션 고유번호 없음
+                merchant.getSubCategoryName(),
+                request.getAmount(),
+                account.getBalance(), // 차감 후 잔액
+                String.valueOf(merchant.getMerchantId()),
+                merchant.getMerchantName(),
+                now.toLocalDate(),
+                timeStr,
+                Boolean.TRUE.equals(merchant.getIsGreen())
+        ));
 
         // 토큰 사용 처리
         token.use();

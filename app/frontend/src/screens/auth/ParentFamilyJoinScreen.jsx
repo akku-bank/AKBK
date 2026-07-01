@@ -14,16 +14,15 @@ const ParentFamilyJoinScreen = ({ navigation, route }) => {
     useEffect(() => {
         const fetchFamilyMembers = async () => {
             try {
-                // 배우자 임시 더미 데이터 ~~
-                // 실제 연동 시 api.get(`/families/members?familyCode=${familyCode}`) 호출 후
-                // member.role === 'PARENT' 인 명단만 필터링해서 보여주기
-                setTimeout(() => {
-                    setFamilyMembers([
-                        { id: 201, name: '엄마' },
-                        { id: 202, name: '아빠' },
-                    ]);
+                if (!familyCode) {
                     setIsLoading(false);
-                }, 800);
+                    return;
+                }
+                const response = await api.get(`/families/members?familyCode=${familyCode}`);
+                const members = response.data?.data || [];
+                const parents = members.filter(m => m.role === 'PARENT');
+                setFamilyMembers(parents);
+                setIsLoading(false);
             } catch (error) {
                 console.error('Family Join Preview Error:', error);
                 setIsLoading(false);

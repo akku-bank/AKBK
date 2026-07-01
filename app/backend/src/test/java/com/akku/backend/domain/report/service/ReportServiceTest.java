@@ -48,17 +48,24 @@ class ReportServiceTest {
         User user = User.builder().id(userId).build();
         given(userRepository.findById(userId)).willReturn(Optional.of(user));
 
-        WeeklyReportId reportId = new WeeklyReportId(userId, weekStart, "SPEND");
+        WeeklyReportId spendReportId = new WeeklyReportId(userId, weekStart, "SPEND");
         WeeklyReport spendReport = WeeklyReport.builder()
-                .id(reportId)
+                .id(spendReportId)
                 .totalAmount(50000L)
                 .mon(10000L).tue(5000L).wed(0L).thu(15000L).fri(20000L).sat(0L).sun(0L)
                 .spendingAiSummary("소비 분석 결과")
                 .quizAiSummary("퀴즈 분석 결과")
                 .build();
 
+        WeeklyReportId incomeReportId = new WeeklyReportId(userId, weekStart, "INCOME");
+        WeeklyReport incomeReport = WeeklyReport.builder()
+                .id(incomeReportId)
+                .totalAmount(30000L)
+                .mon(0L).tue(30000L).wed(0L).thu(0L).fri(0L).sat(0L).sun(0L)
+                .build();
+
         given(weeklyReportRepository.findByIdUserIdAndIdStartDay(userId, weekStart))
-                .willReturn(List.of(spendReport));
+                .willReturn(List.of(spendReport, incomeReport));
         given(weeklyCategoryRatioRepository.findByIdUserIdAndIdStartDay(userId, weekStart))
                 .willReturn(List.of());
 
@@ -69,6 +76,9 @@ class ReportServiceTest {
         assertThat(result.getWeekStartDate()).isEqualTo(weekStart.toString());
         assertThat(result.getTotalSpending()).isEqualTo(50000L);
         assertThat(result.getDailySpending().getMon()).isEqualTo(10000L);
+        assertThat(result.getTotalIncome()).isEqualTo(30000L);
+        assertThat(result.getDailyIncome().getTue()).isEqualTo(30000L);
+        assertThat(result.getDailyIncome().getMon()).isEqualTo(0L);
         assertThat(result.getAiSpendingSummary()).isEqualTo("소비 분석 결과");
         assertThat(result.getReportId()).isNotNull();
     }
@@ -91,7 +101,9 @@ class ReportServiceTest {
 
         // then
         assertThat(result.getTotalSpending()).isEqualTo(0L);
+        assertThat(result.getTotalIncome()).isEqualTo(0L);
         assertThat(result.getDailySpending().getMon()).isEqualTo(0L);
+        assertThat(result.getDailyIncome().getMon()).isEqualTo(0L);
         assertThat(result.getAiSpendingSummary()).isEqualTo("이번 주 소비 내역을 분석하고 있습니다.");
     }
 }

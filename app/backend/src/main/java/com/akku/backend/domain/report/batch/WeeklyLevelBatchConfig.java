@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.batch.core.job.Job;
 import org.springframework.batch.core.step.Step;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
+import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
@@ -48,11 +49,12 @@ public class WeeklyLevelBatchConfig {
     }
 
     @Bean
+    @StepScope
     public JpaPagingItemReader<User> userReader() {
         return new JpaPagingItemReaderBuilder<User>()
                 .name("userReader")
                 .entityManagerFactory(entityManagerFactory)
-                .queryString("SELECT u FROM User u WHERE u.role = 'CHILD' AND u.isActive = true") // 활성 자녀만 대상
+                .queryString("SELECT u FROM User u WHERE u.role = 'CHILD' AND u.isActive = true")
                 .pageSize(100)
                 .build();
     }

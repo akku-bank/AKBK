@@ -21,6 +21,7 @@ public class Merchant {
     @Column(name = "merchant_name", nullable = false, unique = true)
     private String merchantName;
 
+    @Builder.Default
     @Column(name = "is_green")
     private Boolean isGreen = false;
 

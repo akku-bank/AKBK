@@ -53,7 +53,6 @@ public class DonationService {
                 .map(activeCharity -> new ActiveCharityInfo(
                         activeCharity.getId(),
                         activeCharity.getCharity().getName(),
-                        activeCharity.getCurrentAmount(),
                         activeCharity.getTargetAmount()
                 ))
                 .orElse(null);
@@ -98,7 +97,6 @@ public class DonationService {
         ActiveCharity activeCharity = ActiveCharity.builder()
                 .user(user)
                 .charity(charity)
-                .currentAmount(0L)
                 .status("IN_PROGRESS")
                 .build();
 
@@ -108,50 +106,37 @@ public class DonationService {
     /**
      * 진행 중인 저금통에 기부 실행
      */
-    @Transactional
-    public ExecuteDonationResponse executeDonation(UUID userId, Integer amount) {
-        // 진행 중인 저금통 조회
-        ActiveCharity activeCharity = activeCharityRepository.findByUserIdAndStatus(userId, "IN_PROGRESS")
-                .orElseThrow(() -> new ApiException(DonationErrorCode.CHARITY_NOT_FOUND)); // TODO: 전전 단계에서 명세에 맞는 코드로 교체 필요할 수 있음
-
-        // 젤링 잔액 조회 및 락
-        Jelling jelling = jellingRepository.findByUserIdWithLock(userId)
-                .orElseThrow(() -> new ApiException(DonationErrorCode.INSUFFICIENT_JELLING)); // 지갑이 없으면 0으로 간주하거나 에러
-
-        if (jelling.getBalance() < amount) {
-            throw new ApiException(DonationErrorCode.INSUFFICIENT_JELLING);
-        }
-
-        // 젤링 차감
-        jelling.deductBalance(amount);
-
-        // 젤링 변동 내역 저장
-        JellingTransaction transaction = JellingTransaction.builder()
-                .user(jelling.getUser())
-                .amount(-(long)amount)
-                .type("DONATE")
-                .description(activeCharity.getCharity().getName() + " 기부")
-                .build();
-        jellingTransactionRepository.save(transaction);
-
-        // 저금통 진행률 업데이트
-        activeCharity.donate(amount);
-
-        return new ExecuteDonationResponse(
-                jelling.getBalance(),
-                activeCharity.getCurrentAmount(),
-                activeCharity.isCompleted()
-        );
-    }
 
     /**
      * 완료된 저금통에 대해 보상 수령
      */
     @Transactional
     public ReceiveRewardResponse receiveReward(UUID userId) {
-        // 완료된 저금통 조회
-        ActiveCharity activeCharity = activeCharityRepository.findByUserIdAndStatus(userId, "COMPLETED")
-                .orElseThrow(() -> new ApiException(DonationErrorCode.CHARITY_NOT_FOUND)); // 적절한 에러 코드가 없으면 새로 정의 필요하나 일단은 NOT_FOUND
+        // 진행 중인 저금통 조회
+        ActiveCharity activeCharity = activeCharityRepository.findByUserIdAndStatus(userId, "IN_PROGRESS")
+                .orElseThrow(() -> new ApiException(DonationErrorCode.CHARITY_NOT_FOUND));
+
+        // 젤링 잔액 조회 및 락
+        Jelling jelling = jellingRepository.findByUserIdWithLock(userId)
+                .orElseThrow(() -> new ApiException(DonationErrorCode.INSUFFICIENT_JELLING));
+
+        // 보류 중인 목표 금액 확인
+        if (jelling.getBalance() < activeCharity.getTargetAmount()) {
+            throw new ApiException(DonationErrorCode.INSUFFICIENT_JELLING);
+        }
+
+        // 젤링 차감 (목표 금액만큼 한 번에 기부 처리)
+        long amountToDonate = activeCharity.getTargetAmount();
+        jelling.deductBalance((int)amountToDonate);
+
+        // 젤링 변동 내역 저장
+        JellingTransaction transaction = JellingTransaction.builder()
+                .user(jelling.getUser())
+                .amount(-amountToDonate)
+                .type("DONATE")
+                .description(activeCharity.getCharity().getName() + " 기부 및 보상")
+                .build();
+        jellingTransactionRepository.save(transaction);
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ApiException(UserErrorCode.USER_NOT_FOUND));

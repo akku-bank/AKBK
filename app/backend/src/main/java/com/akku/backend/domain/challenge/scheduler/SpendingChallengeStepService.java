@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -18,6 +19,7 @@ import java.util.List;
 public class SpendingChallengeStepService {
 
     private final SpendingChallengeRepository spendingChallengeRepository;
+    private final Clock clock;
 
     /**
      * STEP 1: 지난주 IN_PROGRESS 챌린지 → SUCCESS / FAIL 최종 판정.
@@ -29,7 +31,7 @@ public class SpendingChallengeStepService {
      */
     @Transactional
     public void settleLastWeek() {
-        LocalDate lastSunday = LocalDate.now().minusDays(1); // 월요일 기준 어제 = 지난주 일요일
+        LocalDate lastSunday = LocalDate.now(clock).minusDays(1); // 월요일 기준 어제 = 지난주 일요일
         LocalDate lastMonday = lastSunday.minusDays(6);      // 지난주 월요일
 
         List<SpendingChallenge> challenges =
@@ -67,7 +69,7 @@ public class SpendingChallengeStepService {
      */
     @Transactional
     public void activateThisWeek() {
-        LocalDate thisMonday = LocalDate.now(); // 월요일 00:00에 실행
+        LocalDate thisMonday = LocalDate.now(clock); // 월요일 00:00에 실행
 
         List<SpendingChallenge> challenges =
                 spendingChallengeRepository.findAllByStatusAndStartDate(ChallengeStatus.APPROVED, thisMonday);

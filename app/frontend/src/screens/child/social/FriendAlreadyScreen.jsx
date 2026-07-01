@@ -30,7 +30,7 @@ const FriendAlreadyScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-    safeArea: { flex: 1, backgroundColor: '#F3F4F6' },
+    safeArea: { flex: 1, backgroundColor: '#ECFCCB' },
     container: {
         flex: 1,
         alignItems: 'center',
@@ -79,7 +79,7 @@ const styles = StyleSheet.create({
     },
     footer: {
         padding: scale(20),
-        backgroundColor: '#F3F4F6',
+        backgroundColor: '#F9FAFB',
     },
     mainButton: {
         backgroundColor: '#A3E635',

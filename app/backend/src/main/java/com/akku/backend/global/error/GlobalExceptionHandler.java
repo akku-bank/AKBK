@@ -9,6 +9,7 @@ import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 /**
  * 전역 예외 처리 핸들러
@@ -32,6 +33,20 @@ public class GlobalExceptionHandler {
                 .orElse("잘못된 요청입니다.");
 
         log.warn("[ValidationError] TraceId: {}, Message: {}", traceId, message);
+
+        ApiResponse<Void> response = ApiResponse.fail(message, null, traceId);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    }
+
+    /**
+     * 파라미터 타입 불일치 처리 (예: UUID 형식 오류)
+     */
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ApiResponse<Void>> handleTypeMismatchException(MethodArgumentTypeMismatchException e) {
+        String traceId = MDC.get(TRACE_ID_KEY);
+        String message = String.format("파라미터 '%s'의 형식이 잘못되었습니다.", e.getName());
+
+        log.warn("[TypeMismatchError] TraceId: {}, Message: {}", traceId, e.getMessage());
 
         ApiResponse<Void> response = ApiResponse.fail(message, null, traceId);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
@@ -64,7 +79,6 @@ public class GlobalExceptionHandler {
     }
 
     /**
-<<<<<<< Updated upstream
      * 외부 API 호출 오류 처리
      */
     @ExceptionHandler(org.springframework.web.client.RestClientResponseException.class)
@@ -78,8 +92,6 @@ public class GlobalExceptionHandler {
     }
 
     /**
-=======
->>>>>>> Stashed changes
      * 서버 내부 오류 처리 (Unhandled Exception)
      */
     @ExceptionHandler(Exception.class)

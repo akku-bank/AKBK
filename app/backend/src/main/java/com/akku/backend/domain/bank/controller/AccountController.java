@@ -42,12 +42,12 @@ public class AccountController {
 
     @Operation(summary = "타행 계좌 연동인증 요청 (1원 송금)", description = "타행 계좌 점유 확인을 위해 1원을 송금합니다.")
     @PostMapping("/verify/request")
-    public ApiResponse<Void> verifyExternalAccountRequest(
+    public ApiResponse<AccountVerifyResponse> verifyExternalAccountRequest(
             @AuthenticationPrincipal UUID userId,
             @Valid @RequestBody AccountVerifyRequest request
     ) {
-        accountService.request1WonVerification(userId, request);
-        return ApiResponse.success("1원 송금 요청 성공");
+        AccountVerifyResponse response = accountService.request1WonVerification(userId, request);
+        return ApiResponse.success("1원 송금 요청 성공", response);
     }
 
     @Operation(summary = "타행 계좌 연동 인증 확인", description = "입력한 인증코드를 검증하고 계좌 연동을 완료합니다.")
@@ -78,5 +78,16 @@ public class AccountController {
     ) {
         TransferResponse response = accountService.transfer(userId, request);
         return ApiResponse.success("계좌 이체 성공", response);
+    }
+
+    @Operation(summary = "계좌 실명 조회", description = "계좌번호와 은행코드를 통해 예금주 성명을 조회합니다.")
+    @GetMapping("/holder-name")
+    public ApiResponse<AccountHolderResponse> getAccountHolderName(
+            @RequestParam String bankCode,
+            @RequestParam String accountNumber
+    ) {
+        String userName = accountService.getAccountHolderName(bankCode, accountNumber);
+        AccountHolderResponse response = new AccountHolderResponse(accountNumber, bankCode, userName);
+        return ApiResponse.success("계좌 실명 조회 성공", response);
     }
 }

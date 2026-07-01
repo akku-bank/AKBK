@@ -2,6 +2,8 @@ package com.akku.backend.domain.avatar.entity;
 
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -11,6 +13,8 @@ import java.util.UUID;
 @Table(name = "items")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
+@Builder
 public class Item {
 
     @Id
@@ -26,6 +30,7 @@ public class Item {
     @Column(columnDefinition = "TEXT")
     private String resourceUrl;
 
+    @Builder.Default
     @Column(nullable = false)
     private int requiredLevel = 1;
 }

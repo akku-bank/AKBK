@@ -66,6 +66,9 @@ class CardServiceTest {
     private com.akku.backend.domain.bank.repository.MerchantRepository merchantRepository;
 
     @Mock
+    private com.akku.backend.domain.bank.repository.AccountRepository accountRepository;
+
+    @Mock
     private ApplicationEventPublisher eventPublisher;
 
     @Test
@@ -87,6 +90,8 @@ class CardServiceTest {
         com.akku.backend.domain.bank.entity.Merchant merchant = mock(com.akku.backend.domain.bank.entity.Merchant.class);
         given(merchant.getIsGreen()).willReturn(false);
         given(merchantRepository.findById(1L)).willReturn(Optional.of(merchant));
+        com.akku.backend.domain.bank.entity.Account account = mock(com.akku.backend.domain.bank.entity.Account.class);
+        given(accountRepository.findByAccountNumberAndBankCode(anyString(), eq("001"))).willReturn(Optional.of(account));
 
         // when
         TransactionSynchronizationManager.initSynchronization();
@@ -195,7 +200,7 @@ class CardServiceTest {
         given(userRepository.findById(userId)).willReturn(Optional.of(user));
 
         FinanceUserCardListResponse.UserCardDetails finCard = new FinanceUserCardListResponse.UserCardDetails(
-                "9999-9999", "123", "CARD-123", "001", "BankA", "Good Card", 100000L, 50000L, "Discount card", "1225", "ACC-123", "10"
+                "9999-9999", "123", "CARD-123", "001", "BankA", "Good Card", 100000L, 50000L, "Discount card", "1225", "ACC-123", "10", Collections.emptyList()
         );
         given(ssafyFinanceService.getUserCards("userKey123")).willReturn(List.of(finCard));
 

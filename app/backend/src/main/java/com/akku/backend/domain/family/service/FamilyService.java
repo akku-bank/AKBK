@@ -16,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -29,6 +30,7 @@ public class FamilyService {
     private final FamilyProfileRepository familyProfileRepository;
     private final UserRepository userRepository;
     private final AccountRepository accountRepository;
+    private final Clock clock;
 
     // ── 헬퍼: userId → User 조회 후 familyId 반환. 가족 미가입 시 FAMILY_NOT_FOUND ──
     private UUID resolveFamilyId(UUID userId) {
@@ -100,13 +102,13 @@ public class FamilyService {
 
         if (family.getQrCode() != null &&
                 family.getQrExpiresAt() != null &&
-                family.getQrExpiresAt().isAfter(LocalDateTime.now())) {
+                family.getQrExpiresAt().isAfter(LocalDateTime.now(clock))) {
 
             return new FamilyQrResponse(family.getQrCode(), family.getQrExpiresAt());
         }
 
         String newQrCode = UUID.randomUUID().toString();
-        LocalDateTime newExpiresAt = LocalDateTime.now().plusMinutes(5);
+        LocalDateTime newExpiresAt = LocalDateTime.now(clock).plusMinutes(5);
 
         family.updateQrCode(newQrCode, newExpiresAt);
 
@@ -133,7 +135,7 @@ public class FamilyService {
                 .orElseThrow(() -> new ApiException(FamilyErrorCode.INVALID_QR_CODE));
 
         // 4. 만료 시간 검증
-        if (family.getQrExpiresAt() != null && family.getQrExpiresAt().isBefore(LocalDateTime.now())) {
+        if (family.getQrExpiresAt() != null && family.getQrExpiresAt().isBefore(LocalDateTime.now(clock))) {
             throw new ApiException(FamilyErrorCode.EXPIRED_QR_CODE);
         }
 
@@ -166,7 +168,7 @@ public class FamilyService {
                 .orElseThrow(() -> new ApiException(FamilyErrorCode.FAMILY_NOT_FOUND));
 
         String newQrCode = UUID.randomUUID().toString();
-        LocalDateTime newExpiresAt = LocalDateTime.now().plusMinutes(5);
+        LocalDateTime newExpiresAt = LocalDateTime.now(clock).plusMinutes(5);
 
         family.updateQrCode(newQrCode, newExpiresAt);
         return new FamilyQrResponse(newQrCode, newExpiresAt);
@@ -213,11 +215,11 @@ public class FamilyService {
                 .orElseThrow(() -> new ApiException(FamilyErrorCode.FAMILY_NOT_FOUND));
 
         if (family.getQrCode() == null ||
-                (family.getQrExpiresAt() != null && family.getQrExpiresAt().isBefore(LocalDateTime.now()))) {
+                (family.getQrExpiresAt() != null && family.getQrExpiresAt().isBefore(LocalDateTime.now(clock)))) {
             throw new ApiException(FamilyErrorCode.QR_ALREADY_EXPIRED);
         }
 
-        family.updateQrCode(family.getQrCode(), LocalDateTime.now().minusSeconds(1));
+        family.updateQrCode(family.getQrCode(), LocalDateTime.now(clock).minusSeconds(1));
     }
 
     /**

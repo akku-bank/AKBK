@@ -1,9 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, Alert, ActivityIndicator, ImageBackground } from 'react-native';
 import { scale, verticalScale } from 'react-native-size-matters';
 import ChildAvatar from '../../../components/child/avatar/ChildAvatar';
 import CustomText from '../../../components/common/CustomText';
 import api from '../../../api/axios';
+import { useChildAlert } from '../../../contexts/ChildAlertContext';
+
+const customBackground = require('../../../assets/background.png');
 
 const DEFAULT_EQUIP_STATE = {
     hair: 'hair_boy',
@@ -49,6 +52,7 @@ const FriendTownScreen = ({ route, navigation }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [friendTownInfo, setFriendTownInfo] = useState(null);
     const [equipState, setEquipState] = useState(DEFAULT_EQUIP_STATE);
+    const { showAlert } = useChildAlert();
 
     useEffect(() => {
         const fetchFriendTown = async () => {
@@ -60,10 +64,24 @@ const FriendTownScreen = ({ route, navigation }) => {
                 const data = res?.data?.data;
 
                 setFriendTownInfo(data);
-                setEquipState(mapAvatarUrlsToEquipState(data?.avatar?.equippedItems || []));
+
+                const equipped = data?.avatar?.equippedItems || [];
+                if (equipped.length === 0) {
+                    setEquipState({
+                        hair: 'hair_boy',
+                        face: 'base_boy',
+                        upper: 'upper_1',
+                        lower: 'lower_1',
+                        shoe: 'shoe',
+                        hat: 'none',
+                        wing: 'none'
+                    });
+                } else {
+                    setEquipState(mapAvatarUrlsToEquipState(equipped));
+                }
             } catch (e) {
                 console.error('Friend Town Fetch Error', e);
-                Alert.alert('오류', e.response?.data?.message || '친구 타운 정보를 불러오지 못했습니다.');
+                showAlert({ title: '오류', message: e.response?.data?.message || '친구 타운 정보를 불러오지 못했습니다.' });
             } finally {
                 setIsLoading(false);
             }
@@ -76,31 +94,25 @@ const FriendTownScreen = ({ route, navigation }) => {
     const recentCharity = friendTownInfo?.recentCharity;
 
     const handleDeleteFriend = () => {
-        Alert.alert(
-            '안내',
-            `${friendName}을(를) 삭제할까요?`,
-            [
-                { text: '취소', style: 'cancel' },
-                {
-                    text: '삭제하기',
-                    style: 'destructive',
-                    onPress: async () => {
-                        try {
-                            await api.delete(`/social/friends/${friendId}`);
-                            Alert.alert('완료', '친구가 삭제되었습니다.', [
-                                {
-                                    text: '확인',
-                                    onPress: () => navigation.goBack(),
-                                },
-                            ]);
-                        } catch (e) {
-                            console.error('Friend Delete Error', e);
-                            Alert.alert('오류', e.response?.data?.message || '친구 삭제에 실패했습니다.');
-                        }
-                    },
-                },
-            ]
-        );
+        showAlert({
+            title: '삭제 안내',
+            message: `${friendName}을(를) 삭제할까요?`,
+            showCancel: true,
+            confirmText: '삭제하기',
+            onConfirm: async () => {
+                try {
+                    await api.delete(`/social/friends/${friendId}`);
+                    showAlert({ 
+                        title: '완료', 
+                        message: '친구가 삭제되었습니다.', 
+                        onConfirm: () => navigation.goBack() 
+                    });
+                } catch (e) {
+                    console.error('Friend Delete Error', e);
+                    showAlert({ title: '오류', message: e.response?.data?.message || '친구 삭제에 실패했습니다.' });
+                }
+            }
+        });
     };
 
     return (
@@ -109,15 +121,19 @@ const FriendTownScreen = ({ route, navigation }) => {
                 <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
                     <CustomText style={styles.backButtonText}>←</CustomText>
                 </TouchableOpacity>
-                <CustomText style={styles.headerTitle}>{friendName}의 타운</CustomText>
+                <CustomText style={styles.headerTitle}>{friendName}의 방</CustomText>
                 <TouchableOpacity style={styles.deleteButton} onPress={handleDeleteFriend}>
                     <CustomText style={styles.deleteButtonText}>삭제</CustomText>
                 </TouchableOpacity>
             </View>
 
             <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
-                <View style={styles.townScene}>
-                    <CustomText style={styles.townGreeting}>"안녕! 내 타운에 온 걸 환영해!"</CustomText>
+                <ImageBackground
+                    source={customBackground}
+                    style={styles.townScene}
+                    imageStyle={{ borderRadius: scale(24) }} // 배경 모서리 둥글게 깎기
+                >
+                    <CustomText style={styles.townGreeting}>안녕! 놀러왔구나!</CustomText>
                     {isLoading ? (
                         <View style={styles.loadingBox}>
                             <ActivityIndicator color="#4D7C0F" />
@@ -125,41 +141,25 @@ const FriendTownScreen = ({ route, navigation }) => {
                     ) : (
                         <ChildAvatar size={200} equipState={equipState} />
                     )}
-                    <View style={styles.platform} />
-                </View>
+                </ImageBackground>
 
                 <View style={styles.infoCard}>
                     <CustomText style={styles.infoTitle}>최근 기부 활동</CustomText>
                     <CustomText style={styles.infoSubtitle}>
                         {recentCharity
                             ? `${friendName}의 최근 관심 기부처예요.`
-                            : `${friendName}의 최근 기부 정보가 아직 없어요.`}
+                            : `아직 최근 기부 정보가 없어요.`}
                     </CustomText>
 
-                    <View style={styles.recentCard}>
-                        <CustomText style={styles.recentLabel}>최근 기부처</CustomText>
-                        <CustomText style={styles.recentValue}>
-                            {recentCharity || '표시할 기부 정보가 없어요'}
-                        </CustomText>
-                    </View>
+                    {recentCharity ? (
+                        <View style={styles.recentCard}>
+                            <CustomText style={styles.recentLabel}>최근 기부처</CustomText>
+                            <CustomText style={styles.recentValue}>{recentCharity}</CustomText>
+                        </View>
+                    ) : null}
                 </View>
 
-                <View style={styles.actionRow}>
-                    <TouchableOpacity
-                        style={[styles.actionButton, styles.giftButton]}
-                        activeOpacity={0.8}
-                        onPress={() => Alert.alert('안내', '선물 보내기 API는 아직 연결되지 않았습니다.')}
-                    >
-                        <CustomText style={styles.actionButtonText}>선물 보내기 🎁</CustomText>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={[styles.actionButton, styles.pokeButton]}
-                        activeOpacity={0.8}
-                        onPress={() => Alert.alert('안내', '콕 찌르기 API는 아직 연결되지 않았습니다.')}
-                    >
-                        <CustomText style={[styles.actionButtonText, { color: '#A3E635' }]}>콕 찌르기 👉</CustomText>
-                    </TouchableOpacity>
-                </View>
+
             </ScrollView>
         </SafeAreaView>
     );
@@ -168,7 +168,7 @@ const FriendTownScreen = ({ route, navigation }) => {
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
-        backgroundColor: '#F3F4F6',
+        backgroundColor: '#ECFCCB',
     },
     header: {
         flexDirection: 'row',
@@ -176,7 +176,7 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         paddingHorizontal: scale(16),
         paddingVertical: verticalScale(16),
-        backgroundColor: '#F3F4F6',
+        backgroundColor: '#F9FAFB',
     },
     backButton: {
         width: scale(32),
@@ -213,7 +213,6 @@ const styles = StyleSheet.create({
         paddingBottom: verticalScale(40),
     },
     townScene: {
-        backgroundColor: '#ECFCCB',
         borderRadius: scale(24),
         height: verticalScale(350),
         alignItems: 'center',
@@ -224,8 +223,6 @@ const styles = StyleSheet.create({
         overflow: 'hidden',
     },
     townGreeting: {
-        position: 'absolute',
-        top: verticalScale(30),
         backgroundColor: 'rgba(255, 255, 255, 0.9)',
         paddingHorizontal: scale(16),
         paddingVertical: verticalScale(8),
@@ -234,6 +231,8 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color: '#4D7C0F',
         overflow: 'hidden',
+        marginBottom: verticalScale(16),
+        alignSelf: 'center',
     },
     loadingBox: {
         width: scale(200),
@@ -242,20 +241,13 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         zIndex: 2,
     },
-    platform: {
-        position: 'absolute',
-        bottom: verticalScale(-40),
-        width: scale(300),
-        height: verticalScale(120),
-        backgroundColor: '#D9F99D',
-        borderRadius: scale(150),
-        transform: [{ scaleY: 0.5 }],
-        zIndex: 1,
-    },
     infoCard: {
         backgroundColor: '#FFFFFF',
         borderRadius: scale(20),
-        padding: scale(20),
+        paddingTop: verticalScale(14),
+        paddingBottom: verticalScale(8),
+        paddingHorizontal: scale(16),
+        marginHorizontal: scale(16),
         marginBottom: verticalScale(20),
         shadowColor: '#000',
         shadowOffset: { width: 0, height: verticalScale(2) },
@@ -268,50 +260,39 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color: '#111',
         marginBottom: verticalScale(4),
+        textAlign: 'center',
     },
     infoSubtitle: {
         fontSize: scale(13),
         color: '#6B7280',
         marginBottom: verticalScale(16),
+        textAlign: 'center',
     },
     recentCard: {
         backgroundColor: '#F8FAFC',
         borderRadius: scale(16),
         paddingHorizontal: scale(16),
         paddingVertical: verticalScale(14),
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
+        elevation: 2,
     },
     recentLabel: {
         fontSize: scale(12),
         color: '#6B7280',
         marginBottom: verticalScale(6),
+        textAlign: 'center',
     },
     recentValue: {
         fontSize: scale(15),
         fontWeight: 'bold',
         color: '#111',
+        textAlign: 'center',
     },
-    actionRow: {
-        flexDirection: 'row',
-        gap: scale(12),
-    },
-    actionButton: {
-        flex: 1,
-        paddingVertical: verticalScale(14),
-        borderRadius: scale(16),
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    giftButton: {
-        backgroundColor: '#111',
-    },
-    pokeButton: {
-        backgroundColor: '#ECFCCB',
-    },
-    actionButtonText: {
-        fontSize: scale(15),
-        fontWeight: 'bold',
-        color: '#FFFFFF',
-    }
+
 });
 
 export default FriendTownScreen;

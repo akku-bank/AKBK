@@ -10,7 +10,6 @@ const ParentHomeScreen = ({ navigation }) => {
     const { user } = useAuthStore();
     const [childrenData, setChildrenData] = useState([]);
     const [parentBalance, setParentBalance] = useState(0);
-    const [parentBalance, setParentBalance] = useState(0);
 
     useFocusEffect(
         useCallback(() => {
@@ -29,15 +28,13 @@ const ParentHomeScreen = ({ navigation }) => {
                         familyMembers
                             .filter(member =>
                                 member.role === 'CHILD' &&
-                                member.userId &&
-                                Array.isArray(member.accountIds) &&
-                                member.accountIds.length > 0
+                                member.userId
                             )
                             .map(member => [
                                 String(member.userId),
                                 {
                                     profileId: member.profileId,
-                                    accountId: member.accountIds[0]
+                                    accountId: (member.accountIds && member.accountIds.length > 0) ? member.accountIds[0] : null
                                 }
                             ])
                     );
@@ -49,19 +46,22 @@ const ParentHomeScreen = ({ navigation }) => {
                                 return null;
                             }
 
-                            return {
+                            const result = {
                                 id: matchedMember.profileId,
                                 childId: child.childId,
                                 accountId: matchedMember.accountId,
                                 name: child.name,
-                                balance: child.balance || 0,
+                                balance: matchedMember.accountId ? (child.balance || 0) : null,
+                                bankCode: child.bankCode,
+                                accountNumber: child.accountNumber,
                                 avatar: require('../../../assets/croco/croco_face.png')
                             };
+                            console.log('[ParentHomeScreen] Mapped child:', result);
+                            return result;
                         })
                         .filter(Boolean);
 
                     setChildrenData(mappedChildren);
-                    setParentBalance(pBalance);
                     setParentBalance(pBalance);
                 } catch (e) {
                     console.error('Parent Home Fetch Error', e);
@@ -96,15 +96,12 @@ const ParentHomeScreen = ({ navigation }) => {
     return (
         <SafeAreaView style={styles.safeArea}>
             <View style={styles.header}>
-                <CustomText style={styles.headerTitle}>{user?.name || '부모님'}</CustomText>
-                <TouchableOpacity onPress={() => navigation.navigate('ParentEditProfile')}>
-                    <CustomText style={styles.settingsIcon}>설정</CustomText>
-                </TouchableOpacity>
+                <CustomText style={styles.headerTitle}>{user?.name || '부모'}님 안녕하세요!</CustomText>
             </View>
 
             <ScrollView contentContainerStyle={styles.container}>
                 <View style={styles.parentBalanceCard}>
-                    <CustomText style={styles.parentBalanceLabel}>내 지갑(연동 계좌) 잔액</CustomText>
+                    <CustomText style={styles.parentBalanceLabel}>내 계좌 잔액</CustomText>
                     <CustomText style={styles.parentBalanceValue}>{parentBalance.toLocaleString()}원</CustomText>
                 </View>
 
@@ -122,23 +119,29 @@ const ParentHomeScreen = ({ navigation }) => {
                             </View>
                             <View style={styles.childTextInfo}>
                                 <CustomText style={styles.childName}>{child.name}</CustomText>
-                                <CustomText style={styles.childBalance}>{child.balance.toLocaleString()}원</CustomText>
+                                {child.accountId ? (
+                                    <CustomText style={styles.childBalance}>{child.balance.toLocaleString()}원</CustomText>
+                                ) : (
+                                    <CustomText style={styles.unlinkedText}>계좌 연동을 완료해 주세요.</CustomText>
+                                )}
                             </View>
-                            <TouchableOpacity style={styles.historyBtn} onPress={() => navigation.navigate('ParentHistoryScreen', { child })}>
-                                <CustomText style={styles.historyBtnText}>내역조회</CustomText>
-                            </TouchableOpacity>
+                            {child.accountId && (
+                                <TouchableOpacity style={styles.historyBtn} onPress={() => navigation.navigate('ParentHistoryScreen', { child })}>
+                                    <CustomText style={styles.historyBtnText}>내역 조회</CustomText>
+                                </TouchableOpacity>
+                            )}
                         </View>
 
                         <View style={styles.actionRow}>
-                            <TouchableOpacity style={styles.actionBtn} onPress={() => navigation.navigate('ParentTransferScreen', { child })}>
-                                <CustomText style={styles.actionBtnText}>용돈 송금</CustomText>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={styles.actionBtnOutline} onPress={() => navigation.navigate('ParentChildEdit', { child })}>
-                                <CustomText style={styles.actionBtnOutlineText}>정보 수정</CustomText>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={styles.actionBtnDanger} onPress={() => handleDeleteMember(child)}>
-                                <CustomText style={styles.actionBtnDangerText}>가족 분리</CustomText>
-                            </TouchableOpacity>
+                            {child.accountId ? (
+                                <TouchableOpacity style={styles.actionBtn} onPress={() => navigation.navigate('ParentTransferScreen', { child })}>
+                                    <CustomText style={styles.actionBtnText}>용돈 송금</CustomText>
+                                </TouchableOpacity>
+                            ) : (
+                                <TouchableOpacity style={styles.actionBtnPrimary} onPress={() => navigation.navigate('ParentAccountCreate')}>
+                                    <CustomText style={styles.actionBtnPrimaryText}>계좌 개설</CustomText>
+                                </TouchableOpacity>
+                            )}
                             <TouchableOpacity style={styles.actionBtnOutline} onPress={() => navigation.navigate('ParentChildEdit', { child })}>
                                 <CustomText style={styles.actionBtnOutlineText}>정보 수정</CustomText>
                             </TouchableOpacity>
@@ -156,8 +159,7 @@ const ParentHomeScreen = ({ navigation }) => {
 
                 <View style={styles.reportSection}>
                     <CustomText style={styles.sectionTitle}>이번 주 소비 리포트 요약</CustomText>
-                    <TouchableOpacity style={styles.reportCard} onPress={() => navigation.navigate('ParentReportScreen')}>
-                        <CustomText style={styles.reportEmoji}>리포트</CustomText>
+                    <TouchableOpacity style={styles.reportCard} onPress={() => navigation.navigate('ParentReportScreen', { childId: childrenData[0]?.childId, childName: childrenData[0]?.name })}>
                         <View style={{ flex: 1 }}>
                             <CustomText style={styles.reportTitle}>
                                 {childrenData.length > 0 ? `${childrenData[0].name}의` : '자녀의'} 주간 리포트 도착!
@@ -173,7 +175,7 @@ const ParentHomeScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-    safeArea: { flex: 1, backgroundColor: '#F3F4F6' },
+    safeArea: { flex: 1, backgroundColor: '#F9FAFB' },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -182,9 +184,9 @@ const styles = StyleSheet.create({
         paddingVertical: verticalScale(20),
         backgroundColor: '#FFFFFF',
         borderBottomWidth: 1,
-        borderBottomColor: '#F3F4F6'
+        borderBottomColor: '#F9FAFB'
     },
-    headerTitle: { fontSize: scale(20), fontWeight: '900', color: '#111' },
+    headerTitle: { fontSize: scale(22), fontWeight: '900', color: '#111' },
     settingsIcon: { fontSize: scale(16), fontWeight: '700', color: '#4B5563' },
 
     container: { flexGrow: 1, paddingHorizontal: scale(16), paddingTop: verticalScale(24), paddingBottom: verticalScale(40) },
@@ -193,20 +195,20 @@ const styles = StyleSheet.create({
     sectionTitle: { fontSize: scale(18), fontWeight: 'bold', color: '#111' },
 
     parentBalanceCard: {
-        backgroundColor: '#3B82F6',
+        backgroundColor: '#ECFCCB',
         borderRadius: scale(20),
         padding: scale(20),
         marginBottom: verticalScale(32),
-        shadowColor: '#3B82F6',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: scale(8),
-        elevation: 6
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: verticalScale(2) },
+        shadowOpacity: 0.05,
+        shadowRadius: scale(4),
+        elevation: 2
     },
-    parentBalanceLabel: { fontSize: scale(14), color: '#E0F2FE', marginBottom: verticalScale(8) },
-    parentBalanceValue: { fontSize: scale(28), fontWeight: '900', color: '#FFFFFF' },
+    parentBalanceLabel: { fontSize: scale(16), fontWeight: 'bold', color: '#4D7C0F', marginBottom: verticalScale(8) },
+    parentBalanceValue: { fontSize: scale(28), fontWeight: '900', color: '#111' },
 
-    emptyText: { textAlign: 'center', marginTop: 20, color: '#9CA3AF' },
+    emptyText: { textAlign: 'center', marginTop: verticalScale(30), color: '#9CA3AF', fontSize: scale(16), fontWeight: 'bold' },
 
     childCard: {
         backgroundColor: '#FFFFFF',
@@ -230,37 +232,55 @@ const styles = StyleSheet.create({
         marginRight: scale(16),
         overflow: 'hidden'
     },
-    childAvatarImage: { width: '80%', height: '80%' },
+    childAvatarImage: { width: '100%', height: '100%', transform: [{ translateY: scale(10) }, { translateX: scale(4) }] },
     childTextInfo: { flex: 1 },
     childName: { fontSize: scale(16), fontWeight: 'bold', color: '#4B5563', marginBottom: verticalScale(4) },
     childBalance: { fontSize: scale(20), fontWeight: '900', color: '#111' },
-    historyBtn: { backgroundColor: '#F3F4F6', paddingHorizontal: scale(12), paddingVertical: verticalScale(8), borderRadius: scale(8) },
+    historyBtn: { backgroundColor: '#F9FAFB', paddingHorizontal: scale(12), paddingVertical: verticalScale(8), borderRadius: scale(8), shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2, },
     historyBtnText: { fontSize: scale(12), fontWeight: 'bold', color: '#4B5563' },
 
     actionRow: { flexDirection: 'row', gap: scale(8), marginTop: verticalScale(4) },
-    actionBtn: { flex: 1.5, backgroundColor: '#ECFCCB', paddingVertical: verticalScale(10), borderRadius: scale(8), alignItems: 'center' },
+    actionBtn: { flex: 1.5, backgroundColor: '#ECFCCB', paddingVertical: verticalScale(10), borderRadius: scale(8), alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2, },
     actionBtnText: { fontSize: scale(13), fontWeight: 'bold', color: '#4D7C0F' },
-    actionBtnOutline: { flex: 1, backgroundColor: '#F3F4F6', paddingVertical: verticalScale(10), borderRadius: scale(8), alignItems: 'center' },
+    actionBtnOutline: { flex: 1, backgroundColor: '#F9FAFB', paddingVertical: verticalScale(10), borderRadius: scale(8), alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2, },
     actionBtnOutlineText: { fontSize: scale(13), fontWeight: 'bold', color: '#4B5563' },
-    actionBtnDanger: { flex: 1, backgroundColor: '#FEE2E2', paddingVertical: verticalScale(10), borderRadius: scale(8), alignItems: 'center' },
+    actionBtnDanger: { flex: 1, backgroundColor: '#FEE2E2', paddingVertical: verticalScale(10), borderRadius: scale(8), alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2, },
     actionBtnDangerText: { fontSize: scale(13), fontWeight: 'bold', color: '#DC2626' },
+    unlinkedText: { fontSize: scale(13), color: '#EF4444', fontWeight: 'bold' },
+    actionBtnPrimary: { flex: 1.5, backgroundColor: '#3B82F6', paddingVertical: verticalScale(10), borderRadius: scale(8), alignItems: 'center' },
+    actionBtnPrimaryText: { fontSize: scale(13), fontWeight: 'bold', color: '#FFFFFF' },
 
     addBabyCard: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#FFFFFF',
-        borderRadius: scale(16),
+        backgroundColor: '#ECFCCB',
+        borderRadius: scale(20),
         padding: scale(20),
+        marginTop: verticalScale(16),
         marginBottom: verticalScale(32),
-        borderStyle: 'dashed',
-        borderWidth: 2,
-        borderColor: '#D1D5DB'
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: verticalScale(2) },
+        shadowOpacity: 0.05,
+        shadowRadius: scale(4),
+        elevation: 2
     },
     addBabyIcon: { fontSize: scale(24), fontWeight: 'bold', color: '#9CA3AF', marginRight: scale(16) },
     addBabyText: { fontSize: scale(15), fontWeight: 'bold', color: '#6B7280' },
 
     reportSection: { marginBottom: verticalScale(20) },
-    reportCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', padding: scale(20), borderRadius: scale(16), marginTop: verticalScale(12) },
+    reportCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#ECFCCB',
+        borderRadius: scale(20),
+        padding: scale(20),
+        marginTop: verticalScale(12),
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: verticalScale(2) },
+        shadowOpacity: 0.05,
+        shadowRadius: scale(4),
+        elevation: 2
+    },
     reportEmoji: { fontSize: scale(16), fontWeight: '700', color: '#4B5563', marginRight: scale(16) },
     reportTitle: { fontSize: scale(15), fontWeight: 'bold', color: '#111', marginBottom: verticalScale(4) },
     reportDesc: { fontSize: scale(13), color: '#6B7280' },
