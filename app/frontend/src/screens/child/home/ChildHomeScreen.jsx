@@ -1,5 +1,6 @@
-import React, { useState, useContext, useEffect } from 'react';
-import { View, StyleSheet, TouchableOpacity, SafeAreaView, Dimensions, Image, Modal, Platform, StatusBar } from 'react-native';
+import React, { useState, useContext, useEffect, useCallback } from 'react';
+import { View, StyleSheet, TouchableOpacity, SafeAreaView, Dimensions, Image, Modal, Platform, StatusBar, ImageBackground, Alert } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { scale, verticalScale } from 'react-native-size-matters';
 import ChildAvatar from '../../../components/child/avatar/ChildAvatar';
 import { AvatarContext } from '../../../components/child/avatar/AvatarContext';
@@ -8,6 +9,8 @@ import CustomText from '../../../components/common/CustomText';
 import Pet from '../../../components/child/avatar/Pet';
 import api from '../../../api/axios';
 import useAuthStore from '../../../store/useAuthStore';
+import ChildCustomModal from '../../../components/common/ChildCustomModal';
+import { useChildAlert } from '../../../contexts/ChildAlertContext';
 
 const { width, height } = Dimensions.get('window');
 
@@ -16,76 +19,80 @@ const ChildHomeScreen = ({ navigation }) => {
     const [isLevelUpModalVisible, setLevelUpModalVisible] = useState(false);
     const { equipState, setEquipState } = useContext(AvatarContext);
     const { user, cachedLevel, setCachedLevel } = useAuthStore();
+    const { showAlert } = useChildAlert();
     const [homeData, setHomeData] = useState(null);
     const [realBalance, setRealBalance] = useState(null);
 
-    useEffect(() => {
-        const fetchHomeData = async () => {
-            try {
-                const [res, accRes] = await Promise.all([
-                    api.get('/home'),
-                    api.get('/bank/accounts/me').catch(() => null) // fail gracefully
-                ]);
+    useFocusEffect(
+        useCallback(() => {
+            const fetchHomeData = async () => {
+                try {
+                    const [res, accRes] = await Promise.all([
+                        api.get('/home'),
+                        api.get('/bank/accounts/me').catch(() => null)
+                    ]);
 
-                const homeDataResult = res.data?.data;
-                if (!homeDataResult) return;
+                    const homeDataResult = res.data?.data;
+                    if (!homeDataResult) return;
 
-                setHomeData(homeDataResult);
+                    setHomeData(homeDataResult);
 
-                // 프론트엔드 레벨업 감지 (Zustand 메모리 캐싱)
-                const currentLevel = homeDataResult.level || 1;
+                    const currentLevel = homeDataResult.level || 1;
+                    if (cachedLevel !== null && currentLevel > cachedLevel) {
+                        setLevelUpModalVisible(true);
+                        setCachedLevel(currentLevel);
+                    } else if (cachedLevel === null) {
+                        setCachedLevel(currentLevel);
+                    }
 
-                if (cachedLevel !== null && currentLevel > cachedLevel) {
-                    setLevelUpModalVisible(true);
-                    setCachedLevel(currentLevel);
-                } else if (cachedLevel === null) {
-                    setCachedLevel(currentLevel);
-                }
-
-                // 실제 계좌 데이터 있으면 덮어쓰기
-                if (accRes && accRes.data?.data?.accounts && accRes.data.data.accounts.length > 0) {
-                    setRealBalance(accRes.data.data.accounts[0].balance);
-                }
-
-                // 백엔드 아바타 장착 상태 동기화
-                if (homeDataResult.avatar && homeDataResult.avatar.equippedItems) {
-                    try {
-                        const dictRes = await api.get('/avatars/items');
-                        const backendItems = dictRes.data?.data?.items || [];
-                        const equippedDTOs = homeDataResult.avatar.equippedItems;
-
-                        let newEquip = null;
-
-                        equippedDTOs.forEach(eq => {
-                            const dictItem = backendItems.find(i => i.itemId === eq.itemId);
-                            if (!dictItem) return;
-
-                            let frontendCat = null;
-                            if (eq.category === 'HAT') frontendCat = 'hat';
-                            else if (eq.category === 'TOP') frontendCat = 'upper';
-                            else if (eq.category === 'BOTTOM') frontendCat = 'lower';
-
-                            if (frontendCat) {
-                                const assetItem = AVATAR_ITEMS[frontendCat]?.find(a => a.name === dictItem.name);
-                                if (assetItem) {
-                                    if (!newEquip) newEquip = { ...equipState };
-                                    newEquip[frontendCat] = assetItem.id;
-                                }
-                            }
-                        });
-
-                        if (newEquip) {
-                            setEquipState(newEquip);
+                    if (accRes && accRes.data?.data?.accounts) {
+                        const accounts = accRes.data.data.accounts;
+                        if (accounts.length > 0) {
+                            const primaryAcc = accounts.find(a => a.isPrimary) || accounts[0];
+                            setRealBalance(primaryAcc.balance);
                         }
-                    } catch (dictErr) { console.error('Dictionary Fetch Error on Home', dictErr); }
-                }
+                    }
 
-            } catch (e) {
-                console.error('Child Home Fetch Error', e);
-            }
-        };
-        fetchHomeData();
-    }, []);
+                    // 아바타 장착 상태 동기화
+                    if (homeDataResult.avatar && homeDataResult.avatar.equippedItems) {
+                        try {
+                            const dictRes = await api.get('/avatars/items');
+                            const backendItems = dictRes.data?.data?.items || [];
+                            const equippedDTOs = homeDataResult.avatar.equippedItems;
+
+                            let newEquip = null;
+
+                            equippedDTOs.forEach(eq => {
+                                const dictItem = backendItems.find(i => i.itemId === eq.itemId);
+                                if (!dictItem) return;
+
+                                let frontendCat = null;
+                                if (eq.category === 'HAT') frontendCat = 'hat';
+                                else if (eq.category === 'TOP') frontendCat = 'upper';
+                                else if (eq.category === 'BOTTOM') frontendCat = 'lower';
+
+                                if (frontendCat) {
+                                    const assetItem = AVATAR_ITEMS[frontendCat]?.find(a => a.name === dictItem.name);
+                                    if (assetItem) {
+                                        if (!newEquip) newEquip = { ...equipState };
+                                        newEquip[frontendCat] = assetItem.id;
+                                    }
+                                }
+                            });
+
+                            if (newEquip) {
+                                setEquipState(newEquip);
+                            }
+                        } catch (dictErr) { console.error('Dictionary Fetch Error on Home', dictErr); }
+                    }
+
+                } catch (e) {
+                    console.error('Child Home Fetch Error', e);
+                }
+            };
+            fetchHomeData();
+        }, [cachedLevel, setCachedLevel])
+    );
 
     const avatarSize = height > 750 ? 270 : 200;
 
@@ -111,76 +118,126 @@ const ChildHomeScreen = ({ navigation }) => {
 
                 <View style={styles.divider} />
 
-                {/* 친구, 알림 버튼 */}
-                <View style={styles.actionRow}>
-                    <TouchableOpacity style={styles.pillButton} onPress={() => navigation.navigate('FriendList')}>
-                        <CustomText style={styles.pillButtonText}>친구</CustomText>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.pillButton}>
-                        <CustomText style={styles.pillButtonText}>알림</CustomText>
-                        {homeData?.hasUnreadNotification && <View style={styles.redDot} />}
-                    </TouchableOpacity>
-                </View>
-
-                {/* 내가 기부한 장소 카드 */}
-                <TouchableOpacity style={styles.donationCard} activeOpacity={0.9} onPress={() => navigation.navigate('BadgeMap')}>
-                    <View style={styles.donationBadge}>
-                        <CustomText style={styles.donationBadgeText}>내가 기부한 장소</CustomText>
-                    </View>
-                    <CustomText style={styles.donationContentText}>준비 중</CustomText>
-                </TouchableOpacity>
-
-                {/* 아바타 영역 */}
-                <View style={styles.avatarSection}>
-                    <CustomText style={styles.levelText}>LV.{homeData ? homeData.level : 1} | 소비점수 {homeData ? homeData.score : 0}점</CustomText>
-                    <CustomText style={styles.nameText}>{user ? user.name : '김싸피'}</CustomText>
-
-                    <View style={styles.avatarActionRow}>
-                        <TouchableOpacity style={styles.avatarActionBtn} onPress={() => navigation.navigate('AvatarDictionaryScreen')}>
-                            <CustomText style={styles.avatarActionText}>내 도감</CustomText>
+                <ImageBackground
+                    source={require('../../../assets/background2.jpg')}
+                    style={styles.contentBackground}
+                    imageStyle={{ left: -21, width: width + 30 }}
+                    resizeMode="cover"
+                >
+                    {/* 좌측 알림 버튼 / 우측 플로팅 버튼 스택(내 도감, 꾸미기, 친구) */}
+                    <View style={[styles.actionRow, { alignItems: 'flex-start' }]}>
+                        <TouchableOpacity style={styles.squareIconButton} onPress={() => showAlert({ title: '알림', message: '아직 알림 기록이 없습니다.' })}>
+                            <Image source={require('../../../assets/icon/alert2.png')} style={{ width: scale(28), height: scale(28) }} resizeMode="contain" />
+                            <CustomText style={styles.squareIconText}>알림</CustomText>
+                            {homeData?.hasUnreadNotification && <View style={styles.redDot} />}
                         </TouchableOpacity>
-                        <TouchableOpacity style={styles.avatarActionBtn} onPress={() => navigation.navigate('Wardrobe')}>
-                            <CustomText style={styles.avatarActionText}>꾸미기</CustomText>
-                        </TouchableOpacity>
+
+                        <View style={{ position: 'absolute', right: scale(20), top: 0, gap: verticalScale(8), zIndex: 100 }}>
+                            <TouchableOpacity style={styles.squareIconButton} onPress={() => navigation.navigate('AvatarDictionaryScreen')}>
+                                <Image source={require('../../../assets/icon/dic.png')} style={{ width: scale(28), height: scale(28) }} resizeMode="contain" />
+                                <CustomText style={styles.squareIconText}>도감</CustomText>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity style={styles.squareIconButton} onPress={() => navigation.navigate('Wardrobe')}>
+                                <Image source={require('../../../assets/icon/closet.png')} style={{ width: scale(28), height: scale(28) }} resizeMode="contain" />
+                                <CustomText style={styles.squareIconText}>옷장</CustomText>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity style={styles.squareIconButton} onPress={() => navigation.navigate('FriendList')}>
+                                <Image source={require('../../../assets/icon/friend.png')} style={{ width: scale(28), height: scale(28) }} resizeMode="contain" />
+                                <CustomText style={styles.squareIconText}>친구</CustomText>
+                            </TouchableOpacity>
+                        </View>
                     </View>
 
-                    <View style={styles.avatarWrapper}>
-                        <ChildAvatar equipState={equipState} size={avatarSize} />
+                    {/* ART_1 (벽그림 갤러리) - 구 기부처 카드 자리 */}
+                    <View style={{ paddingHorizontal: scale(10), marginBottom: verticalScale(14), height: verticalScale(90), width: '100%', alignItems: 'flex-start', justifyContent: 'center' }}>
+                        {equipState.art1 && equipState.art1 !== 'none' && (() => {
+                            const artItem = AVATAR_ITEMS.art1.find(a => a.id === equipState.art1);
+                            if (!artItem || !artItem.img) return null;
+                            return (
+                                <Image source={artItem.img} style={{ width: scale(115), height: verticalScale(115), marginTop: verticalScale(45) }} resizeMode="contain" />
+                            );
+                        })()}
+                    </View>
 
-                        {/* 펫 배치 (백엔드 펫 데이터가 있을 때만 렌더링되도록 사전 준비) */}
-                        {homeData?.pet && (
-                            <View style={{ position: 'absolute', right: scale(-120), bottom: verticalScale(-115) }}>
-                                <Pet petType={homeData.pet.type || 'shiba'} size={scale(350)} />
+                    {/* 아바타 영역 */}
+                    <View style={styles.avatarSection}>
+                        <View style={{ marginTop: verticalScale(-2), alignItems: 'center', zIndex: 10, transform: [{ translateY: verticalScale(25) }] }}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(8), marginBottom: verticalScale(-2), transform: [{ translateY: verticalScale(5) }], zIndex: 10 }}>
+                                <CustomText style={styles.levelText}>LV.{homeData ? homeData.level : 1}</CustomText>
+                                <CustomText style={styles.nameText}>{user ? user.name : '김싸피'}</CustomText>
                             </View>
-                        )}
-                    </View>
-                </View>
 
+                            <View style={{ width: scale(200), height: verticalScale(40), justifyContent: 'center', marginBottom: verticalScale(0), transform: [{ translateY: verticalScale(-6) }] }}>
+                                <Image source={require('../../../assets/gauge.png')} style={{ position: 'absolute', width: '100%', height: '100%' }} resizeMode="contain" />
+
+                                <View style={{
+                                    position: 'absolute',
+                                    left: '6%',
+                                    top: '37%',
+                                    height: '25%',
+                                    width: `${Math.min(100, Math.max(0, (homeData ? homeData.score : 0)))}%`,
+                                    maxWidth: '90%',
+                                    backgroundColor: '#7DF39D',
+                                    zIndex: 1
+                                }} />
+
+                                <CustomText style={{ position: 'absolute', width: '100%', textAlign: 'center', fontSize: scale(14), fontWeight: '900', color: '#111', zIndex: 2 }}>
+                                    {homeData ? homeData.score : 0} / 100
+                                </CustomText>
+                            </View>
+                        </View>
+
+                        <View style={styles.avatarWrapper}>
+                            <ChildAvatar equipState={equipState} size={height > 750 ? 270 : 200} />
+
+                            {equipState.pet && equipState.pet !== 'none' && (
+                                <View style={{ position: 'absolute', right: scale(-150), bottom: verticalScale(-110), zIndex: 1 }}>
+                                    <Pet petType={equipState.pet} size={scale(400)} />
+                                </View>
+                            )}
+
+                            {equipState.art2 && equipState.art2 !== 'none' && (() => {
+                                const treeItem = AVATAR_ITEMS.art2.find(a => a.id === equipState.art2);
+                                if (!treeItem || !treeItem.img) return null;
+                                return (
+                                    <View style={{ position: 'absolute', left: scale(10), bottom: verticalScale(5), zIndex: 0 }}>
+                                        <Image source={treeItem.img} style={{ width: scale(90), height: scale(130) }} resizeMode="contain" />
+                                    </View>
+                                );
+                            })()}
+                        </View>
+                    </View>
+                </ImageBackground>
             </View>
 
             {/* QR 결제 모달 */}
-            <Modal visible={isQrModalVisible} transparent={true} animationType="fade">
-                <View style={styles.qrModalBackground}>
-                    <TouchableOpacity style={styles.qrModalCloseBtn} onPress={() => setQrModalVisible(false)}>
-                        <CustomText style={styles.qrModalCloseText}>✕</CustomText>
-                    </TouchableOpacity>
-                    <Image source={require('../../../assets/qr.png')} style={styles.qrModalImage} />
+            <ChildCustomModal visible={isQrModalVisible} onClose={() => setQrModalVisible(false)}>
+                <CustomText style={{ fontSize: scale(20), fontWeight: '900', color: '#111', marginBottom: verticalScale(16) }}>내 QR스캔</CustomText>
+                <View style={{ width: scale(200), height: scale(200), backgroundColor: '#111', borderRadius: scale(16), justifyContent: 'center', alignItems: 'center' }}>
+                    <Image source={require('../../../assets/qr-white.png')} style={{ width: '80%', height: '80%', resizeMode: 'contain' }} />
                 </View>
-            </Modal>
+                <TouchableOpacity 
+                    style={{ marginTop: verticalScale(24), backgroundColor: '#A3E635', paddingVertical: verticalScale(14), width: '100%', borderRadius: scale(999), alignItems: 'center' }} 
+                    onPress={() => setQrModalVisible(false)}
+                >
+                    <CustomText style={{ fontSize: scale(16), fontWeight: 'bold', color: '#111' }}>닫기</CustomText>
+                </TouchableOpacity>
+            </ChildCustomModal>
 
             {/* 레벨업 축하 모달 */}
-            <Modal visible={isLevelUpModalVisible} transparent={true} animationType="fade">
-                <View style={styles.levelUpModalBackground}>
-                    <View style={styles.levelUpModalCard}>
-                        <CustomText style={styles.levelUpEmoji}>🎉</CustomText>
-                        <CustomText style={styles.levelUpTitle}>축하해요!</CustomText>
-                        <CustomText style={styles.levelUpDesc}>레벨이 올랐어요.{'\n'}새로운 아이템이 해금되었습니다!</CustomText>
-                        <TouchableOpacity style={styles.levelUpCloseBtn} onPress={() => setLevelUpModalVisible(false)}>
-                            <CustomText style={styles.levelUpCloseText}>확인</CustomText>
-                        </TouchableOpacity>
-                    </View>
-                </View>
-            </Modal>
+            <ChildCustomModal visible={isLevelUpModalVisible} onClose={() => setLevelUpModalVisible(false)}>
+                <CustomText style={styles.levelUpEmoji}>🎉</CustomText>
+                <CustomText style={styles.levelUpTitle}>축하해요!</CustomText>
+                <CustomText style={styles.levelUpDesc}>레벨이 올랐어요.{'\n'}새로운 아이템이 해금되었습니다!</CustomText>
+                <TouchableOpacity 
+                    style={{ marginTop: verticalScale(8), backgroundColor: '#A3E635', paddingVertical: verticalScale(14), width: '100%', borderRadius: scale(999), alignItems: 'center' }} 
+                    onPress={() => setLevelUpModalVisible(false)}
+                >
+                    <CustomText style={styles.levelUpCloseText}>확인</CustomText>
+                </TouchableOpacity>
+            </ChildCustomModal>
         </SafeAreaView>
     );
 };
@@ -190,10 +247,14 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#FFFFFF',
     },
+    contentBackground: {
+        flex: 1,
+        width: '100%',
+        paddingTop: verticalScale(16),
+    },
     container: {
         flex: 1,
         paddingTop: verticalScale(16),
-        paddingBottom: verticalScale(10),
     },
     headerRow: {
         flexDirection: 'row',
@@ -229,9 +290,13 @@ const styles = StyleSheet.create({
         height: scale(40),
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#F3F4F6',
-        borderRadius: scale(8),
-        overflow: 'hidden',
+        backgroundColor: '#FFFFFF',
+        borderRadius: scale(12),
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: verticalScale(2) },
+        shadowOpacity: 0.05,
+        shadowRadius: scale(8),
+        elevation: 2,
     },
     qrImage: {
         width: '100%',
@@ -240,26 +305,33 @@ const styles = StyleSheet.create({
     },
     divider: {
         height: 1,
-        backgroundColor: '#F3F4F6',
+        backgroundColor: '#F9FAFB',
         width: '100%',
-        marginBottom: verticalScale(20),
     },
     actionRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         paddingHorizontal: scale(20),
-        marginBottom: verticalScale(20),
+        marginBottom: verticalScale(16),
     },
-    pillButton: {
-        backgroundColor: '#F3F4F6',
-        paddingVertical: verticalScale(8),
-        paddingHorizontal: scale(24),
-        borderRadius: scale(20),
+    squareIconButton: {
+        width: scale(58),
+        height: scale(58),
+        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+        borderRadius: scale(18),
+        justifyContent: 'center',
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: verticalScale(2) },
+        shadowOpacity: 0.05,
+        shadowRadius: scale(8),
+        elevation: 2,
     },
-    pillButtonText: {
-        fontSize: scale(15),
-        fontWeight: '900',
-        color: '#374151',
+    squareIconText: {
+        fontSize: scale(11),
+        fontWeight: 'bold',
+        color: '#4B5563',
+        marginTop: verticalScale(2),
     },
     redDot: {
         position: 'absolute',
@@ -280,6 +352,11 @@ const styles = StyleSheet.create({
         position: 'relative',
         justifyContent: 'center',
         alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: verticalScale(2) },
+        shadowOpacity: 0.05,
+        shadowRadius: scale(8),
+        elevation: 2,
     },
     donationBadge: {
         position: 'absolute',
@@ -322,12 +399,19 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         gap: scale(10),
         marginBottom: verticalScale(10),
+        zIndex: 10,
+        elevation: 10,
     },
     avatarActionBtn: {
-        backgroundColor: '#F3F4F6',
+        backgroundColor: '#F9FAFB',
         paddingVertical: verticalScale(6),
         paddingHorizontal: scale(14),
         borderRadius: scale(16),
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
+        elevation: 2,
     },
     avatarActionText: {
         fontSize: scale(13),
@@ -339,6 +423,7 @@ const styles = StyleSheet.create({
         width: '100%',
         alignItems: 'center',
         justifyContent: 'flex-end',
+        paddingBottom: verticalScale(15),
     },
     qrModalBackground: {
         flex: 1,
@@ -406,6 +491,11 @@ const styles = StyleSheet.create({
         borderRadius: scale(16),
         width: '100%',
         alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
+        elevation: 2,
     },
     levelUpCloseText: {
         fontSize: scale(16),

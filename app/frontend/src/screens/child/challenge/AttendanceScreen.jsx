@@ -6,13 +6,13 @@ import api from '../../../api/axios';
 
 // 임시 출석 데이터 (7일 연속 출석)
 const MOCK_ATTENDANCE = [
-    { day: 1, label: '월', status: 'ATTENDED', reward: '🍬 10' },
-    { day: 2, label: '화', status: 'ATTENDED', reward: '🍬 10' },
-    { day: 3, label: '수', status: 'TODAY', reward: '🍬 20' },
-    { day: 4, label: '목', status: 'UPCOMING', reward: '🍬 10' },
-    { day: 5, label: '금', status: 'UPCOMING', reward: '🍬 10' },
-    { day: 6, label: '토', status: 'UPCOMING', reward: '🍬 30' },
-    { day: 7, label: '일', status: 'UPCOMING', reward: '🎁 박스' },
+    { day: 1, label: '월', status: 'ATTENDED' },
+    { day: 2, label: '화', status: 'ATTENDED' },
+    { day: 3, label: '수', status: 'TODAY' },
+    { day: 4, label: '목', status: 'UPCOMING' },
+    { day: 5, label: '금', status: 'UPCOMING' },
+    { day: 6, label: '토', status: 'UPCOMING' },
+    { day: 7, label: '일', status: 'UPCOMING' },
 ];
 
 const AttendanceScreen = ({ navigation }) => {
@@ -45,7 +45,7 @@ const AttendanceScreen = ({ navigation }) => {
         ========================================== */
 
         setIsCheckedIn(true);
-        Alert.alert('출석 완료!', '오늘의 출석 도장을 찍었습니다.\n(7일 연속 달성 시 팝업 연동 필요)');
+        Alert.alert('출석 완료!', '오늘의 출석 도장을 찍었습니다.');
     };
 
     const handleBoxClick = (dayItem) => {
@@ -65,7 +65,6 @@ const AttendanceScreen = ({ navigation }) => {
         let cardStyle = styles.dayCardUpcoming;
         let textStyle = styles.dayTextUpcoming;
         let iconStyle = styles.iconUpcoming;
-        let icon = '🎁';
 
         if (item.status === 'ATTENDED' || (item.status === 'TODAY' && isCheckedIn)) {
             cardStyle = styles.dayCardAttended;
@@ -110,7 +109,6 @@ const AttendanceScreen = ({ navigation }) => {
                 {/* 상단 배너 */}
                 <View style={styles.banner}>
                     <CustomText style={styles.bannerTitle}>매일매일 접속하고{`\n`}선물을 받아가세요!</CustomText>
-                    <CustomText style={styles.bannerSubtitle}>7일 연속 출석 시 스페셜 랜덤 박스 무조건 지급 🎉</CustomText>
                 </View>
 
                 {/* 출석 현황판 */}
@@ -145,7 +143,7 @@ const AttendanceScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
-        backgroundColor: '#F3F4F6',
+        backgroundColor: '#ECFCCB',
     },
     header: {
         flexDirection: 'row',
@@ -153,7 +151,7 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         paddingHorizontal: scale(16),
         paddingVertical: verticalScale(16),
-        backgroundColor: '#F3F4F6',
+        backgroundColor: '#FFFFFF',
     },
     backButton: {
         width: scale(32),
@@ -176,6 +174,7 @@ const styles = StyleSheet.create({
         paddingBottom: verticalScale(40),
     },
     banner: {
+        marginTop: verticalScale(16),
         marginBottom: verticalScale(24),
         paddingHorizontal: scale(8),
     },
@@ -184,7 +183,7 @@ const styles = StyleSheet.create({
         fontWeight: '900',
         color: '#111',
         marginBottom: verticalScale(8),
-        lineHeight: 30,
+        lineHeight: scale(36),
     },
     bannerSubtitle: {
         fontSize: scale(14),
@@ -232,6 +231,7 @@ const styles = StyleSheet.create({
         fontSize: scale(13),
         fontWeight: 'bold',
         marginBottom: verticalScale(8),
+        marginTop: verticalScale(6),
     },
     dayTextAttended: {
         color: '#A3E635', // 라임 그린 텍스트

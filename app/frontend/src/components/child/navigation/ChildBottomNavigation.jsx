@@ -57,7 +57,7 @@ const styles = StyleSheet.create({
         paddingBottom: verticalScale(24), // iOS 하단 안전 영역 대응 여백
         paddingTop: verticalScale(12),
         borderTopWidth: 1,
-        borderTopColor: '#F3F4F6',
+        borderTopColor: '#F9FAFB',
         justifyContent: 'space-around',
         alignItems: 'center',
     },

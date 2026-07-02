@@ -8,6 +8,8 @@ import com.akku.backend.domain.auth.entity.User;
 import com.akku.backend.domain.auth.repository.UserRepository;
 import com.akku.backend.domain.auth.service.SsafyFinanceService;
 import com.akku.backend.domain.bank.exception.BankErrorCode;
+import com.akku.backend.domain.bank.entity.Account;
+import com.akku.backend.domain.bank.repository.AccountRepository;
 import com.akku.backend.domain.bank.repository.CardProductRepository;
 import com.akku.backend.domain.bank.repository.CardRepository;
 import com.akku.backend.domain.bank.repository.MerchantRepository;
@@ -18,6 +20,9 @@ import com.akku.backend.global.finance.dto.FinanceCardProductListResponse;
 import com.akku.backend.global.finance.dto.FinanceUserCardListResponse;
 import com.akku.backend.global.finance.dto.FinanceCardPaymentResponse;
 import com.akku.backend.global.finance.dto.FinanceCardTransactionHistoryResponse;
+import com.akku.backend.global.finance.dto.FinanceTransferResponse;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -41,9 +46,11 @@ public class CardService {
     private final CardProductRepository cardProductRepository;
     private final CardRepository cardRepository;
     private final MerchantRepository merchantRepository;
+    private final AccountRepository accountRepository;
     private final SsafyFinanceService ssafyFinanceService;
     private final UserRepository userRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final ObjectMapper objectMapper;
 
     /**
      * 카드 상품 목록 조회
@@ -59,20 +66,24 @@ public class CardService {
         // DB 업데이트
         for (FinanceCardProductListResponse.CardProductDetails p : finProducts) {
             cardProductRepository.findByCardUniqueNo(p.cardUniqueNo())
-                    .orElseGet(() -> {
-                        CardProduct newProduct = CardProduct.builder()
-                                .cardUniqueNo(p.cardUniqueNo())
-                                .cardIssuerCode(p.cardIssuerCode())
-                                .cardIssuerName(p.cardIssuerName())
-                                .cardName(p.cardName())
-                                .cardTypeCode(p.cardTypeCode())
-                                .cardTypeName(p.cardTypeName())
-                                .baseLimitPerformance(p.baseLimitPerformance())
-                                .maxBenefitLimit(p.maxBenefitLimit())
-                                .cardDescription(p.cardDescription())
-                                .build();
-                        return cardProductRepository.save(newProduct);
-                    });
+                    .ifPresentOrElse(
+                        product -> product.update(p.cardName(), p.cardDescription(), p.baseLimitPerformance(), p.maxBenefitLimit(), toJson(p.cardBenefitInfo())),
+                        () -> {
+                            CardProduct newProduct = CardProduct.builder()
+                                    .cardUniqueNo(p.cardUniqueNo())
+                                    .cardIssuerCode(p.cardIssuerCode())
+                                    .cardIssuerName(p.cardIssuerName())
+                                    .cardName(p.cardName())
+                                    .cardTypeCode(p.cardTypeCode())
+                                    .cardTypeName(p.cardTypeName())
+                                    .baseLimitPerformance(p.baseLimitPerformance())
+                                    .maxBenefitLimit(p.maxBenefitLimit())
+                                    .cardDescription(p.cardDescription())
+                                    .cardBenefitInfo(toJson(p.cardBenefitInfo()))
+                                    .build();
+                            cardProductRepository.save(newProduct);
+                        }
+                    );
         }
 
         // DB 목록 반환
@@ -139,25 +150,28 @@ public class CardService {
 
         // DB 업데이트
         for (FinanceUserCardListResponse.UserCardDetails c : finCards) {
+            // 카드 상품 정보 조회 및 업데이트/생성
+            CardProduct product = cardProductRepository.findByCardUniqueNo(c.cardUniqueNo())
+                    .map(p -> {
+                        p.update(c.cardName(), c.cardDescription(), c.baseLimitPerformance(), c.maxBenefitLimit(), toJson(c.cardBenefitInfo()));
+                        return p;
+                    })
+                    .orElseGet(() -> cardProductRepository.save(CardProduct.builder()
+                            .cardUniqueNo(c.cardUniqueNo())
+                            .cardIssuerCode(c.cardIssuerCode())
+                            .cardIssuerName(c.cardIssuerName())
+                            .cardName(c.cardName())
+                            .baseLimitPerformance(c.baseLimitPerformance())
+                            .maxBenefitLimit(c.maxBenefitLimit())
+                            .cardDescription(c.cardDescription())
+                            .cardBenefitInfo(toJson(c.cardBenefitInfo()))
+                            .build()));
+
             // 해당 카드 번호가 이미 있는지 확인
             boolean exists = cardRepository.findAllByUserId(userId).stream()
                     .anyMatch(card -> card.getCardNo().equals(c.cardNo()));
 
             if (!exists) {
-                // 카드 상품 정보 조회
-                CardProduct product = cardProductRepository.findByCardUniqueNo(c.cardUniqueNo())
-                        .orElseGet(() -> {
-                            return cardProductRepository.save(CardProduct.builder()
-                                    .cardUniqueNo(c.cardUniqueNo())
-                                    .cardIssuerCode(c.cardIssuerCode())
-                                    .cardIssuerName(c.cardIssuerName())
-                                    .cardName(c.cardName())
-                                    .baseLimitPerformance(c.baseLimitPerformance())
-                                    .maxBenefitLimit(c.maxBenefitLimit())
-                                    .cardDescription(c.cardDescription())
-                                    .build());
-                        });
-
                 Card newCard = Card.builder()
                         .userId(userId)
                         .cardProductId(product.getId())
@@ -203,32 +217,65 @@ public class CardService {
                 request.paymentBalance()
         );
 
-        // 결제 완료 이벤트 발행 (트랜잭션 커밋 후 실행되도록 분리)
-        // 외부 결제가 성공했으므로, 이후의 부가 로직(이벤트 발행 등) 실패가 결제를 롤백시키지 않도록 함
-        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-            @Override
-            public void afterCommit() {
-                try {
-                    LocalDate approvalDate = LocalDate.parse(result.transactionDate(), DateTimeFormatter.ofPattern("yyyyMMdd"));
-                    
-                    // 가맹점의 친환경 여부(isGreen) 조회
-                    boolean isGreen = merchantRepository.findById(result.merchantId())
-                            .map(merchant -> Boolean.TRUE.equals(merchant.getIsGreen()))
-                            .orElse(false);
+        // [체크카드 시뮬레이션] 결제 성공 시 계좌에서 즉시 잔액 차감 수행
+        // 카드 연동 계좌(withdrawalAccountNo)에서 가맹점 정산용 더미 계좌로 이체
+        String merchantAccountNo = "9990472825549529";
+        log.info("💸 [체크카드 시뮬레이션] 잔액 차감 시도: 출금계좌={}, 입금계좌(가맹점)={}, 금액={}", 
+                card.getWithdrawalAccountNo(), merchantAccountNo, request.paymentBalance());
 
-                    eventPublisher.publishEvent(new CardPaymentEvent(
-                            userId,
-                            result.categoryName(),
-                            result.paymentBalance(),
-                            approvalDate,
-                            isGreen
-                    ));
-                } catch (Exception e) {
-                    // 이벤트 발행 중 오류가 발생해도 로그만 남기고 무시 (결제는 유지)
-                    log.error("카드 결제 완료 후 이벤트 발행 실패. userId: {}, result: {}", userId, result, e);
-                }
-            }
-        });
+        String withdrawalUniqueNo = null;
+        try {
+            FinanceTransferResponse.Rec transferResult = ssafyFinanceService.transfer(
+                    user.getUserKey(),
+                    "999", // 사용자 은행 (싸피은행 고정)
+                    card.getWithdrawalAccountNo(),
+                    "999", // 가맹점 은행 (싸피은행 고정)
+                    merchantAccountNo,
+                    request.paymentBalance(),
+                    "가맹점정산",
+                    "카드결제:" + result.merchantName()
+            );
+            withdrawalUniqueNo = transferResult.transactionUniqueNo();
+            log.info("✅ [체크카드 시뮬레이션] 잔액 차감 성공 - withdrawalUniqueNo: {}", withdrawalUniqueNo);
+        } catch (Exception e) {
+            log.error("❌ [체크카드 시뮬레이션] 잔액 차감 실패 (A1003 원인 확인용): {}", e.getMessage());
+            // 결제 자체는 성공했으므로 우선 진행 (내역 저장을 위해 예외를 던지지 않음)
+            // 실제 운영 환경이라면 여기서 Rollback 처리를 고민해야 함
+        }
+
+        // 로컬 DB에서도 계좌 잔액 차감 수행 (하이픈 제거 정규화 포함)
+        String normalizedAccountNo = card.getWithdrawalAccountNo().replace("-", "");
+        Account account = accountRepository.findByAccountNumberAndBankCode(normalizedAccountNo, "999")
+                .orElseGet(() -> {
+                    return accountRepository.findByAccountNumberAndBankCode(card.getWithdrawalAccountNo(), "999")
+                            .orElseThrow(() -> new ApiException(BankErrorCode.ACCOUNT_NOT_FOUND));
+                });
+        account.deductBalance(request.paymentBalance());
+        accountRepository.save(account);
+
+        // 가맹점의 친환경 여부(isGreen) 조회
+        boolean isGreen = merchantRepository.findById(result.merchantId())
+                .map(merchant -> Boolean.TRUE.equals(merchant.getIsGreen()))
+                .orElse(false);
+
+        // 결제 완료 이벤트 발행
+        log.info("💳 카드 결제 성공, 이벤트 발행 준비 - uniqueNo: {}, merchant: {}, amount: {}", 
+                result.transactionUniqueNo(), result.merchantName(), result.paymentBalance());
+        LocalDate approvalDate = LocalDate.parse(result.transactionDate(), DateTimeFormatter.ofPattern("yyyyMMdd"));
+        eventPublisher.publishEvent(new CardPaymentEvent(
+                userId,
+                card.getWithdrawalAccountNo(),
+                String.valueOf(result.transactionUniqueNo()),
+                withdrawalUniqueNo, // 이체 시뮬레이션의 고유 번호 (중복 방지용)
+                result.categoryName(),
+                request.paymentBalance(),
+                account.getBalance(), // 차감 후 잔액
+                String.valueOf(result.merchantId()),
+                result.merchantName(),
+                approvalDate,
+                result.transactionTime(),
+                isGreen
+        ));
     }
 
     /**
@@ -269,5 +316,14 @@ public class CardService {
                 .collect(Collectors.toList());
 
         return new CardHistoryResponse(rec.estimatedBalance(), list);
+    }
+
+    private String toJson(Object obj) {
+        try {
+            return objectMapper.writeValueAsString(obj);
+        } catch (JsonProcessingException e) {
+            log.error("JSON serialization error", e);
+            return null;
+        }
     }
 }

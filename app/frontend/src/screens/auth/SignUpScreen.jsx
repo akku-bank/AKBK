@@ -156,7 +156,7 @@ const styles = StyleSheet.create({
     },
     helperText: {
         fontSize: RFValue(11),
-        color: '#3B82F6',
+        color: '#A3E635',
         marginTop: RFValue(8),
     },
     buttonSection: {

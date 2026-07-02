@@ -134,12 +134,12 @@ const styles = StyleSheet.create({
     label: { fontSize: scale(14), fontWeight: 'bold', color: '#4B5563', marginBottom: verticalScale(8) },
     input: { backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: scale(12), paddingHorizontal: scale(16), paddingVertical: verticalScale(14), fontSize: scale(16), color: '#111', marginBottom: verticalScale(24) },
 
-    infoBox: { backgroundColor: '#F0FDF4', padding: scale(16), borderRadius: scale(12) },
+    infoBox: { backgroundColor: '#F0FDF4', padding: scale(16), borderRadius: scale(12), shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2, },
     infoTitle: { fontSize: scale(14), fontWeight: 'bold', color: '#166534', marginBottom: verticalScale(8) },
     infoText: { fontSize: scale(13), color: '#14532D', lineHeight: 20 },
 
-    footer: { padding: scale(16), backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: '#F3F4F6' },
-    mainButton: { backgroundColor: '#A3E635', paddingVertical: verticalScale(16), borderRadius: scale(16), alignItems: 'center' },
+    footer: { padding: scale(16), backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: '#F9FAFB' },
+    mainButton: { backgroundColor: '#A3E635', paddingVertical: verticalScale(16), borderRadius: scale(16), alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2, },
     disabledButton: { backgroundColor: '#D1D5DB' },
     mainButtonText: { fontSize: scale(16), fontWeight: 'bold', color: '#111' }
 });

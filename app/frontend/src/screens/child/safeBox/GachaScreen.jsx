@@ -1,133 +1,209 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { View, StyleSheet, TouchableOpacity, SafeAreaView, Dimensions, ActivityIndicator, Animated, Easing, Platform } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import {
+    Animated,
+    Easing,
+    Image,
+    Platform,
+    SafeAreaView,
+    StyleSheet,
+    TouchableOpacity,
+    View,
+} from 'react-native';
 import { scale, verticalScale } from 'react-native-size-matters';
 import CustomText from '../../../components/common/CustomText';
-import api from '../../../api/axios';
 
-const { width, height } = Dimensions.get('window');
+const REWARD_IMAGE_MAP = {
+    'app/frontend/src/assets/art/lastmeal.png': require('../../../assets/art/lastmeal.png'),
+    'app/frontend/src/assets/art/monalisa.png': require('../../../assets/art/monalisa.png'),
+    'app/frontend/src/assets/art/pearl.png': require('../../../assets/art/pearl.png'),
+    'app/frontend/src/assets/art/scream.png': require('../../../assets/art/scream.png'),
+    'app/frontend/src/assets/art/starnight.png': require('../../../assets/art/starnight.png'),
+    'app/frontend/src/assets/tree/apple.png': require('../../../assets/tree/apple.png'),
+    'app/frontend/src/assets/tree/bamboo.png': require('../../../assets/tree/bamboo.png'),
+    'app/frontend/src/assets/tree/blossom.png': require('../../../assets/tree/blossom.png'),
+    'app/frontend/src/assets/tree/buddle.png': require('../../../assets/tree/buddle.png'),
+    'app/frontend/src/assets/tree/maple.png': require('../../../assets/tree/maple.png'),
+    'app/frontend/src/assets/tree/palm.png': require('../../../assets/tree/palm.png'),
+    'app/frontend/src/assets/tree/tree.png': require('../../../assets/tree/tree.png'),
+    'app/frontend/src/assets/pet/akku.png': require('../../../assets/pet/akku.png'),
+    'app/frontend/src/assets/pet/cat.png': require('../../../assets/pet/cat.png'),
+    'app/frontend/src/assets/pet/kdh.png': require('../../../assets/pet/kdh.png'),
+    'app/frontend/src/assets/pet/kdh_special.png': require('../../../assets/pet/kdh_special.png'),
+    'app/frontend/src/assets/pet/shiba.png': require('../../../assets/pet/shiba.png'),
+    'app/frontend/src/assets/pet/akku-base.png': require('../../../assets/pet/akku-base.png'),
+};
+
+const CATEGORY_LABEL_MAP = {
+    art: '문화 예술 보상',
+    art1: '문화 예술 보상',
+    art2: '나무심기 보상',
+    tree: '나무심기 보상',
+    pet: '유기동물 지원 보상',
+};
+
+const CATEGORY_EMOJI_MAP = {
+    art: '🎨',
+    art1: '🎨',
+    art2: '🌳',
+    tree: '🌳',
+    pet: '🐶',
+};
 
 const GachaScreen = ({ navigation, route }) => {
-    const { itemName = '지구 지키기 캠페인 기부', boxType = '지구' } = route?.params || {};
+    const reward = route?.params?.reward ?? null;
+    const [step, setStep] = useState('OPENING');
 
-    const [step, setStep] = useState('OPENING'); // 개봉중 -> 결과확인 -> 완료
-    const [reward, setReward] = useState(null);
-
-    // 애니메이션 값
-    const translateY = useRef(new Animated.Value(-verticalScale(300))).current; // 위에서 떨어짐
-    const translateX = useRef(new Animated.Value(-scale(100))).current; // 왼쪽에서 굴러옴
-    const rotate = useRef(new Animated.Value(0)).current; // 회전각
-    const scaleAnim = useRef(new Animated.Value(0.5)).current; // 크기 커짐
+    const translateX = useRef(new Animated.Value(-scale(300))).current; // Start off-screen left
+    const rotate = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
-        // 1. 캡슐 굴러나오는 애니메이션 시작
+        if (step !== 'OPENING') return;
+
         Animated.sequence([
-            // 1-1. 떨어지면서 구르기
+            // Roll in from left to center
             Animated.parallel([
-                Animated.spring(translateY, {
-                    toValue: 0,
-                    friction: 4,
-                    tension: 20,
-                    useNativeDriver: Platform.OS !== 'web',
-                }),
                 Animated.timing(translateX, {
                     toValue: 0,
-                    duration: 1200,
+                    duration: 800,
                     easing: Easing.out(Easing.cubic),
                     useNativeDriver: Platform.OS !== 'web',
                 }),
                 Animated.timing(rotate, {
-                    toValue: 1, // 1 = 360도
-                    duration: 1200,
+                    toValue: 2, // 2 full rotations
+                    duration: 800,
+                    easing: Easing.out(Easing.cubic),
                     useNativeDriver: Platform.OS !== 'web',
                 }),
-                Animated.timing(scaleAnim, {
-                    toValue: 1,
-                    duration: 1000,
-                    useNativeDriver: Platform.OS !== 'web',
-                })
             ]),
-            // 1-2. 흔들거림 (열리기 직전 긴장감)
+            // Wiggle sequence
             Animated.sequence([
-                Animated.timing(rotate, { toValue: 1.1, duration: 100, useNativeDriver: Platform.OS !== 'web' }),
-                Animated.timing(rotate, { toValue: 0.9, duration: 100, useNativeDriver: Platform.OS !== 'web' }),
-                Animated.timing(rotate, { toValue: 1.1, duration: 100, useNativeDriver: Platform.OS !== 'web' }),
-                Animated.timing(rotate, { toValue: 1.0, duration: 100, useNativeDriver: Platform.OS !== 'web' }),
-            ])
+                // First Wiggle
+                Animated.timing(rotate, { toValue: 2.1, duration: 100, useNativeDriver: Platform.OS !== 'web' }),
+                Animated.timing(rotate, { toValue: 1.9, duration: 100, useNativeDriver: Platform.OS !== 'web' }),
+                Animated.timing(rotate, { toValue: 2.0, duration: 100, useNativeDriver: Platform.OS !== 'web' }),
+
+                // Stop and wait in center
+                Animated.delay(150),
+
+                // Second Wiggle
+                Animated.timing(rotate, { toValue: 2.1, duration: 100, useNativeDriver: Platform.OS !== 'web' }),
+                Animated.timing(rotate, { toValue: 1.9, duration: 100, useNativeDriver: Platform.OS !== 'web' }),
+                Animated.timing(rotate, { toValue: 2.0, duration: 100, useNativeDriver: Platform.OS !== 'web' }),
+            ]),
         ]).start(() => {
-            // 애니메이션 종료 직후 결과 세팅 (약 2.5초 뒤)
-            /* ==========================================
-               [진짜 랜덤 가챠 뽑기 로직 API 연동]
-               ========================================== 
-            try {
-                // 뽑기 결과 API 호출 (ex. 기부 완료 보상 또는 일반 뽑기)
-                // const res = await api.post('/gacha/draw', { type: boxType });
-                // setReward(res.data.data.reward);
-            } catch(e) { console.error('Gacha Draw Error', e); }
-            ========================================== */
-
-            // --- 실제 연동 시 아래 임시 로직 삭제 ---
-            const mockRewards = [
-                { type: 'PET', name: '꼬마 북극곰', emoji: '🐻‍❄️', desc: '지구를 아끼는 멋진 마음이에요!' },
-                { type: 'JELLING', name: '보너스 50 젤링', emoji: '🍬', desc: '기부 천사에게 주는 작은 선물!' },
-                { type: 'FRAME', name: '에코 나무 액자', emoji: '🖼️', desc: '새로운 액자로 아바타를 꾸며보세요!' },
-                { type: 'ITEM', name: '스페셜 왕관', emoji: '👑', desc: '아바타를 멋지게 꾸며보세요!' },
-                { type: 'DUPLICATE', name: '앗! 꽝이에요', emoji: '😥', desc: '아쉽지만 이미 보유한 아이템이에요. 꽝!' }
-            ];
-            const randomPick = mockRewards[Math.floor(Math.random() * mockRewards.length)];
-            setReward(randomPick);
-            // ------------------------------------
-
-            setStep('REVEAL');
+            setStep('EGG2');
+            setTimeout(() => {
+                setStep('EGG3');
+                setTimeout(() => {
+                    setStep('REVEAL');
+                }, 400);
+            }, 300);
         });
-    }, []);
+    }, [rotate, translateX, step]);
 
-    // 회전 값을 각도로 변환
     const spin = rotate.interpolate({
-        inputRange: [0, 0.9, 1, 1.1],
-        outputRange: ['0deg', '324deg', '360deg', '396deg']
+        inputRange: [0, 1, 1.9, 2, 2.1],
+        outputRange: ['0deg', '360deg', '684deg', '720deg', '756deg'],
     });
 
+    let rewardImage = null;
+    if (reward?.resourceUrl) {
+        const urlStr = reward.resourceUrl;
+        const fileName = urlStr.includes('/') ? urlStr.split('/').pop() : urlStr;
+        if (fileName === 'akku.png' || fileName === 'akku') {
+            rewardImage = [require('../../../assets/pet/akku-body.png'), require('../../../assets/pet/akku-base.png')];
+        } else {
+            const foundKey = Object.keys(REWARD_IMAGE_MAP).find(key => key.includes(fileName));
+            if (foundKey) rewardImage = REWARD_IMAGE_MAP[foundKey];
+        }
+    }
+
+    const rewardCategoryLabel = reward?.category
+        ? CATEGORY_LABEL_MAP[String(reward.category).toLowerCase()] || '기부 보상'
+        : '기부 보상';
+    const rewardCategoryEmoji = reward?.category
+        ? CATEGORY_EMOJI_MAP[String(reward.category).toLowerCase()] || '🎁'
+        : '🎁';
+    const isFallback = !reward?.name && !reward?.rewardItemName;
+    const rewardNameStr = isFallback ? '준비된 아이템이 없습니다.' : (reward?.name || reward?.rewardItemName);
+    const donationCompleteText = reward?.isDuplicate ? '아쉽게도 중복이에요!' : '기부가 완료되었어요!';
+
+    if (!rewardImage && !isFallback && rewardNameStr) {
+        if (rewardNameStr.includes('아꾸') || rewardNameStr.includes('akku')) rewardImage = [require('../../../assets/pet/akku-body.png'), require('../../../assets/pet/akku-base.png')];
+        else if (rewardNameStr.includes('시바견') || rewardNameStr.includes('shiba')) rewardImage = require('../../../assets/pet/shiba.png');
+        else if (rewardNameStr.includes('냥이') || rewardNameStr.includes('고양이') || rewardNameStr.includes('cat')) rewardImage = require('../../../assets/pet/cat.png');
+        else if (rewardNameStr.includes('진주') || rewardNameStr.includes('pearl')) rewardImage = require('../../../assets/art/pearl.png');
+        else if (rewardNameStr.includes('만찬') || rewardNameStr.includes('lastmeal')) rewardImage = require('../../../assets/art/lastmeal.png');
+        else if (rewardNameStr.includes('모나리자') || rewardNameStr.includes('monalisa')) rewardImage = require('../../../assets/art/monalisa.png');
+        else if (rewardNameStr.includes('절규') || rewardNameStr.includes('scream')) rewardImage = require('../../../assets/art/scream.png');
+        else if (rewardNameStr.includes('별이') || rewardNameStr.includes('starnight')) rewardImage = require('../../../assets/art/starnight.png');
+        else if (rewardNameStr.includes('사과') || rewardNameStr.includes('apple')) rewardImage = require('../../../assets/tree/apple.png');
+        else if (rewardNameStr.includes('대나무') || rewardNameStr.includes('bamboo')) rewardImage = require('../../../assets/tree/bamboo.png');
+        else if (rewardNameStr.includes('벚꽃') || rewardNameStr.includes('blossom')) rewardImage = require('../../../assets/tree/blossom.png');
+        else if (rewardNameStr.includes('버드나무') || rewardNameStr.includes('buddle')) rewardImage = require('../../../assets/tree/buddle.png');
+        else if (rewardNameStr.includes('단풍') || rewardNameStr.includes('maple')) rewardImage = require('../../../assets/tree/maple.png');
+        else if (rewardNameStr.includes('야자') || rewardNameStr.includes('palm')) rewardImage = require('../../../assets/tree/palm.png');
+        else if (rewardNameStr.includes('나무') || rewardNameStr.includes('tree')) rewardImage = require('../../../assets/tree/tree.png');
+        else rewardImage = require('../../../assets/pet/akku-base.png');
+    }
+
     const handleConfirm = () => {
-        // 원래 세이프박스 화면으로 복귀
         navigation.goBack();
     };
 
     return (
         <SafeAreaView style={styles.safeArea}>
-            {step === 'OPENING' ? (
+            {step === 'OPENING' || step === 'EGG2' || step === 'EGG3' ? (
                 <View style={styles.centerContainer}>
-                    {/* 데구르르 굴러오는 캡슐 애니메이션 */}
-                    <Animated.View style={[
-                        styles.capsuleWrapper,
-                        {
-                            transform: [
-                                { translateY: translateY },
-                                { translateX: translateX },
-                                { rotate: spin },
-                                { scale: scaleAnim }
-                            ]
-                        }
-                    ]}>
-                        <CustomText style={styles.boxEmoji}>🥚</CustomText>
-                    </Animated.View>
-
-                    <CustomText style={styles.capsuleText}>
-                        데구르르.. 캡슐이 나오고 있어요!
-                    </CustomText>
+                    {step === 'OPENING' ? (
+                        <Animated.View
+                            style={{
+                                transform: [
+                                    { translateX },
+                                    { rotate: spin },
+                                ],
+                            }}
+                        >
+                            <Image
+                                source={require('../../../assets/egg.png')}
+                                style={{ width: scale(220), height: scale(220) }}
+                                resizeMode="contain"
+                            />
+                        </Animated.View>
+                    ) : (
+                        <Image
+                            source={
+                                step === 'EGG3' ? require('../../../assets/egg3.png') :
+                                    require('../../../assets/egg2.png')
+                            }
+                            style={{ width: scale(220), height: scale(220) }}
+                            resizeMode="contain"
+                            fadeDuration={0}
+                        />
+                    )}
                 </View>
             ) : (
-                <View style={styles.revealContainer}>
-                    <CustomText style={styles.tadaEmoji}>🎉</CustomText>
-                    <CustomText style={styles.titleText}>짜잔! 선물이 도착했어요</CustomText>
-
+                <View style={[styles.revealContainer, { justifyContent: 'center', paddingTop: 0 }]}>
                     <View style={styles.rewardCard}>
-                        <CustomText style={styles.rewardEmoji}>{reward?.emoji}</CustomText>
-                        <CustomText style={styles.rewardName}>{reward?.name}</CustomText>
-                        <CustomText style={styles.rewardDesc}>{reward?.desc}</CustomText>
+                        <CustomText style={[styles.titleText, { marginTop: verticalScale(10), marginBottom: verticalScale(20), textAlign: 'center' }]}>{donationCompleteText}</CustomText>
+                        {rewardImage ? (
+                            Array.isArray(rewardImage) ? (
+                                <View style={[styles.rewardImage, { position: 'relative', marginTop: verticalScale(20), marginBottom: verticalScale(20) }]}>
+                                    {rewardImage.map((img, idx) => (
+                                        <Image key={idx} source={img} style={{ width: '100%', height: '100%', position: 'absolute', transform: [{ scale: 2.2 }, { translateY: verticalScale(-5) }, { translateX: scale(5) }] }} resizeMode="contain" />
+                                    ))}
+                                </View>
+                            ) : (
+                                <Image source={rewardImage} style={[styles.rewardImage, { transform: [{ scale: String(reward?.category).toLowerCase() === 'pet' ? 2.3 : 1.0 }, { translateY: String(reward?.category).toLowerCase() === 'pet' ? verticalScale(-10) : 0 }, { translateX: String(reward?.category).toLowerCase() === 'pet' ? scale(6) : 0 }] }]} resizeMode="contain" />
+                            )
+                        ) : null}
+
+                        {!isFallback && <CustomText style={styles.rewardCategory}>{rewardCategoryLabel}</CustomText>}
+                        <CustomText numberOfLines={2} adjustsFontSizeToFit={true} style={[styles.rewardName, isFallback && { color: '#111', marginTop: verticalScale(20) }]}>{rewardNameStr}</CustomText>
                     </View>
 
-                    <TouchableOpacity style={styles.confirmButton} onPress={handleConfirm}>
-                        <CustomText style={styles.confirmButtonText}>확인</CustomText>
+                    <TouchableOpacity style={[styles.confirmButton, { backgroundColor: '#A3E635' }]} onPress={handleConfirm}>
+                        <CustomText style={[styles.confirmButtonText, { color: '#ffffff' }]}>확인</CustomText>
                     </TouchableOpacity>
                 </View>
             )}
@@ -138,7 +214,7 @@ const GachaScreen = ({ navigation, route }) => {
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
-        backgroundColor: '#F3F4F6', // 좀 더 부드러운 토스 스타일 배경
+        backgroundColor: '#ECFCCB',
     },
     centerContainer: {
         flex: 1,
@@ -176,49 +252,60 @@ const styles = StyleSheet.create({
         fontSize: scale(24),
         fontWeight: '900',
         color: '#111',
-        marginBottom: verticalScale(32),
+        marginBottom: verticalScale(16),
     },
     rewardCard: {
         width: '100%',
         backgroundColor: '#FFFFFF',
         borderRadius: scale(24),
-        paddingVertical: verticalScale(40),
+        paddingVertical: verticalScale(20),
         paddingHorizontal: scale(20),
         alignItems: 'center',
-        marginBottom: verticalScale(40),
+        justifyContent: 'center',
+        marginBottom: verticalScale(20),
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.05,
         shadowRadius: 12,
         elevation: 3,
     },
-    rewardEmoji: {
+    rewardImage: {
+        width: scale(220),
+        height: scale(220),
+        marginBottom: verticalScale(10),
+    },
+    rewardFallbackEmoji: {
         fontSize: scale(70),
         marginBottom: verticalScale(16),
+    },
+    rewardCategory: {
+        fontSize: scale(14),
+        color: '#6B7280',
+        marginBottom: verticalScale(8),
     },
     rewardName: {
         fontSize: scale(22),
         fontWeight: 'bold',
-        color: '#3B82F6',
-        marginBottom: verticalScale(8),
-    },
-    rewardDesc: {
-        fontSize: scale(14),
-        color: '#6B7280',
+        color: '#A3E635',
         textAlign: 'center',
     },
     confirmButton: {
         width: '100%',
-        backgroundColor: '#3B82F6',
+        backgroundColor: '#A3E635',
         paddingVertical: verticalScale(16),
         borderRadius: scale(16),
         alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: verticalScale(2) },
+        shadowOpacity: 0.1,
+        shadowRadius: scale(4),
+        elevation: 3,
     },
     confirmButtonText: {
         fontSize: scale(18),
         fontWeight: 'bold',
         color: '#FFFFFF',
-    }
+    },
 });
 
 export default GachaScreen;

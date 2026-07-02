@@ -138,9 +138,9 @@ const styles = StyleSheet.create({
 
     inputGroup: { marginBottom: verticalScale(24) },
     label: { fontSize: scale(14), fontWeight: 'bold', color: '#4B5563', marginBottom: verticalScale(8) },
-    input: { backgroundColor: '#F3F4F6', borderRadius: scale(12), padding: scale(16), fontSize: scale(18), letterSpacing: 4, fontWeight: 'bold', color: '#111' },
+    input: { backgroundColor: '#FFFFFF', borderRadius: scale(16), padding: scale(16), fontSize: scale(18), letterSpacing: 4, fontWeight: 'bold', color: '#111', shadowColor: '#000', shadowOffset: { width: 0, height: verticalScale(2) }, shadowOpacity: 0.05, shadowRadius: scale(4), elevation: 2 },
 
-    submitButton: { marginTop: verticalScale(20), paddingVertical: verticalScale(16), borderRadius: scale(12), alignItems: 'center' },
+    submitButton: { marginTop: verticalScale(20), paddingVertical: verticalScale(16), borderRadius: scale(16), alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: verticalScale(2) }, shadowOpacity: 0.1, shadowRadius: scale(4), elevation: 3 },
     submitButtonActive: { backgroundColor: '#3B82F6' },
     submitButtonDisabled: { backgroundColor: '#E5E7EB' },
     submitButtonText: { fontSize: scale(16), fontWeight: 'bold', color: '#FFFFFF' },

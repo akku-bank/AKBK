@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
@@ -23,22 +24,25 @@ public class SsafyFinanceService {
 
     private final RestClient restClient;
     private final String apiKey;
+    private final Clock clock;
 
     public SsafyFinanceService(
             @Value("${ssafy.api.base-url}") String baseUrl,
-            @Value("${ssafy.api.key}") String apiKey
+            @Value("${ssafy.api.key}") String apiKey,
+            Clock clock
     ) {
         this.restClient = RestClient.builder()
                 .baseUrl(baseUrl)
                 .build();
         this.apiKey = apiKey;
+        this.clock = clock;
     }
 
     /**
      * 금융망 공통 헤더 생성
      */
     private FinanceRequestHeader createHeader(String apiName, String apiServiceCode, String userKey) {
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(clock);
         String date = now.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
         String time = now.format(DateTimeFormatter.ofPattern("HHmmss"));
         
@@ -164,7 +168,7 @@ public class SsafyFinanceService {
      * 계좌 이체
      */
     public FinanceTransferResponse.Rec transfer(String userKey, String withdrawalBankCode, String withdrawalAccountNo, String depositBankCode, String depositAccountNo, Long amount) {
-        FinanceRequestHeader header = createHeader("createDemandDepositAccountTransfer", "createDemandDepositAccountTransfer", userKey);
+        FinanceRequestHeader header = createHeader("updateDemandDepositAccountTransfer", "updateDemandDepositAccountTransfer", userKey);
         
         FinanceTransferRequest data = new FinanceTransferRequest(
                 depositBankCode, // 입금은행
@@ -204,8 +208,8 @@ public class SsafyFinanceService {
                                                 Long amount,
                                                 String depositMemo, String withdrawalMemo) {
         FinanceRequestHeader header = createHeader(
-                "createDemandDepositAccountTransfer",
-                "createDemandDepositAccountTransfer",
+                "updateDemandDepositAccountTransfer",
+                "updateDemandDepositAccountTransfer",
                 userKey);
 
         FinanceTransferRequest data = new FinanceTransferRequest(
@@ -233,6 +237,30 @@ public class SsafyFinanceService {
         }
 
         throw new RuntimeException("금융망 이체 처리 실패");
+    }
+
+    /**
+     * 계좌 실명 조회
+     */
+    public FinanceAccountHolderNameResponse inquireDemandDepositAccountHolderName(String userKey, String accountNo) {
+        FinanceRequestHeader header = createHeader("inquireDemandDepositAccountHolderName", "inquireDemandDepositAccountHolderName", userKey);
+        FinanceAccountHolderNameRequest data = new FinanceAccountHolderNameRequest(accountNo);
+        
+        FinanceRequest<FinanceAccountHolderNameRequest> request = new FinanceRequest<>(header, data);
+
+        FinanceResponse<FinanceAccountHolderNameResponse> response = restClient.post()
+                .uri("/edu/demandDeposit/inquireDemandDepositAccountHolderName")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(request)
+                .retrieve()
+                .body(new ParameterizedTypeReference<>() {});
+
+        validateResponse(response);
+        if (response != null && response.data() != null) {
+            return response.data();
+        }
+        
+        throw new RuntimeException("금융망 계좌 실명 조회 실패");
     }
 
     /**

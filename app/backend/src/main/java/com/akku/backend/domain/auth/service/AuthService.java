@@ -14,6 +14,8 @@ import com.akku.backend.domain.auth.repository.LogoutTokenRepository;
 import com.akku.backend.domain.auth.repository.UserRepository;
 import com.akku.backend.global.security.JwtProvider;
 import com.akku.backend.domain.auth.exception.AuthErrorCode;
+import com.akku.backend.domain.jelling.entity.Jelling;
+import com.akku.backend.domain.jelling.repository.JellingRepository;
 import com.akku.backend.domain.user.exception.UserErrorCode;
 import com.akku.backend.global.error.ApiException;
 import io.jsonwebtoken.Claims;
@@ -22,6 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.UUID;
@@ -35,8 +38,10 @@ public class AuthService {
     private final SsafyFinanceService ssafyFinanceService;
     private final UserRepository userRepository;
     private final LogoutTokenRepository logoutTokenRepository;
+    private final JellingRepository jellingRepository;
     private final JwtProvider jwtProvider;
     private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
+    private final Clock clock;
 
     /**
      * 카카오 소셜 로그인 처리
@@ -69,6 +74,11 @@ public class AuthService {
                             .build();
                     return userRepository.save(newUser);
                 });
+        
+        // DB에는 있으나 간편 비밀번호가 없는 경우 신규 가입 절차로 유도
+        if (user.getPinPassword() == null) {
+            isNewUserFlag[0] = true;
+        }
 
         // 탈퇴/비활성 사용자 차단
         if (!user.getIsActive()) {
@@ -122,6 +132,13 @@ public class AuthService {
         // PIN 암호화 저장
         String encodedPin = passwordEncoder.encode(request.pin());
         user.updatePinPassword(encodedPin);
+
+        // CHILD 역할이면 Jelling 지갑 생성 (없는 경우에만)
+        if ("CHILD".equals(user.getRole())) {
+            jellingRepository.findById(user.getId()).orElseGet(() ->
+                    jellingRepository.save(Jelling.builder().user(user).build())
+            );
+        }
 
         String accessToken = jwtProvider.generateAccessToken(user.getId(), user.getRole());
         String refreshToken = jwtProvider.generateRefreshToken(user.getId());
@@ -180,14 +197,14 @@ public class AuthService {
         Claims claims = jwtProvider.parseToken(accessToken);
         LocalDateTime expiredAt = claims.getExpiration()
                 .toInstant()
-                .atZone(ZoneId.systemDefault())
+                .atZone(clock.getZone())
                 .toLocalDateTime();
 
         LogoutToken logoutToken = LogoutToken.builder()
                 .token(accessToken)
                 .userId(userId)
                 .expiredAt(expiredAt)
-                .createdAt(LocalDateTime.now())
+                .createdAt(LocalDateTime.now(clock))
                 .build();
 
         logoutTokenRepository.save(logoutToken);

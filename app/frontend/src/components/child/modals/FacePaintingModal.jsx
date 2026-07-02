@@ -139,7 +139,7 @@ const FacePaintingModal = ({ visible, onClose, onSave, initialPaths, equipState 
 };
 
 const styles = StyleSheet.create({
-    safeArea: { flex: 1, backgroundColor: '#F3F4F6' },
+    safeArea: { flex: 1, backgroundColor: '#F9FAFB' },
     header: { flexDirection: 'row', justifyContent: 'space-between', padding: scale(16), backgroundColor: '#FFF', alignItems: 'center' },
     headerBtn: { padding: scale(8) },
     headerBtnText: { fontSize: scale(16), fontWeight: 'bold', color: '#111' },
@@ -159,7 +159,7 @@ const styles = StyleSheet.create({
         ...StyleSheet.absoluteFillObject,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#F3F4F6',
+        backgroundColor: '#F9FAFB',
     },
     drawingArea: {
         ...StyleSheet.absoluteFillObject,

@@ -2,34 +2,40 @@ package com.akku.backend.domain.quiz.service;
 
 import com.akku.backend.domain.auth.entity.User;
 import com.akku.backend.domain.auth.repository.UserRepository;
+import com.akku.backend.domain.jelling.entity.Jelling;
+import com.akku.backend.domain.jelling.entity.JellingTransaction;
 import com.akku.backend.domain.quiz.dto.AnswerRequest;
 import com.akku.backend.domain.quiz.dto.AnswerResponse;
 import com.akku.backend.domain.quiz.dto.ChatRequest;
+import com.akku.backend.domain.quiz.dto.ChatResponse;
 import com.akku.backend.domain.quiz.dto.QuizResponse;
 import com.akku.backend.domain.quiz.entity.ChatLog;
 import com.akku.backend.domain.quiz.entity.Quiz;
 import com.akku.backend.domain.quiz.entity.UserQuiz;
 import com.akku.backend.domain.quiz.event.QuizChatEvent;
 import com.akku.backend.domain.quiz.exception.QuizErrorCode;
-import com.akku.backend.domain.quiz.kafka.QuizKafkaProducer;
 import com.akku.backend.domain.quiz.repository.ChatLogRepository;
 import com.akku.backend.domain.quiz.repository.QuizRepository;
 import com.akku.backend.domain.quiz.repository.UserQuizRepository;
+import com.akku.backend.domain.quiz.sse.SseConnectionManager;
+import com.akku.backend.domain.jelling.repository.JellingRepository;
+import com.akku.backend.domain.jelling.repository.JellingTransactionRepository;
+import com.akku.backend.domain.quiz.client.QuizAiClient;
+import com.akku.backend.domain.notification.dto.NotificationRequest;
+import com.akku.backend.domain.notification.service.FcmService;
 import com.akku.backend.domain.user.exception.UserErrorCode;
 import com.akku.backend.global.error.ApiException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
-/**
- * 금융 퀴즈 챌린지 비즈니스 로직
- */
 @Service
 @RequiredArgsConstructor
 public class QuizService {
@@ -38,35 +44,33 @@ public class QuizService {
     private final UserQuizRepository userQuizRepository;
     private final ChatLogRepository chatLogRepository;
     private final UserRepository userRepository;
-    private final QuizKafkaProducer quizKafkaProducer;
-
-    // ────────────────────────────────────────────────────────────────────────
-    // 1. 퀴즈 조회 및 난이도 락 (GET /api/challenges/quizzes)
-    // ────────────────────────────────────────────────────────────────────────
+    private final JellingRepository jellingRepository;
+    private final JellingTransactionRepository jellingTransactionRepository;
+    private final QuizAiClient quizAiClient;
+    private final SseConnectionManager sseConnectionManager;
+    private final FcmService fcmService;
+    private final Clock clock;
 
     @Transactional
     public QuizResponse fetchQuiz(UUID userId, String difficulty) {
-        LocalDateTime quizFrom = LocalDateTime.of(LocalDate.now().minusDays(1), LocalTime.of(22, 0));
-        LocalDateTime quizTo   = LocalDateTime.of(LocalDate.now(), LocalTime.MIDNIGHT);
+        LocalDateTime quizFrom = LocalDateTime.of(LocalDate.now(clock).minusDays(1), LocalTime.of(22, 0));
+        LocalDateTime quizTo = LocalDateTime.of(LocalDate.now(clock), LocalTime.MIDNIGHT);
 
         Quiz quiz = quizRepository.findTopByDifficultyAndCreatedAtBetween(difficulty, quizFrom, quizTo)
                 .orElseThrow(() -> new ApiException(QuizErrorCode.QUIZ_NOT_FOUND));
 
-        LocalDateTime lockFrom = LocalDateTime.of(LocalDate.now(), LocalTime.MIDNIGHT);
-        LocalDateTime lockTo   = LocalDateTime.now();
+        LocalDateTime lockFrom = LocalDateTime.of(LocalDate.now(clock), LocalTime.MIDNIGHT);
+        LocalDateTime lockTo = LocalDateTime.now(clock);
 
         UserQuiz userQuiz = userQuizRepository
                 .findTopByUserIdAndCreatedAtBetweenOrderByCreatedAtDesc(userId, lockFrom, lockTo)
                 .map(existing -> {
-                    // 다른 난이도(퀴즈)에서 이미 힌트를 사용했으면 변경 불가
                     if (!existing.getQuizId().equals(quiz.getId()) && existing.getRemainingCredits() < 100) {
                         throw new ApiException(QuizErrorCode.DIFFICULTY_CHANGE_NOT_ALLOWED);
                     }
-                    // 같은 퀴즈면 기존 락 반환
                     if (existing.getQuizId().equals(quiz.getId())) {
                         return existing;
                     }
-                    // 다른 퀴즈지만 힌트 미사용(credits=100) — 새 난이도로 락 생성
                     return userQuizRepository.save(UserQuiz.builder()
                             .userId(userId)
                             .quizId(quiz.getId())
@@ -77,9 +81,8 @@ public class QuizService {
                         .quizId(quiz.getId())
                         .build()));
 
-        // 당일 채팅 로그만 조회
         String todayChatJson = chatLogRepository.findByUserIdAndQuizId(userId, quiz.getId())
-                .filter(log -> log.getCreatedAt().equals(LocalDate.now()))
+                .filter(log -> log.getCreatedAt().equals(LocalDate.now(clock)))
                 .map(ChatLog::getChatJson)
                 .orElse(null);
 
@@ -90,21 +93,15 @@ public class QuizService {
                 quiz.getProblemJson(),
                 quiz.getExplanation(),
                 userQuiz.getRemainingCredits(),
-                todayChatJson
+                todayChatJson,
+                userQuiz.isSubmitted(),
+                userQuiz.getIsCorrect(),
+                quiz.getCorrectAnswer()
         );
     }
 
-    // ────────────────────────────────────────────────────────────────────────
-    // 2. AI 챗봇 힌트 — Kafka 이벤트 발행 (POST /api/challenges/quizzes/chat)
-    // ────────────────────────────────────────────────────────────────────────
-
-    /**
-     * 동기 RestClient 호출 대신 Kafka CHAT_REQUEST 이벤트를 발행한다.
-     * AI 처리는 FastAPI 컨슈머가 비동기로 수행하며, 202 Accepted 로 즉시 응답한다.
-     * 트랜잭션 없음 — Kafka 발행은 DB 트랜잭션과 분리되어야 한다.
-     */
+    @Transactional
     public void chatWithAi(UUID userId, ChatRequest request) {
-        // 1. Chat Freeze 검증
         UserQuiz userQuiz = userQuizRepository.findByUserIdAndQuizId(userId, request.quizId())
                 .orElseThrow(() -> new ApiException(QuizErrorCode.QUIZ_NOT_FOUND));
 
@@ -112,14 +109,16 @@ public class QuizService {
             throw new ApiException(QuizErrorCode.QUIZ_ALREADY_SUBMITTED);
         }
 
-        // 2. 이벤트 조립에 필요한 데이터 조회
         Quiz quiz = quizRepository.findById(request.quizId())
                 .orElseThrow(() -> new ApiException(QuizErrorCode.QUIZ_NOT_FOUND));
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ApiException(UserErrorCode.USER_NOT_FOUND));
 
-        // 3. Kafka CHAT_REQUEST 이벤트 발행
+        String currentChatJson = chatLogRepository.findByUserIdAndQuizId(userId, request.quizId())
+                .map(ChatLog::getChatJson)
+                .orElse(null);
+
         QuizChatEvent event = QuizChatEvent.of(
                 userId,
                 request.quizId(),
@@ -128,14 +127,16 @@ public class QuizService {
                 quiz.getDifficulty(),
                 user.getBirthDate()
         );
-        quizKafkaProducer.publishChatRequest(event);
 
-        // TODO: 채팅 로그는 FastAPI → Kafka CHAT_RESPONSE 수신 후 컨슈머에서 저장
+        ChatResponse response = quizAiClient.requestHint(event, currentChatJson);
+        if (response.chatJson() == null) {
+            throw new ApiException(QuizErrorCode.AI_SERVER_ERROR);
+        }
+        userQuiz.deductCredits(response.deductedCredits());
+        upsertChatLog(userId, request.quizId(), response.chatJson());
+        sseConnectionManager.send(userId, response, "chat-response");
+        sseConnectionManager.complete(userId);
     }
-
-    // ────────────────────────────────────────────────────────────────────────
-    // 3. 정답 제출 및 젤링 보상 (POST /api/challenges/quizzes/answer)
-    // ────────────────────────────────────────────────────────────────────────
 
     @Transactional
     public AnswerResponse submitAnswer(UUID userId, AnswerRequest request) {
@@ -149,33 +150,52 @@ public class QuizService {
         Quiz quiz = quizRepository.findById(request.quizId())
                 .orElseThrow(() -> new ApiException(QuizErrorCode.QUIZ_NOT_FOUND));
 
-        boolean isCorrect = (quiz.getCorrectAnswer() == request.selectedAnswer());
-        userQuiz.submit(isCorrect);
+        boolean isCorrect = quiz.getCorrectAnswer() == request.selectedAnswer() + 1;
+        userQuiz.submit(isCorrect, LocalDate.now(clock));
 
         Long jellingReward = null;
         if (isCorrect) {
             long reward = ThreadLocalRandom.current().nextLong(1, 21); // 1~20 랜덤 보상
-            // TODO: Call Jelling domain to add reward (amount: reward)
+            addQuizRewardJelling(userId, reward);
             jellingReward = reward;
         }
 
-        return new AnswerResponse(isCorrect, jellingReward);
+        return new AnswerResponse(isCorrect, jellingReward, quiz.getCorrectAnswer());
     }
 
-    // ────────────────────────────────────────────────────────────────────────
-    // 4. 채팅 로그 UPSERT — Kafka 컨슈머 전용 (CHAT_RESPONSE 수신 시 호출)
-    // ────────────────────────────────────────────────────────────────────────
-
-    /**
-     * chat_logs 테이블에 대해 UPSERT를 수행한다.
-     * {@link com.akku.backend.domain.quiz.kafka.QuizKafkaConsumer}가 CHAT_RESPONSE를
-     * 수신한 직후 호출하며, 이 메서드의 트랜잭션이 커밋된 뒤에 SSE 푸시가 진행된다.
-     *
-     * <p>호출 전 컨슈머가 chatJson null/blank 여부를 반드시 검증해야 한다.
-     * 이 메서드는 chatJson이 유효함을 전제로 동작한다.</p>
-     */
     @Transactional
     public void upsertChatLog(UUID userId, UUID quizId, String chatJson) {
         chatLogRepository.upsertChatJson(userId, quizId, chatJson);
+    }
+
+    private void addQuizRewardJelling(UUID userId, long rewardAmount) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ApiException(UserErrorCode.USER_NOT_FOUND));
+
+        Jelling jelling = jellingRepository.findByUserIdWithLock(userId)
+                .orElseThrow(() -> new ApiException(QuizErrorCode.QUIZ_NOT_FOUND));
+
+        jelling.addBalance(rewardAmount);
+        jellingRepository.save(jelling);
+
+        jellingTransactionRepository.save(JellingTransaction.builder()
+                .user(user)
+                .amount(rewardAmount)
+                .type("QUIZ_REWARD")
+                .description("금융 퀴즈 정답 보상")
+                .build());
+
+        // FCM 알림 발송
+        if (user.getFcmToken() != null && !user.getFcmToken().isBlank()) {
+            try {
+                fcmService.sendMessage(NotificationRequest.builder()
+                        .token(user.getFcmToken())
+                        .title("정답입니다! \uD83C\uDF89")
+                        .body(String.format("금융 퀴즈 보상으로 젤링 %,d개가 지급되었습니다.", rewardAmount))
+                        .build());
+            } catch (Exception e) {
+                // 알림 실패는 핵심 로직에 영향을 주지 않도록 로깅만 수행
+            }
+        }
     }
 }

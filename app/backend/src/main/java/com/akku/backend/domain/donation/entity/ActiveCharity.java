@@ -29,10 +29,6 @@ public class ActiveCharity {
     @JoinColumn(name = "charity_id", nullable = false)
     private Charity charity;
 
-    @Column(name = "current_amount")
-    @Builder.Default
-    private Long currentAmount = 0L;
-
     @Column(name = "target_amount", nullable = false)
     @Builder.Default
     private Integer targetAmount = 500;
@@ -49,21 +45,11 @@ public class ActiveCharity {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    public void donate(long amount) {
-        this.currentAmount += amount;
-        if (this.currentAmount >= this.targetAmount) {
-            this.status = "COMPLETED";
-        }
-    }
-
     public boolean isCompleted() {
         return "COMPLETED".equals(this.status);
     }
 
     public void markRewarded() {
-        if (!isCompleted()) {
-            throw new IllegalStateException("Only completed charities can be rewarded.");
-        }
         this.status = "REWARDED";
     }
 }

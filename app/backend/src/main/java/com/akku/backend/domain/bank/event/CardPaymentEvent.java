@@ -1,5 +1,6 @@
 package com.akku.backend.domain.bank.event;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.time.LocalDate;
 import java.util.UUID;
 
@@ -13,9 +14,16 @@ import java.util.UUID;
  *          SpendingChallengeCardPaymentEventListener는 이 필드를 무시한다.
  */
 public record CardPaymentEvent(
-        UUID userId,
-        String subCategoryName,
-        Long paymentBalance,
-        LocalDate transactionDate,
-        boolean isGreen
+    UUID userId,
+    String withdrawalAccountNo,
+    @JsonProperty("transactionUniqueNo") String transactionUniqueNo,
+    String withdrawalUniqueNo,
+    String subCategoryName,
+    Long paymentBalance,
+    Long balanceAfter,
+    String merchantId,
+    String merchantName,
+    LocalDate transactionDate,
+    String transactionTime,
+    boolean isGreen
 ) {}

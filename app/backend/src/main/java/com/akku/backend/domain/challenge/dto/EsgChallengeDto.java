@@ -1,5 +1,6 @@
 package com.akku.backend.domain.challenge.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -17,8 +18,11 @@ public class EsgChallengeDto {
     @Builder
     public static class StatusResponse {
         private UUID challengeId;
+        @JsonProperty("isCompleted")
         private boolean isCompleted;
+        @JsonProperty("isRewarded")
         private boolean isRewarded;
+        private Long rewardAmount;
     }
 
     /**

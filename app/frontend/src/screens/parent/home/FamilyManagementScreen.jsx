@@ -150,7 +150,7 @@ const FamilyManagementScreen = ({ navigation }) => {
                                                 setEditName(profile.name);
                                             }}
                                         >
-                                            <CustomText style={{ fontSize: scale(12), color: '#3B82F6' }}>수정</CustomText>
+                                            <CustomText style={{ fontSize: scale(12), color: '#A3E635' }}>수정</CustomText>
                                         </TouchableOpacity>
                                         <TouchableOpacity
                                             style={{ marginLeft: scale(8) }}
@@ -185,7 +185,7 @@ const FamilyManagementScreen = ({ navigation }) => {
                 ))}
 
                 <View style={styles.infoBox}>
-                    <CustomText style={styles.infoTitle}>💡 가족 계정 연동이란?</CustomText>
+                    <CustomText style={styles.infoTitle}>가족 계정 연동이란?</CustomText>
                     <CustomText style={styles.infoText}>아이의 프로필을 생성한 후 QR 코드를 생성하세요. 아이의 기기에서 해당 QR을 스캔하면 계정이 안전하게 연결됩니다.</CustomText>
                 </View>
 
@@ -195,8 +195,8 @@ const FamilyManagementScreen = ({ navigation }) => {
                 <View style={styles.modalOverlay}>
                     <View style={styles.modalContent}>
                         <CustomText style={styles.modalTitle}>새 가족 추가</CustomText>
-                        <TextInput style={styles.modalInput} placeholder="이름 (예: 안싸피)" placeholderTextColor="#9CA3AF" value={addName} onChangeText={setAddName} />
-                        <TextInput style={[styles.modalInput, { marginTop: 12 }]} placeholder="생년월일 (예: 2015-05-05)" placeholderTextColor="#9CA3AF" value={addBirth} onChangeText={setAddBirth} />
+                        <TextInput style={styles.modalInput} placeholder="이름 (예: 김싸피)" placeholderTextColor="#9CA3AF" value={addName} onChangeText={setAddName} />
+                        <TextInput style={styles.modalInput} placeholder="생년월일 (예: 2015-05-05)" placeholderTextColor="#9CA3AF" value={addBirth} onChangeText={setAddBirth} />
 
                         <View style={{ flexDirection: 'row', marginTop: 12, marginBottom: 20, justifyContent: 'space-around' }}>
                             <TouchableOpacity style={[styles.roleBtn, addRole === 'CHILD' && styles.roleBtnActive]} onPress={() => setAddRole('CHILD')}>
@@ -211,8 +211,8 @@ const FamilyManagementScreen = ({ navigation }) => {
                             <TouchableOpacity style={[styles.modalBtn, { backgroundColor: '#E5E7EB' }]} onPress={() => setIsAddModalVisible(false)}>
                                 <CustomText style={{ color: '#4B5563', fontWeight: 'bold' }}>취소</CustomText>
                             </TouchableOpacity>
-                            <TouchableOpacity style={[styles.modalBtn, { backgroundColor: '#3B82F6' }]} onPress={submitAddProfile}>
-                                <CustomText style={{ color: '#FFF', fontWeight: 'bold' }}>저장하기</CustomText>
+                            <TouchableOpacity style={[styles.modalBtn, { backgroundColor: '#A3E635' }]} onPress={submitAddProfile}>
+                                <CustomText style={{ color: '#111', fontWeight: 'bold' }}>저장하기</CustomText>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -224,7 +224,7 @@ const FamilyManagementScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-    safeArea: { flex: 1, backgroundColor: '#F3F4F6' },
+    safeArea: { flex: 1, backgroundColor: '#F9FAFB' },
     header: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
         paddingHorizontal: scale(16), paddingVertical: verticalScale(16),
@@ -238,7 +238,7 @@ const styles = StyleSheet.create({
 
     sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: verticalScale(16) },
     sectionTitle: { fontSize: scale(18), fontWeight: 'bold', color: '#111' },
-    addText: { fontSize: scale(14), fontWeight: 'bold', color: '#3B82F6' },
+    addText: { fontSize: scale(14), fontWeight: 'bold', color: '#A3E635' },
 
     profileCard: {
         flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
@@ -246,34 +246,34 @@ const styles = StyleSheet.create({
         marginBottom: verticalScale(12),
         elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: verticalScale(2) }, shadowOpacity: 0.05, shadowRadius: scale(8),
     },
-    profileName: { fontSize: scale(16), fontWeight: 'bold', color: '#111', marginBottom: verticalScale(4) },
-    profileStatus: { fontSize: scale(13), fontWeight: '600' },
-    statusPending: { color: '#F59E0B' },
-    statusActive: { color: '#10B981' },
+    profileName: { fontSize: scale(16), fontWeight: 'bold', color: '#111', marginBottom: verticalScale(2) },
+    profileStatus: { fontSize: scale(12), fontWeight: 'bold', paddingHorizontal: scale(10), paddingVertical: verticalScale(4), borderRadius: scale(8), alignSelf: 'flex-start', overflow: 'hidden', marginTop: verticalScale(4) },
+    statusPending: { backgroundColor: '#FEF3C7', color: '#D97706' },
+    statusActive: { backgroundColor: '#ECFCCB', color: '#4D7C0F' },
 
-    qrButton: { backgroundColor: '#F3F4F6', paddingHorizontal: scale(16), paddingVertical: verticalScale(8), borderRadius: scale(12) },
+    qrButton: { backgroundColor: '#F9FAFB', paddingHorizontal: scale(16), paddingVertical: verticalScale(8), borderRadius: scale(12), shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2, },
     qrButtonText: { fontSize: scale(14), fontWeight: 'bold', color: '#4B5563' },
 
-    detailButton: { backgroundColor: '#EFF6FF', paddingHorizontal: scale(16), paddingVertical: verticalScale(8), borderRadius: scale(12) },
-    detailButtonText: { fontSize: scale(14), fontWeight: 'bold', color: '#3B82F6' },
+    detailButton: { backgroundColor: '#ECFCCB', paddingHorizontal: scale(16), paddingVertical: verticalScale(8), borderRadius: scale(12), shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2, },
+    detailButtonText: { fontSize: scale(14), fontWeight: 'bold', color: '#4D7C0F' },
 
     editInput: { flex: 1, backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#D1D5DB', borderRadius: scale(8), paddingHorizontal: scale(12), paddingVertical: verticalScale(6), fontSize: scale(14), color: '#111', marginRight: scale(8) },
     actionBtn: { paddingHorizontal: scale(8), paddingVertical: verticalScale(6) },
 
-    infoBox: { marginTop: verticalScale(32), backgroundColor: '#EFF6FF', padding: scale(16), borderRadius: scale(12) },
-    infoTitle: { fontSize: scale(14), fontWeight: 'bold', color: '#1E3A8A', marginBottom: verticalScale(8) },
-    infoText: { fontSize: scale(13), color: '#1E40AF', lineHeight: 20 },
+    infoBox: { marginTop: verticalScale(32), backgroundColor: '#ECFCCB', padding: scale(16), borderRadius: scale(12), shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2, },
+    infoTitle: { fontSize: scale(14), fontWeight: 'bold', color: '#4D7C0F', marginBottom: verticalScale(8) },
+    infoText: { fontSize: scale(13), color: '#4D7C0F', lineHeight: 20 },
 
     modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
     modalContent: { width: '85%', backgroundColor: '#FFF', borderRadius: scale(16), padding: scale(20) },
     modalTitle: { fontSize: scale(18), fontWeight: 'bold', color: '#111', marginBottom: verticalScale(16), textAlign: 'center' },
-    modalInput: { width: '100%', height: scale(45), backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#D1D5DB', borderRadius: scale(8), paddingHorizontal: scale(12), fontSize: scale(14), color: '#111' },
-    roleBtn: { paddingVertical: verticalScale(8), paddingHorizontal: scale(16), borderRadius: scale(8), backgroundColor: '#F3F4F6' },
-    roleBtnActive: { backgroundColor: '#DBEAFE' },
+    modalInput: { width: '100%', height: scale(45), backgroundColor: '#FFFFFF', borderRadius: scale(12), paddingHorizontal: scale(12), fontSize: scale(14), color: '#111', marginBottom: verticalScale(12), shadowColor: '#000', shadowOffset: { width: 0, height: verticalScale(2) }, shadowOpacity: 0.05, shadowRadius: scale(4), elevation: 2 },
+    roleBtn: { paddingVertical: verticalScale(8), paddingHorizontal: scale(16), borderRadius: scale(12), backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E5E7EB', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
+    roleBtnActive: { borderColor: '#A3E635', borderWidth: 2 },
     roleText: { color: '#6B7280', fontWeight: 'bold' },
-    roleTextActive: { color: '#2563EB', fontWeight: 'bold' },
+    roleTextActive: { color: '#4D7C0F', fontWeight: 'bold' },
     modalActionRow: { flexDirection: 'row', justifyContent: 'space-between', gap: scale(12) },
-    modalBtn: { flex: 1, height: scale(45), justifyContent: 'center', alignItems: 'center', borderRadius: scale(8) }
+    modalBtn: { flex: 1, height: scale(45), justifyContent: 'center', alignItems: 'center', borderRadius: scale(12), shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 }
 });
 
 export default FamilyManagementScreen;

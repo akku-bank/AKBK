@@ -1,15 +1,17 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, SafeAreaView, TouchableOpacity, Alert, ScrollView, Image } from 'react-native';
 import { scale, verticalScale } from 'react-native-size-matters';
 import CustomText from '../../../components/common/CustomText';
 import CustomTextInput from '../../../components/common/CustomTextInput';
 import api from '../../../api/axios';
 import useAuthStore from '../../../store/useAuthStore';
+import { useChildAlert } from '../../../contexts/ChildAlertContext';
 
 const ChildEditProfileScreen = ({ navigation }) => {
     const { user, setUser } = useAuthStore();
     const [nickname, setNickname] = useState(user?.name || '');
     const [statusMessage, setStatusMessage] = useState('돈을 아끼자!');
+    const { showAlert } = useChildAlert();
 
     useEffect(() => {
         if (user?.name) {
@@ -23,7 +25,7 @@ const ChildEditProfileScreen = ({ navigation }) => {
 
     const handleSave = async () => {
         if (!nickname.trim()) {
-            Alert.alert('알림', '닉네임을 입력해주세요.');
+            showAlert({ title: '알림', message: '닉네임을 입력해주세요.' });
             return;
         }
 
@@ -32,9 +34,13 @@ const ChildEditProfileScreen = ({ navigation }) => {
             if (user) {
                 setUser({ ...user, name: nickname });
             }
-            Alert.alert('저장 완료', '프로필이 수정되었습니다.', [{ text: '확인', onPress: () => navigation.goBack() }]);
+            showAlert({ 
+                title: '저장 완료', 
+                message: '프로필이 수정되었습니다.', 
+                onConfirm: () => navigation.goBack() 
+            });
         } catch (error) {
-            Alert.alert('오류', '프로필 수정에 실패했습니다.');
+            showAlert({ title: '오류', message: '프로필 수정에 실패했습니다.' });
         }
     };
 
@@ -48,7 +54,7 @@ const ChildEditProfileScreen = ({ navigation }) => {
                 <View style={{ width: scale(32) }} />
             </View>
 
-            <ScrollView contentContainerStyle={styles.container}>
+            <ScrollView style={{ backgroundColor: '#ECFCCB' }} contentContainerStyle={styles.container}>
                 <View style={styles.avatarSection}>
                     <View style={styles.avatarCircle}>
                         <Image source={require('../../../assets/croco/croco_face.png')} style={styles.avatarImage} resizeMode="contain" />
@@ -89,10 +95,10 @@ const ChildEditProfileScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-    safeArea: { flex: 1, backgroundColor: '#FFFFFF' },
+    safeArea: { flex: 1, backgroundColor: '#ECFCCB' },
     header: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-        paddingHorizontal: scale(16), paddingVertical: verticalScale(16)
+        paddingHorizontal: scale(16), paddingVertical: verticalScale(16), backgroundColor: '#FFFFFF'
     },
     backButton: { width: scale(32), height: scale(32), justifyContent: 'center' },
     backButtonText: { fontSize: scale(22), fontWeight: 'bold', color: '#111' },
@@ -101,17 +107,17 @@ const styles = StyleSheet.create({
     container: { flexGrow: 1, paddingHorizontal: scale(24), paddingTop: verticalScale(20) },
 
     avatarSection: { alignItems: 'center', marginBottom: verticalScale(40) },
-    avatarCircle: { width: scale(100), height: scale(100), borderRadius: scale(50), backgroundColor: '#E5E7EB', justifyContent: 'center', alignItems: 'center', marginBottom: verticalScale(16), overflow: 'hidden' },
-    avatarImage: { width: '80%', height: '80%' },
-    avatarEditBtn: { paddingVertical: verticalScale(8), paddingHorizontal: scale(16), backgroundColor: '#F3F4F6', borderRadius: scale(20) },
+    avatarCircle: { width: scale(100), height: scale(100), borderRadius: scale(50), backgroundColor: '#FFFFFF', justifyContent: 'center', alignItems: 'center', marginBottom: verticalScale(16), shadowColor: '#000', shadowOffset: { width: 0, height: verticalScale(4) }, shadowOpacity: 0.1, shadowRadius: scale(8), elevation: 4 },
+    avatarImage: { width: '110%', height: '110%', marginTop: verticalScale(40), marginLeft: verticalScale(10) },
+    avatarEditBtn: { paddingVertical: verticalScale(8), paddingHorizontal: scale(16), backgroundColor: '#F9FAFB', borderRadius: scale(20), shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 1, },
     avatarEditBtnText: { fontSize: scale(13), fontWeight: 'bold', color: '#4B5563' },
 
     inputSection: { marginBottom: verticalScale(30) },
     label: { fontSize: scale(14), fontWeight: 'bold', color: '#4B5563', marginBottom: verticalScale(8) },
-    input: { backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: scale(12), paddingHorizontal: scale(16), paddingVertical: verticalScale(14), fontSize: scale(16), color: '#111', marginBottom: verticalScale(24) },
+    input: { backgroundColor: '#FFFFFF', borderRadius: scale(16), paddingHorizontal: scale(16), paddingVertical: verticalScale(14), fontSize: scale(16), color: '#111', marginBottom: verticalScale(24), shadowColor: '#000', shadowOffset: { width: 0, height: verticalScale(2) }, shadowOpacity: 0.05, shadowRadius: scale(4), elevation: 2 },
 
-    footer: { padding: scale(16), backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: '#F3F4F6' },
-    saveButton: { backgroundColor: '#A3E635', paddingVertical: verticalScale(16), borderRadius: scale(16), alignItems: 'center' },
+    footer: { padding: scale(16), backgroundColor: '#ECFCCB', paddingBottom: verticalScale(20) },
+    saveButton: { backgroundColor: '#A3E635', paddingVertical: verticalScale(16), borderRadius: scale(16), alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: verticalScale(2) }, shadowOpacity: 0.1, shadowRadius: scale(4), elevation: 3 },
     saveButtonText: { fontSize: scale(16), fontWeight: 'bold', color: '#111' }
 });
 

@@ -6,6 +6,7 @@ import com.akku.backend.domain.auth.dto.SignupPinRequest;
 import com.akku.backend.domain.auth.dto.SocialLoginData;
 import com.akku.backend.domain.auth.entity.User;
 import com.akku.backend.domain.auth.repository.UserRepository;
+import com.akku.backend.domain.jelling.repository.JellingRepository;
 import com.akku.backend.global.security.JwtProvider;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -28,6 +29,9 @@ class AuthServicePinTest {
 
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private JellingRepository jellingRepository;
 
     @Mock
     private JwtProvider jwtProvider;

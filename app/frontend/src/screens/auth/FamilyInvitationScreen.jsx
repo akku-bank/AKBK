@@ -77,7 +77,7 @@ const styles = StyleSheet.create({
     imageWrapper: {
         width: RFValue(100),
         height: RFValue(100),
-        backgroundColor: '#F3F4F6',
+        backgroundColor: '#F9FAFB',
         borderRadius: RFValue(50),
         justifyContent: 'center',
         alignItems: 'center',
@@ -126,7 +126,7 @@ const styles = StyleSheet.create({
         width: '100%',
         height: RFValue(54),
         borderRadius: RFValue(12),
-        backgroundColor: '#F3F4F6',
+        backgroundColor: '#F9FAFB',
         justifyContent: 'center',
         alignItems: 'center',
     },

@@ -47,6 +47,9 @@ public class CardProduct {
     @Column(name = "max_benefit_limit")
     private Long maxBenefitLimit;
 
+    @Column(name = "card_benefit_info", length = 2000)
+    private String cardBenefitInfo;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
@@ -54,4 +57,12 @@ public class CardProduct {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    public void update(String cardName, String cardDescription, Long baseLimitPerformance, Long maxBenefitLimit, String cardBenefitInfo) {
+        this.cardName = cardName;
+        this.cardDescription = cardDescription;
+        this.baseLimitPerformance = baseLimitPerformance;
+        this.maxBenefitLimit = maxBenefitLimit;
+        this.cardBenefitInfo = cardBenefitInfo;
+    }
 }

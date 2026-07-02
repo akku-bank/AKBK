@@ -113,17 +113,6 @@ const ParentEditProfileScreen = ({ navigation }) => {
                         value={phone}
                         editable={false}
                     />
-                    <CustomText style={styles.helperText}>* 번호 변경은 고객센터에 문의해주세요.</CustomText>
-                </View>
-
-                <View style={styles.utilitySection}>
-                    <TouchableOpacity onPress={handleLogout}>
-                        <CustomText style={styles.logoutText}>로그아웃</CustomText>
-                    </TouchableOpacity>
-                    <View style={styles.divider} />
-                    <TouchableOpacity onPress={handleWithdraw}>
-                        <CustomText style={styles.withdrawalText}>회원 탈퇴</CustomText>
-                    </TouchableOpacity>
                 </View>
             </ScrollView>
 
@@ -150,12 +139,11 @@ const styles = StyleSheet.create({
 
     inputSection: { marginBottom: verticalScale(30) },
     label: { fontSize: scale(14), fontWeight: 'bold', color: '#4B5563', marginBottom: verticalScale(8) },
-    input: { backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: scale(12), paddingHorizontal: scale(16), paddingVertical: verticalScale(14), fontSize: scale(16), color: '#111', marginBottom: verticalScale(12) },
-    disabledInput: { backgroundColor: '#E5E7EB', color: '#6B7280' },
-    helperText: { fontSize: scale(12), color: '#9CA3AF', marginTop: verticalScale(-4), marginBottom: verticalScale(24) },
+    input: { backgroundColor: '#FFFFFF', borderRadius: scale(16), paddingHorizontal: scale(16), paddingVertical: verticalScale(14), fontSize: scale(16), color: '#111', marginBottom: verticalScale(16), shadowColor: '#000', shadowOffset: { width: 0, height: verticalScale(2) }, shadowOpacity: 0.05, shadowRadius: scale(4), elevation: 2 },
+    disabledInput: { backgroundColor: '#F9FAFB', color: '#6B7280' },
 
-    footer: { padding: scale(16), backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: '#F3F4F6' },
-    saveButton: { backgroundColor: '#A3E635', paddingVertical: verticalScale(16), borderRadius: scale(16), alignItems: 'center' },
+    footer: { padding: scale(16), backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: '#F9FAFB' },
+    saveButton: { backgroundColor: '#A3E635', paddingVertical: verticalScale(16), borderRadius: scale(16), alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2, },
     saveButtonText: { fontSize: scale(16), fontWeight: 'bold', color: '#111' },
 
     utilitySection: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: verticalScale(40), marginBottom: verticalScale(16) },

@@ -19,7 +19,8 @@ public enum FinanceErrorCode {
     // 사용자/계좌 관련
     INVALID_DATA_FORMAT("E4001", "입력 데이터가 형식에 맞지 않습니다."),
     USER_ALREADY_EXISTS("E4002", "이미 존재하는 ID입니다."),
-    USER_NOT_FOUND("E4003", "존재하지 않는 ID입니다.");
+    USER_NOT_FOUND("E4003", "존재하지 않는 ID입니다."),
+    INVALID_WITHDRAWAL_DATE("A1053", "출금날짜는 1 ~ 7 로만 입력 가능합니다.");
 
     private final String code;
     private final String description;

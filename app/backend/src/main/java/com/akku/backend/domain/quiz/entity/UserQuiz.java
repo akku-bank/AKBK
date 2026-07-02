@@ -2,7 +2,8 @@ package com.akku.backend.domain.quiz.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -16,6 +17,7 @@ import java.util.UUID;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Builder
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 @IdClass(UserQuizId.class)
 @Table(name = "user_quizzes")
 public class UserQuiz {
@@ -51,16 +53,23 @@ public class UserQuiz {
     @Column(name = "solved_date")
     private LocalDate solvedDate;
 
-    @CreationTimestamp
+    @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     /**
      * 정답 제출 시 결과를 반영
      */
-    public void submit(boolean isCorrect) {
+    public void submit(boolean isCorrect, LocalDate solvedDate) {
         this.isSubmitted = true;
         this.isCorrect = isCorrect;
-        this.solvedDate = LocalDate.now();
+        this.solvedDate = solvedDate;
+    }
+
+    public void deductCredits(int credits) {
+        if (credits <= 0) {
+            return;
+        }
+        this.remainingCredits = Math.max(0, this.remainingCredits - credits);
     }
 }

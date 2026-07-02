@@ -9,6 +9,7 @@ import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import java.time.Clock;
 import java.time.LocalDateTime;
 
 /**
@@ -21,18 +22,19 @@ public class WeeklyLevelScheduler {
 
     private final JobLauncher jobLauncher;
     private final Job weeklyLevelUpdateJob;
+    private final Clock clock;
 
     /**
      * 매주 월요일 00:00:00에 지난주(월-일) 데이터를 바탕으로 레벨 정산 시작
      */
     @Scheduled(cron = "0 0 0 * * MON")
     public void runWeeklyLevelUpdateJob() {
-        log.info("[Scheduler] Starting Weekly Level Update Job at {}", LocalDateTime.now());
+        log.info("[Scheduler] Starting Weekly Level Update Job at {}", LocalDateTime.now(clock));
         
         try {
             // 실행 시각을 파라미터로 넣어 동일한 Job의 중복 방지 및 이력 관리
             JobParameters params = new JobParametersBuilder()
-                    .addString("datetime", LocalDateTime.now().toString())
+                    .addString("datetime", LocalDateTime.now(clock).toString())
                     .toJobParameters();
             
             jobLauncher.run(weeklyLevelUpdateJob, params);
